@@ -1,4 +1,5 @@
 using System.Text.Json;
+using WiiCompiled.Setup.Common;
 
 namespace WiiCompiled.Setup;
 

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using WiiCompiled.Setup.Common;
 
 namespace WiiCompiled.Setup;
 

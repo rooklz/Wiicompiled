@@ -1,16 +1,19 @@
-using System.Globalization;
 using System.Text;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Common;
 
-internal sealed record RuntimeConfigSnapshot(bool Existed, byte[] Contents);
+public sealed record RuntimeConfigSnapshot(bool Existed, byte[] Contents);
 
 /// <summary>
 /// Reads and writes the runtime's <c>Config.toml</c>. Every entry point takes the file it operates on
 /// since its location depends on the installation (portable <c>UserData</c> vs. per-user app data);
-/// callers obtain it once via <see cref="ResolveConfigPath"/>.
+/// callers obtain it once via <see cref="ResolveConfigPath"/>. Shared by both installers - Linux
+/// never creates a <see cref="PortableRoot.MarkerFileName"/> marker file, so
+/// <see cref="ResolveConfigPath"/>/<see cref="FormatPathValue"/>'s portable-root lookups always miss
+/// there and this degrades to the same plain per-user-app-data, always-absolute-path behavior a
+/// non-portable Windows install already gets.
 /// </summary>
-internal static class RuntimeConfiguration
+public static class RuntimeConfiguration
 {
     public const string ConfigFileName = "Config.toml";
 
@@ -51,7 +54,7 @@ internal static class RuntimeConfiguration
             File.Delete(configPath);
     }
 
-    internal static void SetDvdRoot(string configPath, string dvdRoot) =>
+    public static void SetDvdRoot(string configPath, string dvdRoot) =>
         SetPath(configPath, "dvd_root", dvdRoot);
 
     /// <summary>
@@ -59,21 +62,21 @@ internal static class RuntimeConfiguration
     /// asset overlay by scanning this directory live at launch, so an asset-only Retro Rewind update
     /// needs no backend work: the next launch simply reads the new files.
     /// </summary>
-    internal static void SetRetroRewindRoot(string configPath, string retroRewindRoot) =>
+    public static void SetRetroRewindRoot(string configPath, string retroRewindRoot) =>
         SetPath(configPath, "retro_rewind_root", retroRewindRoot);
 
     /// <summary>The canonical Retro Rewind root, or null when no installation has recorded one.</summary>
     public static string? GetRetroRewindRoot(string configPath) =>
         GetResolvedPath(configPath, "retro_rewind_root");
 
-    internal static void RemoveRetroRewindRootIfOwned(string configPath, string retroRewindRoot) =>
+    public static void RemoveRetroRewindRootIfOwned(string configPath, string retroRewindRoot) =>
         RemovePathIfOwned(configPath, "retro_rewind_root", retroRewindRoot);
 
-    internal static void RemoveDvdRootIfOwned(string configPath, string dvdRoot) =>
+    public static void RemoveDvdRootIfOwned(string configPath, string dvdRoot) =>
         RemovePathIfOwned(configPath, "dvd_root", dvdRoot);
 
     /// <summary>The raw stored text of a <c>[paths]</c> key, exactly as the file holds it.</summary>
-    internal static string? GetPath(string configPath, string key) =>
+    public static string? GetPath(string configPath, string key) =>
         TryUnquoteToml(GetRawValue(configPath, "paths", key) ?? "", out var value) ? value : null;
 
     /// <summary>
@@ -81,17 +84,17 @@ internal static class RuntimeConfiguration
     /// <c>[paths]</c> value against the directory holding <c>Config.toml</c> (never the working
     /// directory), so the host must resolve it the same way before comparing or reading it.
     /// </summary>
-    internal static string? GetResolvedPath(string configPath, string key)
+    public static string? GetResolvedPath(string configPath, string key)
     {
         var stored = GetPath(configPath, key);
         return string.IsNullOrWhiteSpace(stored) ? null : ResolveAgainstConfig(configPath, stored);
     }
 
-    internal static string ConfigDirectory(string configPath) =>
+    public static string ConfigDirectory(string configPath) =>
         Path.GetDirectoryName(Path.GetFullPath(configPath))
         ?? throw new InvalidOperationException($"{configPath} has no containing directory.");
 
-    internal static string ResolveAgainstConfig(string configPath, string value) =>
+    public static string ResolveAgainstConfig(string configPath, string value) =>
         Path.GetFullPath(value, ConfigDirectory(configPath));
 
     private static void SetPath(string configPath, string key, string value)
@@ -150,7 +153,7 @@ internal static class RuntimeConfiguration
     }
 
     /// <summary>The raw TOML literal stored for a key, or null when the section or key is absent.</summary>
-    internal static string? GetRawValue(string configPath, string section, string key)
+    public static string? GetRawValue(string configPath, string section, string key)
     {
         if (!File.Exists(configPath)) return null;
         var header = $"[{section}]";
@@ -265,7 +268,7 @@ internal static class RuntimeConfiguration
     private static string QuoteToml(string value) =>
         "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 
-    internal static bool TryUnquoteToml(string value, out string result)
+    public static bool TryUnquoteToml(string value, out string result)
     {
         result = "";
         if (value.Length < 2) return false;
@@ -292,5 +295,4 @@ internal static class RuntimeConfiguration
         result = builder.ToString();
         return true;
     }
-
 }

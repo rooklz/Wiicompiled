@@ -15,6 +15,6 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WiiCompiled.NodTool\WiiCompiled.NodTool.csproj" />
+    <ProjectReference Include="..\WiiCompiled.Setup.Common\WiiCompiled.Setup.Common.csproj" />
   </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using WiiCompiled.Setup.Common;
 
 namespace WiiCompiled.Setup;
 

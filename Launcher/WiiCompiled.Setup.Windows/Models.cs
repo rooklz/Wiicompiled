@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using WiiCompiled.Setup.Common;
 
 namespace WiiCompiled.Setup;
 
@@ -53,12 +54,6 @@ internal sealed class PayloadManifest
     public string TranslationFingerprint { get; set; } = "";
     public string NativeToolchainFingerprint { get; set; } = "";
 }
-
-/// <summary>
-/// One validated, content-identified download in operation-owned scratch space. Callers use this
-/// exact directory for both the update decision and any resulting build.
-/// </summary>
-internal sealed record RetroWfcPayloadSnapshot(string Directory, string Sha256, long ByteLength);
 
 internal sealed class DiscHeader
 {

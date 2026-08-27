@@ -1,11 +1,11 @@
-using WiiCompiled.NodTool;
+using WiiCompiled.Setup.Common;
 
 // A packaging-time-only helper - never shipped, never run by an end user. Both
 // Launcher/build-appimage.sh and Launcher/Build-Installer.ps1 invoke this to obtain the nodtool
 // binary they bundle, so there is exactly one place (NodToolProvider) that knows the pinned
 // version/URL/platform-asset mapping, instead of a separate copy per packaging script.
 //
-// Usage: WiiCompiled.NodTool.Cli --workspace <repo-root>
+// Usage: WiiCompiled.Setup.Common.Cli --workspace <repo-root>
 // Prints the resolved nodtool path to stdout.
 
 string? workspace = null;
@@ -19,7 +19,7 @@ for (var i = 0; i < args.Length; i++)
 
 if (workspace is null)
 {
-    Console.Error.WriteLine("Usage: WiiCompiled.NodTool.Cli --workspace <repo-root>");
+    Console.Error.WriteLine("Usage: WiiCompiled.Setup.Common.Cli --workspace <repo-root>");
     return 1;
 }
 

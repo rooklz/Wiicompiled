@@ -1,9 +1,9 @@
 using System.Text.Json;
 
-namespace WiiCompiled.Setup.Linux;
+namespace WiiCompiled.Setup.Common;
 
-/// <summary>Reads and atomically writes the small JSON state documents this tool keeps.</summary>
-internal static class JsonState
+/// <summary>Reads and atomically writes the small JSON state documents each installer keeps.</summary>
+public static class JsonState
 {
     private static readonly JsonSerializerOptions ReadOptions = new() { PropertyNameCaseInsensitive = true };
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
@@ -17,7 +17,7 @@ internal static class JsonState
         catch
         {
             // A truncated or hand-edited state document must degrade into "unknown", which every
-            // caller already treats as "assume stale and re-run install", not into a crash.
+            // caller already treats as "assume stale and rebuild", not into a crash.
             return null;
         }
     }

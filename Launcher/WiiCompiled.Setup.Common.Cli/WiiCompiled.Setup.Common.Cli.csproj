@@ -4,8 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>WiiCompiled.NodTool.Cli</RootNamespace>
-    <AssemblyName>WiiCompiled.NodTool.Cli</AssemblyName>
+    <RootNamespace>WiiCompiled.Setup.Common.Cli</RootNamespace>
+    <AssemblyName>WiiCompiled.Setup.Common.Cli</AssemblyName>
     <Version>0.2.22</Version>
     <Authors>patchzy</Authors>
     <Product>WiiCompiled</Product>
@@ -14,6 +14,6 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WiiCompiled.NodTool\WiiCompiled.NodTool.csproj" />
+    <ProjectReference Include="..\WiiCompiled.Setup.Common\WiiCompiled.Setup.Common.csproj" />
   </ItemGroup>
 </Project>

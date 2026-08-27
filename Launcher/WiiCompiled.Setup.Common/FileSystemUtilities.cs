@@ -1,14 +1,14 @@
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Common;
 
 /// <summary>
 /// One entry of an exact regular directory tree. Directory topology is part of the content
 /// contract everywhere this walker is used: an empty directory can be a runtime-visible asset just
 /// as a regular file can be, so it must not disappear from a content identity or a staged copy.
 /// </summary>
-internal sealed record RegularTreeEntry(string RelativePath, string FullPath, bool IsDirectory,
+public sealed record RegularTreeEntry(string RelativePath, string FullPath, bool IsDirectory,
     bool IsEmptyDirectory, long Length);
 
-internal static class FileSystemUtilities
+public static class FileSystemUtilities
 {
     public static void CopyDirectory(string source, string destination,
         CancellationToken cancellationToken = default)

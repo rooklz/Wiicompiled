@@ -1,16 +1,17 @@
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Common;
 
 /// <summary>
 /// Resolves the one canonical Retro Rewind install. Wheel Wizard owns and passes it as
-/// <c>--retro-dir</c>; the backend only resolves, reads, and records it, never packages or copies it.
+/// <c>--retro-dir</c>; each installer only resolves, reads, and records it, never packages or
+/// copies it.
 /// </summary>
-internal static class RetroRewindSource
+public static class RetroRewindSource
 {
     /// <summary>
     /// Resolves the <c>RetroRewind6</c> folder from a selection that may be the folder itself or a
     /// parent containing exactly one <c>RetroRewind6/Binaries/Code.pul</c>.
     /// </summary>
-    internal static string ResolveRetroRewind6(string selected)
+    public static string ResolveRetroRewind6(string selected)
     {
         if (string.IsNullOrWhiteSpace(selected))
             throw new InvalidDataException("Choose the canonical Retro Rewind folder.");

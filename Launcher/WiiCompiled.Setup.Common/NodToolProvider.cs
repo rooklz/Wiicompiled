@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WiiCompiled.NodTool;
+namespace WiiCompiled.Setup.Common;
 
 /// <summary>
 /// Resolves the `nodtool` binary both installers use for Wii disc validation/extraction (see
@@ -9,7 +9,7 @@ namespace WiiCompiled.NodTool;
 /// from encounter/nod and caches it at Launcher/artifacts/nodtool[.exe].
 ///
 /// Shared by: WiiCompiled.Setup.Linux/DiscTool.cs (falls back to this at end-user install time on
-/// a plain git checkout), and WiiCompiled.NodTool.Cli (invoked once at packaging time by both
+/// a plain git checkout), and WiiCompiled.Setup.Common.Cli (invoked once at packaging time by both
 /// build-appimage.sh and Build-Installer.ps1 to acquire the copy each bundles).
 /// </summary>
 public static class NodToolProvider

@@ -1,3 +1,5 @@
+using WiiCompiled.Setup.Common;
+
 namespace WiiCompiled.Setup;
 
 /// <summary>Provenance written by the bundled build script next to every product it produces.</summary>

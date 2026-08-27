@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace WiiCompiled.NodTool;
+namespace WiiCompiled.Setup.Common;
 
 /// <summary>Disc metadata parsed from `nodtool info`'s stdout.</summary>
 public sealed record NodToolDiscInfo(string GameId, string Title, int Revision);

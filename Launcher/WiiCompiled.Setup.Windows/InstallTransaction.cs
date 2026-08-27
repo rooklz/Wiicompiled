@@ -1,3 +1,5 @@
+using WiiCompiled.Setup.Common;
+
 namespace WiiCompiled.Setup;
 
 internal enum InstallTransactionEntryKind
