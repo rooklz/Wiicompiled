@@ -1,4 +1,4 @@
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// Names of the installed/staged layout. Not cosmetic: payload and toolkit identities hash relative paths

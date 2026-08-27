@@ -1,6 +1,6 @@
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// Owns one temporary directory for an install operation. The name carries the installation's scope

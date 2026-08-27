@@ -1,6 +1,6 @@
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// A portable root can be moved or renamed between operations. Every installed-host operation that

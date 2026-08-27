@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 internal sealed class PayloadArchive : IDisposable
 {

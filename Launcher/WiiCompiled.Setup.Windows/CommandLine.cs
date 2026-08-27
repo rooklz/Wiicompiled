@@ -1,4 +1,4 @@
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 internal enum AppMode
 {

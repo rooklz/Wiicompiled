@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// Refuses to replace installed products while one of them is running: publishing renames the

@@ -1,4 +1,4 @@
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// Bridges a frontend-owned, named Windows event into the cancellation token used by setup.

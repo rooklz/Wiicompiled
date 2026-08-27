@@ -1,6 +1,6 @@
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// The one path by which a product receives its copied runtime assets, shared by install and repair.

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// Stable stage identifiers reported by <c>--progress-json</c>. These are part of the public

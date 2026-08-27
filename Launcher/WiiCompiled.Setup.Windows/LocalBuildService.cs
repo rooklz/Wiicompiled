@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// <see cref="Both"/> runs one retro-aware translation and compiles the two products from a single

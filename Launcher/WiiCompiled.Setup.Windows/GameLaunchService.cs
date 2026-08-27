@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 internal static class GameLaunchService
 {

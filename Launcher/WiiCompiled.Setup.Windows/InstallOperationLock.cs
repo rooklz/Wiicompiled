@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// A fail-fast, cross-process lock covering install, repair and launch operations for one install

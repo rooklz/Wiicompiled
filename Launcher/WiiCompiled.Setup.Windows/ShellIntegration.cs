@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 internal static class ShellIntegration
 {

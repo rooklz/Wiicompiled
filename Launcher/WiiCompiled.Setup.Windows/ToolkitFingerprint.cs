@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// Content identity of everything that decides what the locally produced executables contain.

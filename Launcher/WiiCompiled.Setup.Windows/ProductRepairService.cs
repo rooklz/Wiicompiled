@@ -1,6 +1,6 @@
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>
 /// Reconciles installed products against the canonical Retro Rewind install Wheel Wizard owns: the

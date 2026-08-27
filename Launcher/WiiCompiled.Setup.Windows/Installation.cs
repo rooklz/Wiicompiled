@@ -1,6 +1,6 @@
 using WiiCompiled.Setup.Common;
 
-namespace WiiCompiled.Setup;
+namespace WiiCompiled.Setup.Windows;
 
 /// <summary>Provenance written by the bundled build script next to every product it produces.</summary>
 internal sealed class LocalBuildProvenance
