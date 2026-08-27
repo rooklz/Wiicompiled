@@ -298,11 +298,20 @@ else()
     message(STATUS "RetroRewind target disabled (run translate-mod and emit-build-shards)")
 endif()
 
+# x86-64-v3 (SSE3/SSSE3/SSE4.1/FMA/AVX2/BMI2) is the baseline runtime/src/host_cpu_baseline.cpp
+# guards against; there is no equivalent optional-feature baseline to set on AArch64 (ASIMD/NEON is
+# mandatory in the base architecture), so this flag is x86_64-only.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+    set(MKW_BASELINE_ARCH_FLAG -march=x86-64-v3)
+else()
+    set(MKW_BASELINE_ARCH_FLAG "")
+endif()
+
 set(MKW_ALL_BUILD_TARGETS
     mkw_runtime_common mkw_base_shared mkw_base_sensitive mkw_retro_sensitive
     mkw_retro_rewind_functions WiiCompiled RetroRewind)
 foreach(target IN LISTS MKW_ALL_BUILD_TARGETS)
-    if(TARGET ${target})
-        target_compile_options(${target} PRIVATE -march=x86-64-v3)
+    if(TARGET ${target} AND MKW_BASELINE_ARCH_FLAG)
+        target_compile_options(${target} PRIVATE ${MKW_BASELINE_ARCH_FLAG})
     endif()
 endforeach()
