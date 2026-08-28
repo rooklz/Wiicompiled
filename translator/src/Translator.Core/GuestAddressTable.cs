@@ -59,6 +59,7 @@ public sealed partial class GuestAddressTable
     {
         source = MacroTokenPattern().Replace(source, m => m.Groups["head"].Value + Resolve(m.Groups["pal"].Value));
         source = GaddrPattern().Replace(source, m => "0x" + Resolve(m.Groups["pal"].Value) + "u");
+        source = GuestFuncPattern().Replace(source, m => "func_" + Resolve(m.Groups["pal"].Value));
         return source;
     }
 
@@ -70,4 +71,7 @@ public sealed partial class GuestAddressTable
 
     [GeneratedRegex(@"MKW_GADDR\s*\(\s*(?<pal>[0-9A-Fa-f]{8})\s*\)", RegexOptions.CultureInvariant)]
     private static partial Regex GaddrPattern();
+
+    [GeneratedRegex(@"MKW_GUEST_FUNC\s*\(\s*(?<pal>[0-9A-Fa-f]{8})\s*\)", RegexOptions.CultureInvariant)]
+    private static partial Regex GuestFuncPattern();
 }

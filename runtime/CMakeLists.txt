@@ -202,6 +202,18 @@ else()
     set(SDL_SHARED OFF CACHE BOOL "" FORCE)
     set(SDL_STATIC ON CACHE BOOL "" FORCE)
     set(SDL_TEST OFF CACHE BOOL "" FORCE)
+    if(APPLE)
+        # A self-contained executable: aurora's extern tree prefers system packages, which on a
+        # Homebrew machine resolve to dylibs in /opt/homebrew that the binary would then require
+        # at run time. Refusing those makes aurora build zlib, libpng and FreeType from its pinned
+        # sources as static archives. SDL's hidapi keeps libusb (GameCube adapters) as a run-time
+        # dlopen rather than a link-time dependency for the same reason.
+        set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB ON)
+        set(CMAKE_DISABLE_FIND_PACKAGE_PNG ON)
+        set(CMAKE_DISABLE_FIND_PACKAGE_Freetype ON)
+        set(SDL_HIDAPI_LIBUSB ON CACHE BOOL "" FORCE)
+        set(SDL_HIDAPI_LIBUSB_SHARED ON CACHE BOOL "" FORCE)
+    endif()
 
     # MinGW/WSL can choke on SDL precompiled headers; disable PCH for aurora/SDL.
     set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON)
@@ -273,8 +285,14 @@ list(REMOVE_ITEM SOURCES ${MKW_BASE_PRODUCT_SOURCE} ${MKW_RETRO_REWIND_PRODUCT_S
 # The translator emits the complete, content-addressed source graph. Consuming
 # this one manifest keeps configure independent of the 28k generated function
 # files and of optional Retro Rewind artifacts such as code.map.
+# Where the translator wrote this build's outputs. One workspace can hold several translations
+# (the clean game, the Wiimmfi-patched executables) side by side; each configures its own build
+# directory against its own generated tree.
+set(MKW_GENERATED_DIR "${CMAKE_CURRENT_LIST_DIR}/../generated" CACHE PATH
+    "Translator output root (generated/ for the base translation)")
+get_filename_component(MKW_GENERATED_DIR "${MKW_GENERATED_DIR}" ABSOLUTE)
 set(MKW_TRANSLATED_SHARD_MANIFEST
-    "${CMAKE_CURRENT_LIST_DIR}/../generated/build_shards/shards.cmake"
+    "${MKW_GENERATED_DIR}/build_shards/shards.cmake"
     CACHE FILEPATH "Translator-owned aggregate shard manifest")
 if(NOT EXISTS "${MKW_TRANSLATED_SHARD_MANIFEST}")
     message(FATAL_ERROR

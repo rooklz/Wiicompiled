@@ -1,6 +1,6 @@
 # NTSC-U (RMCE01) function map, ported from ../mkwii/MAP.txt (PAL RMCP01) by tools/region/port_map.py.
 # Every entry was validated against the RMCE01 main.dol/StaticR.rel; see MAP_REPORT.md next to this file.
-# Verdicts: PROVEN=11949, REFERENCED=11646, PLAUSIBLE=5389, IDENTITY=15, INTERPOLATED=0, TERTIARY=2; entries=29001
+# Verdicts: PROVEN=11951, REFERENCED=12792, PLAUSIBLE=4507, IDENTITY=15, INTERPOLATED=0, TERTIARY=0; entries=29265
 800018a8 0x800018a8
 80001d50 0x80001d50
 80001d6c 0x80001d6c
@@ -150,6 +150,7 @@
 8000c058 __timesdec
 8000c2e0 __str2dec
 8000c3cc __two_exp
+8000c408 __two_exp_switch
 8000c40c __two_exp_caseD_ffffffc0
 8000c420 __two_exp_caseD_ffffffcb
 8000c438 __two_exp_caseD_ffffffe0
@@ -205,6 +206,7 @@
 8000ea24 __copy_longs_rev_unaligned
 8000ead0 __stdio_atexit
 8000eae0 parse_format
+8000ee70 parse_format_switch
 8000ee74 parse_format_caseD_58
 8000eebc parse_format_caseD_46
 8000ef04 parse_format_caseD_41
@@ -214,15 +216,13 @@
 8000efd8 parse_format_caseD_63
 8000f010 parse_format_caseD_73
 8000f03c 0x8000f03c
-8000f054 0x8000f054
 8000f09c long2str
 8000f2d4 longlong2str
 8000f584 double2hex
-8000f5d8 0x8000f5d8
 8000f954 round_decimal
 8000fa7c float2str
 80010214 _pformatter
-8001025c 0x8001025c
+80010314 _pformatter_switch
 80010318 _pformatter_caseD_64
 80010474 _pformatter_caseD_58
 800105d0 _pformatter_caseD_45
@@ -244,6 +244,7 @@
 80011110 rand
 80011130 srand
 80011138 parse_format
+8001140c parse_format_switch
 80011410 parse_format_caseD_58
 80011428 parse_format_caseD_41
 80011470 parse_format_caseD_70
@@ -253,9 +254,10 @@
 80011754 parse_format_caseD_42
 8001175c parse_format_caseD_6e
 800117c0 __sformatter
-8001181c 0x8001181c
+80011a44 __sformatter_switch
 80011a48 __sformatter_caseD_64
 80011a50 __sformatter_caseD_69
+80011b90 __sformatter_switch
 80011b94 __sformatter_caseD_0
 80011b9c __sformatter_caseD_1
 80011ba4 __sformatter_caseD_2
@@ -267,6 +269,7 @@
 80011bfc __sformatter_caseD_6f
 80011c04 __sformatter_caseD_75
 80011c0c __sformatter_caseD_58
+80011d28 __sformatter_switch
 80011d2c __sformatter_caseD_0
 80011d34 __sformatter_caseD_1
 80011d3c __sformatter_caseD_2
@@ -308,6 +311,7 @@
 80014af0 wmemcpy
 80014af8 wmemchr
 80014b20 parse_format
+80014e70 parse_format_switch
 80014e74 parse_format_caseD_58
 80014eb8 parse_format_caseD_46
 80014f04 parse_format_caseD_41
@@ -324,7 +328,7 @@
 80015a08 round_decimal
 80015b30 float2str
 800162bc __wpformatter
-80016308 0x80016308
+800163cc __wpformatter_switch
 800163d0 __wpformatter_caseD_64
 8001652c __wpformatter_caseD_58
 80016688 __wpformatter_caseD_45
@@ -394,6 +398,7 @@
 8001b634 gdev_cc_peek
 8001b6a8 gdev_cc_initinterrupts
 8001b6cc TRK_DispatchMessage
+8001b710 TRK_DispatchMessage_switch
 8001b714 TRK_DispatchMessage_caseD_1
 8001b724 TRK_DispatchMessage_caseD_2
 8001b734 TRK_DispatchMessage_caseD_3
@@ -406,6 +411,7 @@
 8001b7a4 TRK_DispatchMessage_caseD_19
 8001b7b4 TRK_DispatchMessage_caseD_1a
 8001b7c4 TRK_DispatchMessage_caseD_17
+8001b7d0 TRK_DispatchMessage_caseD_0
 8001b7ec InitMetroTRK
 8001b884 InitMetroTRK_BBA
 8001b918 EnableMetroTRKInterrupts
@@ -454,6 +460,7 @@
 8001cf08 TRKDoReset
 8001cf74 TRKDoOverride
 8001cfe0 TRKDoReadMemory
+8001d16c TRKDoReadMemory_switch
 8001d170 TRKDoReadMemory_caseD_702
 8001d178 TRKDoReadMemory_caseD_700
 8001d180 TRKDoReadMemory_caseD_704
@@ -461,6 +468,7 @@
 8001d190 TRKDoReadMemory_caseD_706
 8001d198 TRKDoReadMemory_caseD_701
 8001d214 TRKDoWriteMemory
+8001d37c TRKDoWriteMemory_switch
 8001d380 TRKDoWriteMemory_caseD_702
 8001d388 TRKDoWriteMemory_caseD_700
 8001d390 TRKDoWriteMemory_caseD_704
@@ -550,7 +558,6 @@
 80020710 __va_arg
 800207d8 __register__global_object
 800207f0 __destroy__global_chain
-80020800 0x80020800
 80020838 __register_atexit
 80020884 __ptmf_test
 800208b4 __ptmf_cmpr
@@ -1151,6 +1158,7 @@
 800517b0 nw4r::g3d::ResMatTexCoordGen::CallDisplayList
 80051880 nw4r::g3d::ResMatTexCoordGen::GXGetTexCoordGen2
 80051a30 nw4r::g3d::ResMatTexCoordGen::GXGetTexCoordGen2
+80051a94 nw4r::g3d::ResMatTexCoordGen::GXGetTexCoordGen2_switch
 80051a98 nw4r::g3d::ResMatTexCoordGen::GXGetTexCoordGen2_caseD_0
 80051aa4 nw4r::g3d::ResMatTexCoordGen::GXGetTexCoordGen2_caseD_1
 80051ab0 nw4r::g3d::ResMatTexCoordGen::GXGetTexCoordGen2_caseD_2
@@ -2575,6 +2583,7 @@
 80096230 nw4r::snd::detail::SeqPlayer::OnUpdateFrameSoundThread(thunk)
 80096240 0x80096240
 800968d0 0x800968d0
+80096920 0x80096920
 80096924 0x80096924
 80096944 0x80096944
 8009694c 0x8009694c
@@ -2619,6 +2628,7 @@
 80096da4 0x80096da4
 80096df4 0x80096df4
 80096e2c 0x80096e2c
+80096f04 0x80096f04
 80096f08 0x80096f08
 80096f10 0x80096f10
 80096f20 0x80096f20
@@ -3461,6 +3471,7 @@
 800bd8a0 RFLiEndWorking
 800bd920 0x800bd920
 800bd970 opencallback_
+800bd9c4 opencallback__switch
 800bd9c8 opencallback__caseD_0
 800bda18 opencallback__caseD_fffffff1
 800bda68 opencallback__caseD_fffffff4
@@ -3646,6 +3657,7 @@
 800cc8d4 DWC_Base64Decode
 800ccaac DWC_GetLastError
 800ccac4 DWC_GetLastErrorEx
+800ccafc DWC_GetLastErrorEx_switch
 800ccb00 DWC_GetLastErrorEx_caseD_2
 800ccb0c DWC_GetLastErrorEx_caseD_6
 800ccb34 DWC_GetLastErrorEx_caseD_7
@@ -3681,6 +3693,7 @@
 800cd634 DWC_PostGHTTPData
 800cd7c4 DWC_GetGHTTPDataEx
 800cda44 DWCi_HandleGHTTPError
+800cdab4 DWCi_HandleGHTTPError_switch
 800cdab8 DWCi_HandleGHTTPError_caseD_fffffff8
 800cdac0 DWCi_HandleGHTTPError_caseD_fffffff9
 800cdac8 DWCi_HandleGHTTPError_caseD_fffffffa
@@ -3698,6 +3711,7 @@
 800cdb2c DWCi_HandleGHTTPError_caseD_f
 800cdb34 DWCi_HandleGHTTPError_caseD_10
 800cdb3c DWCi_HandleGHTTPError_caseD_11
+800cdb40 DWCi_HandleGHTTPError_caseD_0
 800cdb6c DWCi_RemoveDWCGHTTPParamEntry
 800cdbf8 DWC_SetCommonKeyValueString
 800cdc50 DWC_AddCommonKeyValueString
@@ -3728,11 +3742,13 @@
 800cf374 DWCi_GetBuddyFriendStatus
 800cf440 DWCi_HandleGPError
 800cf568 DWCi_HandlePersError
+800cf5c4 DWCi_HandlePersError_switch
 800cf5c8 DWCi_HandlePersError_caseD_1
 800cf5d4 DWCi_HandlePersError_caseD_2
 800cf5e0 DWCi_HandlePersError_caseD_3
 800cf5ec DWCi_HandlePersError_caseD_5
 800cf5f8 DWCi_HandlePersError_caseD_7
+800cf600 DWCi_HandlePersError_caseD_4
 800cf6bc DWCi_GPProfileSearchCallback
 800cf9c8 DWCi_GPGetInfoCallback_RecvBuddyRequest
 800cfbf8 DWCi_GPGetInfoCallback_RecvAuthMessage
@@ -3782,12 +3798,14 @@
 800d2b00 DWC_ConnectToGameServerFromGroupID
 800d2c34 DWCi_HandleGPError
 800d2dac DWCi_HandleGT2Error
+800d2e04 DWCi_HandleGT2Error_switch
 800d2e08 DWCi_HandleGT2Error_caseD_1
 800d2e14 DWCi_HandleGT2Error_caseD_2
 800d2e24 DWCi_HandleGT2Error_caseD_3
 800d2e30 DWCi_HandleGT2Error_caseD_4
 800d2e3c DWCi_HandleGT2Error_caseD_6
 800d2e48 DWCi_HandleGT2Error_caseD_7
+800d2e50 DWCi_HandleGT2Error_caseD_7
 800d2e7c DWCi_LoginCallback
 800d2f1c DWCi_UpdateServersCallback
 800d2f50 DWCi_MatchedCallback
@@ -3816,6 +3834,7 @@
 800d56dc DWCi_ConnectToGameServerAsync
 800d60f4 DWCi_ConnectToGameServerFromGroupId
 800d6384 DWCi_MatchProcess
+800d6424 DWCi_MatchProcess_switch
 800d6428 DWCi_MatchProcess_caseD_3
 800d6960 DWCi_MatchProcess_caseD_14
 800d6a08 DWCi_MatchProcess_caseD_5
@@ -3824,6 +3843,7 @@
 800d75d4 DWCi_MatchProcess_caseD_9
 800d79a8 DWCi_MatchProcess_caseD_a
 800d7d44 DWCi_MatchProcess_caseD_b
+800d7f2c DWCi_MatchProcess_caseD_1
 800d8644 DWCi_GT2UnrecognizedMessageCallback
 800d87b8 DWCi_GT2ConnectAttemptCallback
 800d8dd8 DWCi_GT2ConnectedCallback
@@ -3841,6 +3861,7 @@
 800db258 DWCi_SetMatchCommonParam
 800db378 DWCi_CloseMatch
 800db574 DWCi_SBUpdateAsync
+800db6e4 DWCi_SBUpdateAsync_switch
 800db6e8 DWCi_SBUpdateAsync_caseD_2
 800db798 DWCi_SBUpdateAsync_caseD_14
 800db7c0 DWCi_SBUpdateAsync_caseD_8
@@ -3869,12 +3890,14 @@
 800e2af8 DWCi_HandleQR2Error
 800e2d50 DWCi_HandleNNError
 800e2f24 DWCi_HandleGT2Error
+800e2f80 DWCi_HandleGT2Error_switch
 800e2f84 DWCi_HandleGT2Error_caseD_1
 800e2f90 DWCi_HandleGT2Error_caseD_2
 800e2fa0 DWCi_HandleGT2Error_caseD_3
 800e2fac DWCi_HandleGT2Error_caseD_4
 800e2fb8 DWCi_HandleGT2Error_caseD_6
 800e2fc4 DWCi_HandleGT2Error_caseD_7
+800e2fcc DWCi_HandleGT2Error_caseD_7
 800e3120 DWCi_SBCallback
 800e4560 DWCi_SBPrintServerData
 800e4828 DWCi_EvaluateServers
@@ -3931,12 +3954,59 @@
 800e912c DWCs_HandleUnreliableMessage
 800e9374 DWCi_Np_SetInitFlag
 800e937c DWCi_Np_CPUCopyFast
+800e9458 DWCi_Np_CPUCopyFast_switch
 800e945c DWCi_Np_CPUCopyFast_caseD_1
+800e946c DWCi_Np_CPUCopyFast_caseD_2
+800e947c DWCi_Np_CPUCopyFast_caseD_3
+800e948c DWCi_Np_CPUCopyFast_caseD_4
+800e949c DWCi_Np_CPUCopyFast_caseD_5
+800e94ac DWCi_Np_CPUCopyFast_caseD_6
+800e94bc DWCi_Np_CPUCopyFast_caseD_7
+800e96ec DWCi_Np_CPUCopyFast_switch
 800e96f0 DWCi_Np_CPUCopyFast_caseD_f
+800e9700 DWCi_Np_CPUCopyFast_caseD_e
+800e9710 DWCi_Np_CPUCopyFast_caseD_d
+800e9720 DWCi_Np_CPUCopyFast_caseD_c
+800e9730 DWCi_Np_CPUCopyFast_caseD_b
+800e9740 DWCi_Np_CPUCopyFast_caseD_a
+800e9750 DWCi_Np_CPUCopyFast_caseD_9
+800e9760 DWCi_Np_CPUCopyFast_caseD_8
+800e9770 DWCi_Np_CPUCopyFast_caseD_7
+800e9780 DWCi_Np_CPUCopyFast_caseD_6
+800e9790 DWCi_Np_CPUCopyFast_caseD_5
+800e97a0 DWCi_Np_CPUCopyFast_caseD_4
+800e97b0 DWCi_Np_CPUCopyFast_caseD_3
+800e97c0 DWCi_Np_CPUCopyFast_caseD_2
+800e97d0 DWCi_Np_CPUCopyFast_caseD_1
+800e97e0 DWCi_Np_CPUCopyFast_caseD_0
+800e9918 DWCi_Np_CPUCopyFast_switch
 800e991c DWCi_Np_CPUCopyFast_caseD_7
+800e992c DWCi_Np_CPUCopyFast_caseD_6
+800e993c DWCi_Np_CPUCopyFast_caseD_5
+800e994c DWCi_Np_CPUCopyFast_caseD_4
+800e995c DWCi_Np_CPUCopyFast_caseD_3
+800e996c DWCi_Np_CPUCopyFast_caseD_2
+800e997c DWCi_Np_CPUCopyFast_caseD_1
+800e998c DWCi_Np_CPUCopyFast_caseD_0
 800e99e0 DWCi_Np_CPUCopyFast_caseD_0
+800e9bc0 DWCi_Np_CPUCopyFast_switch
 800e9bc4 DWCi_Np_CPUCopyFast_caseD_7
+800e9bdc DWCi_Np_CPUCopyFast_caseD_6
+800e9bf4 DWCi_Np_CPUCopyFast_caseD_5
+800e9c0c DWCi_Np_CPUCopyFast_caseD_4
+800e9c24 DWCi_Np_CPUCopyFast_caseD_3
+800e9c3c DWCi_Np_CPUCopyFast_caseD_2
+800e9c54 DWCi_Np_CPUCopyFast_caseD_1
+800e9c6c DWCi_Np_CPUCopyFast_caseD_0
+800e9c90 DWCi_Np_CPUCopyFast_switch
 800e9c94 DWCi_Np_CPUCopyFast_caseD_7
+800e9ca4 DWCi_Np_CPUCopyFast_caseD_6
+800e9cb4 DWCi_Np_CPUCopyFast_caseD_5
+800e9cc4 DWCi_Np_CPUCopyFast_caseD_4
+800e9cd4 DWCi_Np_CPUCopyFast_caseD_3
+800e9ce4 DWCi_Np_CPUCopyFast_caseD_2
+800e9cf4 DWCi_Np_CPUCopyFast_caseD_1
+800e9cfc DWCi_Np_CPUCopyFast_caseD_0
 800e9d00 DWCi_Np_GetTimeInSeconds
 800e9d48 DWCi_Np_GetConsoleid
 800e9e60 DWCi_Np_GetConsoleName
@@ -3966,6 +4036,7 @@
 800eace8 DWCi_GdbPrintf
 800eadb8 DWCi_GdbCheckStateForAsyncProcess
 800eaeb4 DWCi_GdbSakeRequestCallback
+800eafbc DWCi_GdbSakeRequestCallback_switch
 800eafc0 DWCi_GdbSakeRequestCallback_caseD_2
 800eb004 DWCi_GdbSakeRequestCallback_caseD_3
 800eb034 DWCi_GdbSakeRequestCallback_caseD_4
@@ -3978,6 +4049,7 @@
 800eb23c DWCi_GdbSakeRequestCallback_caseD_d
 800eb278 DWCi_GdbSakeRequestCallback_caseD_0
 800eb2a4 DWCi_GdbGHTTPPostCallback
+800eb3cc DWCi_GdbGHTTPPostCallback_switch
 800eb3d0 DWCi_GdbGHTTPPostCallback_caseD_0
 800eb3dc DWCi_GdbGHTTPPostCallback_caseD_1
 800eb3e4 DWCi_GdbGHTTPPostCallback_caseD_2
@@ -3988,6 +4060,7 @@
 800eb40c DWCi_GdbGHTTPPostCallback_caseD_7
 800eb4fc DWCi_GdbGHTTPGetCallback
 800eb590 DWCi_GdbStartRequestResultToError
+800eb5b4 DWCi_GdbStartRequestResultToError_switch
 800eb5b8 DWCi_GdbStartRequestResultToError_caseD_0
 800eb5c8 DWCi_GdbStartRequestResultToError_caseD_1
 800eb5d0 DWCi_GdbStartRequestResultToError_caseD_2
@@ -4004,6 +4077,7 @@
 800eb630 DWCi_GdbStartRequestResultToError_caseD_d
 800eb638 DWCi_GdbStartRequestResultToError_caseD_e
 800eb648 DWCi_GdbRequestResultToAsyncResult
+800eb66c DWCi_GdbRequestResultToAsyncResult_switch
 800eb670 DWCi_GdbRequestResultToAsyncResult_caseD_0
 800eb680 DWCi_GdbRequestResultToAsyncResult_caseD_1
 800eb688 DWCi_GdbRequestResultToAsyncResult_caseD_2
@@ -4061,6 +4135,7 @@
 800ecc04 DWCi_Auth_Prof_StartAuthentication
 800ecce0 DWCi_Auth_AbortAuthentication
 800ece80 DWCi_Auth_ProcessAuthentication
+800ecebc DWCi_Auth_ProcessAuthentication_switch
 800ecec0 DWCi_Auth_ProcessAuthentication_caseD_1
 800ecf04 DWCi_Auth_ProcessAuthentication_caseD_2
 800ecf2c DWCi_Auth_ProcessAuthentication_caseD_3
@@ -4084,6 +4159,7 @@
 800ed484 DWCi_Auth_ProcessAuthentication_caseD_15
 800ed49c DWCi_Auth_ProcessAuthentication_caseD_16
 800ed4c0 DWCi_Auth_ProcessAuthentication_caseD_17
+800ed508 DWCi_Auth_ProcessAuthentication_caseD_0
 800ed520 DWCi_IsAuthFinished
 800ed55c DWCi_IsAuthSucceeded
 800ed574 DWCi_Auth_GetErrorCode
@@ -4316,7 +4392,6 @@
 800ff9b4 gpiCallCallback
 800ffc68 gpiProcessCallbacks
 800ffd88 gpiStartConnect
-800fff60 0x800fff60
 801000b0 gpiConnect
 80100304 gpiSendLogin
 8010073c gpiSendNewuser
@@ -4325,6 +4400,7 @@
 80101088 gpiDisconnectCleanupProfile
 80101218 gpiDisconnect
 801013d0 gpiIsValidDate
+8010142c gpiIsValidDate_switch
 80101430 gpiIsValidDate_caseD_0
 8010143c gpiIsValidDate_caseD_1
 8010144c gpiIsValidDate_caseD_4
@@ -4333,6 +4409,7 @@
 80101770 gpiProcessGetInfo
 80102030 gpiAddLocalInfo
 80102144 gpiSetInfoi
+80102188 gpiSetInfoi_switch
 8010218c gpiSetInfoi_caseD_708
 80102204 gpiSetInfoi_caseD_70b
 8010232c gpiSetInfoi_caseD_706
@@ -4353,6 +4430,7 @@
 801028f0 gpiSetInfoi_caseD_71e
 80102950 gpiSetInfoi_caseD_707
 80102984 gpiSetInfos
+801029ec gpiSetInfos_switch
 801029f0 gpiSetInfos_caseD_700
 80102a7c gpiSetInfos_caseD_701
 80102b08 gpiSetInfos_caseD_702
@@ -4394,6 +4472,7 @@
 80103ac4 gpiStatusInfoCheckKey
 80103b6c gpiSaveKeysToBuffer
 80103ed0 gpiFailedOpCallback
+80103f30 gpiFailedOpCallback_switch
 80103f34 gpiFailedOpCallback_caseD_0
 80103fc4 gpiFailedOpCallback_caseD_1
 80104038 gpiFailedOpCallback_caseD_5
@@ -4407,6 +4486,7 @@
 80104474 gpiFindOperationByID
 801044c4 gpiOperationsAreBlocking
 80104504 gpiProcessOperation
+8010453c gpiProcessOperation_switch
 80104540 gpiProcessOperation_caseD_0
 8010454c gpiProcessOperation_caseD_1
 80104558 gpiProcessOperation_caseD_5
@@ -4586,6 +4666,7 @@
 801102b0 qr_process_client_message
 801103f4 qr2_process_ip_verify
 80110680 qr2_parse_queryA
+80110764 qr2_parse_queryA_switch
 80110768 qr2_parse_queryA_caseD_9
 80110784 qr2_parse_queryA_caseD_0
 80110838 qr2_parse_queryA_caseD_1
@@ -4776,12 +4857,14 @@
 8011dc48 SBServerGetState
 8011dc50 SBIsNullServer
 8011dc64 ListCallback
+8011dca4 ListCallback_switch
 8011dca8 ListCallback_caseD_0
 8011dd5c ListCallback_caseD_1
 8011dda0 ListCallback_caseD_2
 8011ddd8 ListCallback_caseD_3
 8011de24 ListCallback_caseD_5
 8011de44 ListCallback_caseD_6
+8011de50 ListCallback_caseD_4
 8011de9c EngineCallback
 8011df98 ServerBrowserNewA
 8011e07c ServerBrowserFree
@@ -5277,6 +5360,7 @@
 80136080 bta_hh_open_act
 80136138 bta_hh_data_act
 80136190 bta_hh_handsk_act
+801361e4 bta_hh_handsk_act_switch
 801361e8 bta_hh_handsk_act_caseD_4
 801361f0 bta_hh_handsk_act_caseD_5
 801361f8 bta_hh_handsk_act_caseD_6
@@ -5285,11 +5369,13 @@
 80136210 bta_hh_handsk_act_caseD_9
 80136218 bta_hh_handsk_act_caseD_2
 80136220 bta_hh_handsk_act_caseD_0
+80136254 bta_hh_handsk_act_switch
 80136258 bta_hh_handsk_act_caseD_4
 801362d8 bta_hh_handsk_act_caseD_5
 80136348 bta_hh_handsk_act_caseD_2
 801363b4 bta_hh_handsk_act_caseD_0
 801363f8 bta_hh_ctrl_dat_act
+80136458 bta_hh_ctrl_dat_act_switch
 8013645c bta_hh_ctrl_dat_act_caseD_4
 80136464 bta_hh_ctrl_dat_act_caseD_5
 8013646c bta_hh_ctrl_dat_act_caseD_6
@@ -5298,6 +5384,7 @@
 80136484 bta_hh_ctrl_dat_act_caseD_9
 8013648c bta_hh_ctrl_dat_act_caseD_2
 80136494 bta_hh_ctrl_dat_act_caseD_0
+8013653c bta_hh_ctrl_dat_act_switch
 80136540 bta_hh_ctrl_dat_act_caseD_4
 80136548 bta_hh_ctrl_dat_act_caseD_5
 80136550 bta_hh_ctrl_dat_act_caseD_6
@@ -5312,6 +5399,7 @@
 80136970 bta_hh_get_acl_q_info
 80136a8c bta_hh_write_dev_act
 80136c54 bta_hh_cback
+80136cb4 bta_hh_cback_switch
 80136cb8 bta_hh_cback_caseD_0
 80136cc0 bta_hh_cback_caseD_1
 80136cc8 bta_hh_cback_caseD_2
@@ -5321,6 +5409,7 @@
 80136ce8 bta_hh_cback_caseD_6
 80136cf0 bta_hh_cback_caseD_7
 80136cf8 bta_hh_cback_caseD_8
+80136d2c bta_hh_cback_switch
 80136d30 bta_hh_cback_caseD_0
 80136d38 bta_hh_cback_caseD_1
 80136d40 bta_hh_cback_caseD_3
@@ -5328,6 +5417,7 @@
 80136d50 bta_hh_cback_caseD_5
 80136d58 bta_hh_cback_caseD_4
 80136d64 bta_hh_cback_caseD_8
+80136e9c bta_hh_cback_caseD_2
 80136eec BTA_HhEnable
 80136f74 BTA_HhDisable
 80136fac BTA_HhClose
@@ -5339,6 +5429,7 @@
 801372bc bta_hh_sm_execute
 80137610 bta_hh_hdl_event
 8013775c bta_hh_evt_code
+80137784 bta_hh_evt_code_switch
 80137788 bta_hh_evt_code_caseD_170d
 80137790 bta_hh_evt_code_caseD_170c
 80137798 bta_hh_evt_code_caseD_1700
@@ -5539,6 +5630,7 @@
 80143d18 gap_data_ind
 80143e28 gap_congestion_ind
 80143f5c btm_cback
+80144084 btm_cback_switch
 80144088 btm_cback_caseD_0
 80144090 btm_cback_caseD_1
 80144098 btm_cback_caseD_2
@@ -5550,6 +5642,7 @@
 80144134 gap_btm_cback1
 80144140 0x80144140
 8014414c gap_find_addr_name_cb
+80144244 gap_find_addr_name_cb_switch
 80144248 gap_find_addr_name_cb_caseD_0
 80144250 gap_find_addr_name_cb_caseD_1
 80144258 gap_find_addr_name_cb_caseD_2
@@ -5558,6 +5651,7 @@
 80144270 gap_find_addr_name_cb_caseD_7
 80144278 gap_find_addr_name_cb_caseD_8
 80144280 gap_find_addr_name_cb_caseD_3
+801442dc gap_find_addr_name_cb_switch
 801442e0 gap_find_addr_name_cb_caseD_0
 801442e8 gap_find_addr_name_cb_caseD_1
 801442f0 gap_find_addr_name_cb_caseD_2
@@ -5567,6 +5661,7 @@
 80144310 gap_find_addr_name_cb_caseD_8
 80144318 gap_find_addr_name_cb_caseD_3
 80144364 gap_find_addr_inq_cb
+80144420 gap_find_addr_inq_cb_switch
 80144424 gap_find_addr_inq_cb_caseD_0
 8014442c gap_find_addr_inq_cb_caseD_1
 80144434 gap_find_addr_inq_cb_caseD_2
@@ -5575,6 +5670,7 @@
 8014444c gap_find_addr_inq_cb_caseD_7
 80144454 gap_find_addr_inq_cb_caseD_8
 8014445c gap_find_addr_inq_cb_caseD_3
+80144490 gap_find_addr_inq_cb_switch
 80144494 0x80144494
 8014449c gap_find_addr_inq_cb_caseD_1
 801444a4 gap_find_addr_inq_cb_caseD_2
@@ -5591,7 +5687,6 @@
 80144558 0x80144558
 80144560 0x80144560
 80144568 0x80144568
-80144570 0x80144570
 80144578 btsnd_hcic_inquiry
 80144620 btsnd_hcic_inq_cancel
 80144680 btsnd_hcic_per_inq_mode
@@ -5698,6 +5793,7 @@
 8014ab6c L2CA_SetTraceLevel
 8014ab88 L2CA_RegisterCompression
 8014ab8c l2c_csm_execute
+8014abac l2c_csm_execute_switch
 8014abb0 l2c_csm_execute_caseD_0
 8014abb4 l2c_csm_execute_caseD_1
 8014abb8 l2c_csm_execute_caseD_2
@@ -5708,6 +5804,7 @@
 8014abcc l2c_csm_execute_caseD_7
 8014abd0 l2c_csm_execute_caseD_8
 8014abd8 l2c_csm_closed
+8014ac50 l2c_csm_closed_switch
 8014ac54 l2c_csm_closed_caseD_3
 8014ac98 l2c_csm_closed_caseD_0
 8014acc8 l2c_csm_closed_caseD_1
@@ -5718,20 +5815,26 @@
 8014adec l2c_csm_closed_caseD_1e
 8014ae40 l2c_csm_closed_caseD_13
 8014ae4c l2c_csm_closed_caseD_1a
+8014ae54 l2c_csm_closed_caseD_10
 8014ae6c l2c_csm_orig_w4_sec_comp
+8014aee8 l2c_csm_orig_w4_sec_comp_switch
 8014aeec l2c_csm_orig_w4_sec_comp_caseD_3
 8014af30 l2c_csm_orig_w4_sec_comp_caseD_7
 8014af5c l2c_csm_orig_w4_sec_comp_caseD_8
 8014afa4 l2c_csm_orig_w4_sec_comp_caseD_13
 8014afb0 l2c_csm_orig_w4_sec_comp_caseD_1a
+8014afc4 l2c_csm_orig_w4_sec_comp_caseD_10
 8014afdc l2c_csm_term_w4_sec_comp
+8014b048 l2c_csm_term_w4_sec_comp_switch
 8014b04c l2c_csm_term_w4_sec_comp_caseD_3
 8014b064 l2c_csm_term_w4_sec_comp_caseD_7
 8014b0cc l2c_csm_term_w4_sec_comp_caseD_8
 8014b0e8 l2c_csm_term_w4_sec_comp_caseD_13
 8014b0f4 l2c_csm_term_w4_sec_comp_caseD_1a
 8014b100 l2c_csm_term_w4_sec_comp_caseD_11
+8014b128 l2c_csm_term_w4_sec_comp_caseD_10
 8014b144 l2c_csm_w4_l2cap_connect_rsp
+8014b1c0 l2c_csm_w4_l2cap_connect_rsp_switch
 8014b1c4 l2c_csm_w4_l2cap_connect_rsp_caseD_3
 8014b210 l2c_csm_w4_l2cap_connect_rsp_caseD_b
 8014b270 l2c_csm_w4_l2cap_connect_rsp_caseD_c
@@ -5739,14 +5842,18 @@
 8014b310 l2c_csm_w4_l2cap_connect_rsp_caseD_1e
 8014b35c l2c_csm_w4_l2cap_connect_rsp_caseD_1a
 8014b368 l2c_csm_w4_l2cap_connect_rsp_caseD_13
+8014b370 l2c_csm_w4_l2cap_connect_rsp_caseD_10
 8014b388 l2c_csm_w4_l2ca_connect_rsp
+8014b3fc l2c_csm_w4_l2ca_connect_rsp_switch
 8014b400 l2c_csm_w4_l2ca_connect_rsp_caseD_3
 8014b448 l2c_csm_w4_l2ca_connect_rsp_caseD_15
 8014b4a8 l2c_csm_w4_l2ca_connect_rsp_caseD_16
 8014b4c4 l2c_csm_w4_l2ca_connect_rsp_caseD_1e
 8014b51c l2c_csm_w4_l2ca_connect_rsp_caseD_13
 8014b528 l2c_csm_w4_l2ca_connect_rsp_caseD_1a
+8014b548 l2c_csm_w4_l2ca_connect_rsp_caseD_10
 8014b560 l2c_csm_config
+8014b5d8 l2c_csm_config_switch
 8014b5dc l2c_csm_config_caseD_3
 8014b620 l2c_csm_config_caseD_e
 8014b684 l2c_csm_config_caseD_f
@@ -5759,7 +5866,9 @@
 8014b860 l2c_csm_config_caseD_13
 8014b8a0 l2c_csm_config_caseD_1d
 8014b8c8 l2c_csm_config_caseD_1e
+8014b910 l2c_csm_config_caseD_12
 8014b928 l2c_csm_open
+8014b9a0 l2c_csm_open_switch
 8014b9a4 l2c_csm_open_caseD_3
 8014b9e8 l2c_csm_open_caseD_6
 8014ba0c l2c_csm_open_caseD_e
@@ -5768,17 +5877,22 @@
 8014baf8 l2c_csm_open_caseD_1a
 8014bb1c l2c_csm_open_caseD_1d
 8014bb34 l2c_csm_open_caseD_17
+8014bb6c l2c_csm_open_caseD_10
 8014bb84 l2c_csm_w4_l2cap_disconnect_rsp
+8014bc00 l2c_csm_w4_l2cap_disconnect_rsp_switch
 8014bc04 l2c_csm_w4_l2cap_disconnect_rsp_caseD_3
 8014bc48 l2c_csm_w4_l2cap_disconnect_rsp_caseD_12
 8014bc94 l2c_csm_w4_l2cap_disconnect_rsp_caseD_11
 8014bcf4 l2c_csm_w4_l2cap_disconnect_rsp_caseD_1e
 8014bd48 l2c_csm_w4_l2cap_disconnect_rsp_caseD_13
+8014bd50 l2c_csm_w4_l2cap_disconnect_rsp_caseD_10
 8014bd68 l2c_csm_w4_l2ca_disconnect_rsp
+8014bddc l2c_csm_w4_l2ca_disconnect_rsp_switch
 8014bde0 l2c_csm_w4_l2ca_disconnect_rsp_caseD_3
 8014be28 l2c_csm_w4_l2ca_disconnect_rsp_caseD_1e
 8014be84 l2c_csm_w4_l2ca_disconnect_rsp_caseD_1b
 8014bea4 l2c_csm_w4_l2ca_disconnect_rsp_caseD_13
+8014beac l2c_csm_w4_l2ca_disconnect_rsp_caseD_10
 8014bec4 forward_peer_data
 8014c068 l2c_link_hci_conn_req
 8014c1bc l2c_link_hci_conn_comp
@@ -5800,6 +5914,8 @@
 8014d1f4 l2c_init
 8014d308 l2c_rcv_acl_data
 8014d638 process_l2cap_cmd
+8014d684 process_l2cap_cmd_caseD_b
+8014d700 process_l2cap_cmd_switch
 8014d704 process_l2cap_cmd_caseD_1
 8014d7d8 process_l2cap_cmd_caseD_2
 8014d8a4 process_l2cap_cmd_caseD_3
@@ -5883,6 +5999,7 @@
 801522f0 RFCOMM_CongestionStatusInd
 80152424 rfc_save_lcid_mcb
 80152440 rfc_mx_sm_execute
+80152460 rfc_mx_sm_execute_switch
 80152464 rfc_mx_sm_execute_caseD_0
 80152468 rfc_mx_sm_execute_caseD_1
 8015246c rfc_mx_sm_execute_caseD_2
@@ -5891,6 +6008,7 @@
 80152478 rfc_mx_sm_execute_caseD_5
 8015247c rfc_mx_sm_execute_caseD_6
 80152484 rfc_mx_sm_state_idle
+801524f8 rfc_mx_sm_state_idle_switch
 801524fc rfc_mx_sm_state_idle_caseD_6
 80152540 rfc_mx_sm_state_idle_caseD_7
 8015256c rfc_mx_sm_state_idle_caseD_a
@@ -5900,26 +6018,31 @@
 8015264c rfc_mx_sm_state_idle_caseD_0
 80152698 rfc_mx_sm_state_wait_conn_cnf
 80152854 rfc_mx_sm_state_configure
+801528cc rfc_mx_sm_state_configure_switch
 801528d0 rfc_mx_sm_state_configure_caseD_6
 801528fc rfc_mx_sm_state_configure_caseD_c
 8015290c rfc_mx_sm_state_configure_caseD_b
 8015291c rfc_mx_sm_state_configure_caseD_e
 80152930 rfc_mx_sm_state_configure_caseD_7
 8015297c rfc_mx_sm_sabme_wait_ua
+801529f0 rfc_mx_sm_sabme_wait_ua_switch
 801529f4 rfc_mx_sm_sabme_wait_ua_caseD_6
 80152a20 rfc_mx_sm_sabme_wait_ua_caseD_c
 80152a30 rfc_mx_sm_sabme_wait_ua_caseD_b
 80152a40 rfc_mx_sm_sabme_wait_ua_caseD_e
 80152a54 rfc_mx_sm_sabme_wait_ua_caseD_1
 80152a7c rfc_mx_sm_sabme_wait_ua_caseD_2
+80152a84 rfc_mx_sm_sabme_wait_ua_caseD_5
 80152aa4 rfc_mx_sm_sabme_wait_ua_caseD_0
 80152af0 rfc_mx_sm_state_wait_sabme
 80152c10 rfc_mx_sm_state_connected
+80152c78 rfc_mx_sm_state_connected_switch
 80152c7c rfc_mx_sm_state_connected_caseD_5
 80152ca0 rfc_mx_sm_state_connected_caseD_e
 80152cb4 rfc_mx_sm_state_connected_caseD_3
 80152ce0 rfc_mx_sm_state_connected_caseD_4
 80152d28 rfc_mx_sm_state_disc_wait_ua
+80152d94 rfc_mx_sm_state_disc_wait_ua_switch
 80152d98 rfc_mx_sm_state_disc_wait_ua_caseD_1
 80152e04 rfc_mx_sm_state_disc_wait_ua_caseD_3
 80152e14 rfc_mx_sm_state_disc_wait_ua_caseD_4
@@ -5931,6 +6054,7 @@
 80152f94 rfc_mx_conf_ind
 80153084 rfc_port_sm_execute
 80153114 rfc_port_sm_state_closed
+8015314c rfc_port_sm_state_closed_switch
 80153150 rfc_port_sm_state_closed_caseD_9
 80153188 rfc_port_sm_state_closed_caseD_d
 8015318c rfc_port_sm_state_closed_caseD_e
@@ -5942,6 +6066,7 @@
 8015320c rfc_port_sm_state_closed_caseD_5
 80153244 rfc_port_sm_state_closed_caseD_6
 80153288 rfc_port_sm_sabme_wait_ua
+801532c0 rfc_port_sm_sabme_wait_ua_switch
 801532c4 rfc_port_sm_sabme_wait_ua_caseD_9
 801532f4 rfc_port_sm_sabme_wait_ua_caseD_c
 8015331c rfc_port_sm_sabme_wait_ua_caseD_d
@@ -5954,6 +6079,7 @@
 801533bc rfc_port_sm_sabme_wait_ua_caseD_5
 801533e0 rfc_port_sm_sabme_wait_ua_caseD_6
 80153424 rfc_port_sm_term_wait_sec_check
+80153464 rfc_port_sm_term_wait_sec_check_switch
 80153468 rfc_port_sm_term_wait_sec_check_caseD_f
 801534b0 rfc_port_sm_term_wait_sec_check_caseD_9
 801534dc rfc_port_sm_term_wait_sec_check_caseD_d
@@ -5964,6 +6090,7 @@
 80153560 rfc_port_sm_term_wait_sec_check_caseD_b
 801535a0 rfc_port_sm_term_wait_sec_check_caseD_1
 801535e0 rfc_port_sm_orig_wait_sec_check
+80153620 rfc_port_sm_orig_wait_sec_check_switch
 80153624 rfc_port_sm_orig_wait_sec_check_caseD_f
 80153674 rfc_port_sm_orig_wait_sec_check_caseD_0
 801536a0 rfc_port_sm_orig_wait_sec_check_caseD_c
@@ -5971,6 +6098,7 @@
 801536e4 rfc_port_sm_orig_wait_sec_check_caseD_4
 801536f0 rfc_port_sm_orig_wait_sec_check_caseD_1
 80153730 rfc_port_sm_opened
+80153768 rfc_port_sm_opened_switch
 8015376c rfc_port_sm_opened_caseD_9
 8015379c rfc_port_sm_opened_caseD_c
 801537c4 rfc_port_sm_opened_caseD_d
@@ -5983,10 +6111,12 @@
 801538a0 rfc_port_sm_opened_caseD_5
 801538d8 rfc_port_sm_opened_caseD_6
 8015391c rfc_port_sm_disc_wait_ua
+80153950 rfc_port_sm_disc_wait_ua_switch
 80153954 rfc_port_sm_disc_wait_ua_caseD_9
 80153980 rfc_port_sm_disc_wait_ua_caseD_d
 80153988 rfc_port_sm_disc_wait_ua_caseD_e
 80153994 rfc_port_sm_disc_wait_ua_caseD_1
+801539a0 rfc_port_sm_disc_wait_ua_caseD_2
 801539ac rfc_port_sm_disc_wait_ua_caseD_0
 801539c0 rfc_port_sm_disc_wait_ua_caseD_3
 801539d4 rfc_port_sm_disc_wait_ua_caseD_4
@@ -6073,6 +6203,7 @@
 80158b00 save_attr_seq
 80158cec add_record
 80158d8c add_attr
+80158e54 add_attr_switch
 80158e58 add_attr_caseD_1
 80158f08 add_attr_caseD_2
 80158fc4 add_attr_caseD_3
@@ -6100,6 +6231,7 @@
 8015aca4 sdpu_release_ccb
 8015acdc sdpu_build_attrib_seq
 8015aeac sdpu_build_attrib_entry
+8015af54 sdpu_build_attrib_entry_switch
 8015af58 sdpu_build_attrib_entry_caseD_1
 8015af68 sdpu_build_attrib_entry_caseD_2
 8015af7c sdpu_build_attrib_entry_caseD_4
@@ -6115,16 +6247,16 @@
 8015b1a8 sdpu_extract_uid_seq_caseD_6
 8015b1c4 sdpu_extract_uid_seq_caseD_7
 8015b1f4 sdpu_extract_uid_seq_caseD_0
-8015b21c 0x8015b21c
+8015b254 0x8015b254
 8015b258 0x8015b258
 8015b260 0x8015b260
 8015b268 0x8015b268
 8015b270 0x8015b270
 8015b27c 0x8015b27c
 8015b298 0x8015b298
-8015b2c8 0x8015b2c8
 8015b48c sdpu_extract_attr_seq
 8015b6dc sdpu_get_len_from_type
+8015b700 sdpu_get_len_from_type_switch
 8015b704 sdpu_get_len_from_type_caseD_0
 8015b710 sdpu_get_len_from_type_caseD_1
 8015b71c sdpu_get_len_from_type_caseD_2
@@ -6206,6 +6338,7 @@
 8016071c cbForStateCheckID1
 801608e4 cbForStateCheckID2
 80160a78 stateCoverClosed
+80160aac stateCoverClosed_switch
 80160ab0 stateCoverClosed_caseD_21
 80160ae4 stateCoverClosed_caseD_20
 80160aec stateCoverClosed_caseD_23
@@ -6221,8 +6354,10 @@
 80161550 CoverAlarmHandler
 80161574 stateReady
 8016189c stateBusy
+801618e0 stateBusy_switch
 801618e4 stateBusy_caseD_10
 80161968 stateBusy_caseD_0
+80161988 stateBusy_switch
 8016198c stateBusy_caseD_5
 801619b0 stateBusy_caseD_1
 80161ad8 stateBusy_caseD_2
@@ -6251,15 +6386,18 @@
 80162b5c DVD::Pause
 80162b98 DVD::Resume
 80162be8 DVD::CancelAsync
+80162c34 DVD::CancelAsync_switch
 80162c38 DVD::CancelAsync_caseD_0
 80162c58 DVD::CancelAsync_caseD_1
 80162cbc DVD::CancelAsync_caseD_2
 80162d08 DVD::CancelAsync_caseD_3
+80162d28 DVD::CancelAsync_switch
 80162d2c DVD::CancelAsync_caseD_21
 80162d4c DVD::CancelAsync_caseD_1
 80162dac DVD::CancelAsync_caseD_0
 80162dd8 DVD::CancelAsync_caseD_4
 80162ed4 DVD::CancelAsync_caseD_c
+80162f24 DVD::CancelAsync_caseD_8
 80162f4c DVD::Cancel
 80163028 cbForCancelSync
 80163030 DVD::CancelAll
@@ -6429,6 +6567,7 @@
 8016d15c __GX::CleanGPFifo
 8016d2fc GX::GetCurrentGXThread
 8016d304 GX::SetVtxDesc
+8016d320 GX::SetVtxDesc_switch
 8016d324 GX::SetVtxDesc_caseD_0
 8016d338 GX::SetVtxDesc_caseD_1
 8016d34c GX::SetVtxDesc_caseD_2
@@ -6453,7 +6592,6 @@
 8016d508 GX::SetVtxDesc_caseD_14
 8016d518 GX::SetVtxDesc_caseD_15
 8016d568 GX::SetVtxDescv
-8016d57c 0x8016d57c
 8016d5a0 0x8016d5a0
 8016d5b0 0x8016d5b0
 8016d5c0 0x8016d5c0
@@ -6476,10 +6614,10 @@
 8016d6f0 0x8016d6f0
 8016d700 0x8016d700
 8016d710 0x8016d710
-8016d71c 0x8016d71c
 8016d774 __GX::SetVCD
 8016d824 __GX::CalculateVLim
 8016d950 GX::GetVtxDesc
+8016d96c GX::GetVtxDesc_switch
 8016d970 GX::GetVtxDesc_caseD_0
 8016d980 GX::GetVtxDesc_caseD_1
 8016d990 GX::GetVtxDesc_caseD_2
@@ -6506,6 +6644,7 @@
 8016db04 GX::GetVtxDescv
 8016db94 GX::ClearVtxDesc
 8016dbc8 GX::SetVtxAttrFmt
+8016dbf4 GX::SetVtxAttrFmt_switch
 8016dbf8 GX::SetVtxAttrFmt_caseD_9
 8016dc10 GX::SetVtxAttrFmt_caseD_19
 8016dc4c GX::SetVtxAttrFmt_caseD_b
@@ -6520,7 +6659,7 @@
 8016dd24 GX::SetVtxAttrFmt_caseD_14
 8016dd38 GX::SetVtxAttrFmt_caseD_15
 8016dd68 GX::SetVtxAttrFmtv
-8016dd7c 0x8016dd7c
+8016dda8 GX::SetVtxAttrFmtv_switch
 8016ddac GX::SetVtxAttrFmtv_caseD_9
 8016ddc4 GX::SetVtxAttrFmtv_caseD_19
 8016de00 GX::SetVtxAttrFmtv_caseD_b
@@ -6536,6 +6675,7 @@
 8016deec GX::SetVtxAttrFmtv_caseD_15
 8016df2c __GX::SetVAT
 8016dfac GX::GetVtxAttrFmt
+8016dfd8 GX::GetVtxAttrFmt_switch
 8016dfdc GX::GetVtxAttrFmt_caseD_9
 8016e004 GX::GetVtxAttrFmt_caseD_19
 8016e078 GX::GetVtxAttrFmt_caseD_b
@@ -6553,6 +6693,7 @@
 8016e28c GX::SetArray
 8016e2cc GX::InvalidateVtxCache
 8016e2dc GX::SetTexCoordGen2
+8016e304 GX::SetTexCoordGen2_switch
 8016e308 GX::SetTexCoordGen2_caseD_0
 8016e314 GX::SetTexCoordGen2_caseD_1
 8016e320 GX::SetTexCoordGen2_caseD_2
@@ -6568,6 +6709,7 @@
 8016e378 GX::SetTexCoordGen2_caseD_a
 8016e380 GX::SetTexCoordGen2_caseD_b
 8016e384 GX::SetTexCoordGen2_caseD_10
+8016e474 GX::SetTexCoordGen2_switch
 8016e478 GX::SetTexCoordGen2_caseD_0
 8016e488 GX::SetTexCoordGen2_caseD_1
 8016e498 GX::SetTexCoordGen2_caseD_2
@@ -6625,6 +6767,7 @@
 8016fe80 GX::InitLightAttnA
 8016fe90 GX::InitLightAttnK
 8016fea0 GX::InitLightSpot
+8016ff10 GX::InitLightSpot_switch
 8016ff14 GX::InitLightSpot_caseD_1
 8016ff28 GX::InitLightSpot_caseD_2
 8016ff44 GX::InitLightSpot_caseD_3
@@ -6645,16 +6788,19 @@
 801704ac GX::SetNumChans
 801704d0 GX::SetChanCtrl
 80170574 GX::GetTexBufferSize
+80170590 GX::GetTexBufferSize_switch
 80170594 GX::GetTexBufferSize_caseD_0
 801705a0 GX::GetTexBufferSize_caseD_1
 801705ac GX::GetTexBufferSize_caseD_13
 801705b8 GX::GetTexBufferSize_caseD_10
 80170698 __GetImageTileCount
+801706b4 __GetImageTileCount_switch
 801706b8 __GetImageTileCount_caseD_0
 801706c4 __GetImageTileCount_caseD_1
 801706d0 __GetImageTileCount_caseD_13
 801706dc __GetImageTileCount_caseD_10
 80170758 GX::InitTexObj
+80170898 GX::InitTexObj_switch
 8017089c GX::InitTexObj_caseD_0
 801708b0 GX::InitTexObj_caseD_1
 801708c4 GX::InitTexObj_caseD_3
@@ -6759,6 +6905,7 @@
 8017347c GX::SetClipMode
 801734a4 __GX::SetMatrixIndex
 8017352c GX::SetGPMetric
+80173654 GX::SetGPMetric_switch
 80173658 GX::SetGPMetric_caseD_0
 80173678 GX::SetGPMetric_caseD_1
 80173698 GX::SetGPMetric_caseD_2
@@ -6794,6 +6941,8 @@
 80173a08 GX::SetGPMetric_caseD_1f
 80173a24 GX::SetGPMetric_caseD_20
 80173a40 GX::SetGPMetric_caseD_21
+80173a58 GX::SetGPMetric_caseD_23
+80173a78 GX::SetGPMetric_switch
 80173a7c GX::SetGPMetric_caseD_0
 80173a98 GX::SetGPMetric_caseD_1
 80173ab4 GX::SetGPMetric_caseD_2
@@ -6816,6 +6965,7 @@
 80173d20 GX::SetGPMetric_caseD_12
 80173d30 GX::SetGPMetric_caseD_13
 80173d40 GX::SetGPMetric_caseD_14
+80173d4c GX::SetGPMetric_caseD_16
 80173d58 GX::ClearGPMetric
 80173d68 homebutton::FrameController::Init
 80173da0 homebutton::FrameController::InitFrame
@@ -6971,6 +7121,7 @@
 8017b700 homebutton::__ct::Update_controller
 8017bf98 homebutton::__ct::UpdateTrigPane
 8017c260 homebutton::__ct::StartPointEvent
+8017c3b0 homebutton::__ct::StartPointEvent_switch
 8017c3b4 homebutton::__ct::StartPointEvent_caseD_0
 8017c474 homebutton::__ct::StartPointEvent_caseD_1
 8017ca0c homebutton::__ct::StartPointEvent_caseD_2
@@ -6981,6 +7132,7 @@
 8017ce1c homebutton::__ct::StartPointEvent_caseD_7
 8017ceec 0x8017ceec
 8017d090 homebutton::__ct::StartLeftEvent
+8017d1e0 homebutton::__ct::StartLeftEvent_switch
 8017d1e4 homebutton::__ct::StartLeftEvent_caseD_0
 8017d258 homebutton::__ct::StartLeftEvent_caseD_1
 8017d780 homebutton::__ct::StartLeftEvent_caseD_2
@@ -7015,8 +7167,6 @@
 8017fbac nw4hbm::lyt::AnimTransformBasic::Bind
 8017fc68 0x8017fc68
 8017fe58 0x8017fe58
-8017fec0 0x8017fec0
-8017ff24 0x8017ff24
 80180148 0x80180148
 8018017c 0x8018017c
 80180258 0x80180258
@@ -7564,6 +7714,7 @@
 8019f6fc ClearMEM2Arena
 8019f8e0 InquiryCallback
 8019f91c ReportOS::Info
+8019fa40 ReportOS::Info_switch
 8019fa44 ReportOS::Info_caseD_10000021
 8019fa54 ReportOS::Info_caseD_10000020
 8019fa64 ReportOS::Info_caseD_10000012
@@ -7660,11 +7811,13 @@
 801a25c0 OS::Panic
 801a26ec OS::SetErrorHandler
 801a2974 OS::__UnhandledException
+801a2b80 OS::__UnhandledException_switch
 801a2b84 OS::__UnhandledException_caseD_2
 801a2b9c OS::__UnhandledException_caseD_3
 801a2bb0 OS::__UnhandledException_caseD_5
 801a2bc8 OS::__UnhandledException_caseD_6
 801a2be0 OS::__UnhandledException_caseD_f
+801a2c2c OS::__UnhandledException_caseD_0
 801a2c64 PackArgs
 801a2de4 Utf16ToArg
 801a2f3c PackInstallerArgs
@@ -7751,6 +7904,7 @@
 801a86b8 OS::__ReturnToMenu
 801a87b8 OS::ReturnToMenu
 801a87f8 OS::ReturnToSetting
+801a882c OS::ReturnToSetting_switch
 801a8830 OS::ReturnToSetting_caseD_1
 801a8838 OS::ReturnToSetting_caseD_2
 801a8840 OS::ReturnToSetting_caseD_3
@@ -7829,6 +7983,7 @@
 801abb70 OS::__StateEventHandler
 801abcc4 PlayRecordAlarmCallback
 801abcd0 PlayRecordCallback
+801abd3c PlayRecordCallback_switch
 801abd40 PlayRecordCallback_caseD_0
 801abd4c PlayRecordCallback_caseD_1
 801abdc8 PlayRecordCallback_caseD_2
@@ -7911,6 +8066,7 @@
 801b15e4 0x801b15e4
 801b15f0 SCFlushAsync
 801b180c MyNandCallback
+801b1848 MyNandCallback_switch
 801b184c MyNandCallback_caseD_0
 801b1890 MyNandCallback_caseD_1
 801b18d0 MyNandCallback_caseD_2
@@ -7920,6 +8076,7 @@
 801b19b0 MyNandCallback_caseD_6
 801b19f4 MyNandCallback_caseD_7
 801b1a30 MyNandCallback_caseD_8
+801b1a38 MyNandCallback_caseD_9
 801b1b44 SCGetAspectRatio
 801b1b98 SCGetDisplayOffsetH
 801b1c0c SCGetEuRgb60Mode
@@ -8008,12 +8165,14 @@
 801b8624 IUSB_WriteCtrlMsgAsync
 801b86b0 OnShutdown
 801b8844 __VIRetraceHandler
+801b8b88 __VIRetraceHandler_switch
 801b8b8c __VIRetraceHandler_caseD_0
 801b8b94 __VIRetraceHandler_caseD_1
 801b8b9c __VIRetraceHandler_caseD_2
 801b9054 VISetPreRetraceCallback
 801b9098 VISetPostRetraceCallback
 801b90dc getTiming
+801b90f8 getTiming_switch
 801b90fc getTiming_caseD_0
 801b9108 getTiming_caseD_1
 801b9118 getTiming_caseD_4
@@ -8033,6 +8192,7 @@
 801b91ec getTiming_caseD_12
 801b91f4 __VIInit
 801b9404 VIInit
+801b9890 VIInit_switch
 801b9894 VIInit_caseD_0
 801b989c VIInit_caseD_1
 801b98a4 VIInit_caseD_2
@@ -8050,12 +8210,14 @@
 801bab0c VIGetNextField
 801baba8 VIGetCurrentLine
 801bac38 VIGetTvFormat
+801bac6c VIGetTvFormat_switch
 801bac70 VIGetTvFormat_caseD_0
 801bac78 VIGetTvFormat_caseD_1
 801bac7c VIGetTvFormat_caseD_2
 801bac98 VIGetDTVStatus
 801bacd4 __VIDisplayPositionToXY
 801baf08 VISetTimeToDimming
+801baf48 VISetTimeToDimming_switch
 801baf4c VISetTimeToDimming_caseD_0
 801baf54 VISetTimeToDimming_caseD_1
 801baf58 VISetTimeToDimming_caseD_2
@@ -8142,6 +8304,7 @@
 801c3278 WPAD::ControlDpd
 801c42f4 __SendData
 801c4528 WPADiSendSetReportType
+801c458c WPADiSendSetReportType_switch
 801c4590 WPADiSendSetReportType_caseD_0
 801c459c WPADiSendSetReportType_caseD_1
 801c45a8 WPADiSendSetReportType_caseD_2
@@ -8202,11 +8365,13 @@
 801cc87c WUDiTerminateDevice
 801cc914 WUDiDeleteDevice
 801cc9c8 DeleteAllHandler
+801cca14 DeleteAllHandler_switch
 801cca18 DeleteAllHandler_caseD_1
 801cca30 DeleteAllHandler_caseD_2
 801cca3c DeleteAllHandler_caseD_3
 801cca48 DeleteAllHandler_caseD_5
 801ccab4 DeleteAllHandler_caseD_8
+801ccb08 DeleteAllHandler_caseD_0
 801ccb24 DeleteAllHandler0
 801ccb44 WUDiClearUnregisteredDevice
 801ccc58 EnableStackHandler
@@ -8251,6 +8416,7 @@
 801cf274 WUDIsBusy
 801cf2e8 CleanupCallback
 801cf31c WUDSecurityCallback
+801cf374 WUDSecurityCallback_switch
 801cf378 WUDSecurityCallback_caseD_0
 801cf424 WUDSecurityCallback_caseD_1
 801cf440 WUDSecurityCallback_caseD_2
@@ -8270,6 +8436,7 @@
 801d0298 _WUDGetNotAckedSize
 801d02f4 _WUDGetLinkNumber
 801d0330 WUDHidHostCallback
+801d0378 WUDHidHostCallback_switch
 801d037c WUDHidHostCallback_caseD_0
 801d0398 WUDHidHostCallback_caseD_1
 801d03a8 WUDHidHostCallback_caseD_2
@@ -8285,6 +8452,7 @@
 801d07d0 WUDHidHostCallback_caseD_c
 801d0810 WUDHidHostCallback_caseD_d
 801d0820 WUDHidHostCallback_caseD_f
+801d08ac WUDHidHostCallback_caseD_e
 801d08c8 bta_hh_co_data
 801d0904 bta_hh_co_open
 801d0914 bta_hh_co_close
@@ -8474,7 +8642,7 @@
 801da114 convNum
 801da67c Mail_sprintf
 801da708 0x801da708
-801da748 0x801da748
+801da870 0x801da870
 801da874 0x801da874
 801da880 0x801da880
 801da88c 0x801da88c
@@ -8484,6 +8652,7 @@
 801da904 0x801da904
 801dabc8 NWC24FOpen
 801dacbc NWC24iFOpenNand
+801dacf8 NWC24iFOpenNand_switch
 801dacfc NWC24iFOpenNand_caseD_1
 801dad2c NWC24iFOpenNand_caseD_2
 801dad34 NWC24iFOpenNand_caseD_4
@@ -8522,6 +8691,7 @@
 801dcc24 NWC24iRegister
 801dcc5c NWC24::OpenLib
 801dcc7c 0x801dcc7c
+801dce1c 0x801dce1c
 801dce20 0x801dce20
 801dce48 NWC24::CloseLib
 801dceb4 NWC24IsMsgLibOpened
@@ -8758,6 +8928,7 @@
 801ebfe8 SOFinish
 801ec0e4 SOStartup
 801ec0f0 0x801ec0f0
+801ec3a8 SOStartup_switch
 801ec3ac SOStartup_caseD_0
 801ec3b4 SOStartup_caseD_ffffffea
 801ec3bc SOStartup_caseD_ffffffdf
@@ -8765,6 +8936,7 @@
 801ec3cc SOStartup_caseD_ffffffe3
 801ec3d0 SOStartup_caseD_ffffffe0
 801ec518 SOCleanup
+801ec5e0 SOCleanup_switch
 801ec5e4 SOCleanup_caseD_0
 801ec5ec SOCleanup_caseD_ffffffea
 801ec5f4 SOCleanup_caseD_ffffffdf
@@ -8779,6 +8951,7 @@
 801ec848 SOiPrepare
 801ec930 SOiConclude
 801ec98c SOiPrepareTempRm
+801ecb74 SOiPrepareTempRm_switch
 801ecb78 SOiPrepareTempRm_caseD_ffffffe3
 801ecb80 SOiPrepareTempRm_caseD_fffffffe
 801ecb88 SOiPrepareTempRm_caseD_fffffff1
@@ -9175,6 +9348,7 @@
 80209808 VFSysCheckExistPrfFile_nandflash_sub_switch_80209a8c::caseD_1
 80209844 VFSysCheckExistPrfFile_nandflash_sub_caseD_2
 80209978 VFSysCheckExistPrfFile
+802099ec VFSysCheckExistPrfFile_switch
 80209a00 thunk_0x8020c82c
 80209a04 VFSysCreatePrfFileNANDFlash
 80209ac8 VFSysCreatePrfFileNANDFlashEx
@@ -9360,7 +9534,6 @@
 80211a70 0x80211a70
 80211a80 0x80211a80
 80211a90 0x80211a90
-80211aa0 0x80211aa0
 80211abc 0x80211abc
 80211b74 EGG::AudioFxMgr::__ct
 80211bd4 EGG::AudioFxMgr::__dt
@@ -9571,6 +9744,7 @@
 8021b09c EGG::DrawGX::SetMatTev
 8021b1fc EGG::DrawGX::SetMatPE
 8021b260 EGG::DrawGX::SetVtxState
+8021b2a4 EGG::DrawGX::SetVtxState_switch
 8021b2a8 EGG::DrawGX::SetVtxState_caseD_0
 8021b314 EGG::DrawGX::SetVtxState_caseD_2
 8021b360 EGG::DrawGX::SetVtxState_caseD_6
@@ -10041,7 +10215,7 @@
 80231050 EGG::NWC24Handler::__ct
 802310b0 EGG::NWC24Handler::__dt
 8023115c EGG::NWC24Handler::OpenLib
-802311a8 0x802311a8
+802311d0 EGG::NWC24Handler::OpenLib_switch
 802311d4 EGG::NWC24Handler::OpenLib_caseD_0
 802311f4 EGG::NWC24Handler::OpenLib_caseD_ffffffcf
 8023120c EGG::NWC24Handler::OpenLib_caseD_ffffffe3
@@ -10071,11 +10245,13 @@
 80231de0 EGG::NWC24Handler::GetMsgAppId
 80231e44 EGG::NWC24Handler::ReadMsgFromAddr
 80231f20 EGG::NWC24Handler::ReadMsgToId
+80231f64 EGG::NWC24Handler::ReadMsgToId_switch
 80231f68 EGG::NWC24Handler::ReadMsgToId_caseD_0
 80231f7c EGG::NWC24Handler::ReadMsgToId_caseD_ffffffd2
 80231f90 EGG::NWC24Handler::ReadMsgToId_caseD_ffffffe8
 80231fa4 EGG::NWC24Handler::ReadMsgToId_caseD_ffffffd3
 80231fcc EGG::NWC24Handler::ReadMsgToAddr
+8023201c EGG::NWC24Handler::ReadMsgToAddr_switch
 80232020 EGG::NWC24Handler::ReadMsgToAddr_caseD_0
 80232034 EGG::NWC24Handler::ReadMsgToAddr_caseD_ffffffd2
 80232048 EGG::NWC24Handler::ReadMsgToAddr_caseD_fffffff3
@@ -10083,17 +10259,20 @@
 80232088 EGG::NWC24Handler::ReadMsgSubject
 80232174 EGG::NWC24Handler::ReadMsgText
 80232264 EGG::NWC24Handler::ReadMsgAttached
+802322ac EGG::NWC24Handler::ReadMsgAttached_switch
 802322b0 EGG::NWC24Handler::ReadMsgAttached_caseD_0
 802322c4 EGG::NWC24Handler::ReadMsgAttached_caseD_ffffffd2
 802322d8 EGG::NWC24Handler::ReadMsgAttached_caseD_fffffff2
 802322ec EGG::NWC24Handler::ReadMsgAttached_caseD_ffffffd3
 80232314 eggNwc24_80232698
+80232350 eggNwc24_80232698_switch
 80232354 eggNwc24_80232698_caseD_0
 80232368 eggNwc24_80232698_caseD_ffffffd2
 8023237c eggNwc24_80232698_caseD_ffffffe8
 80232390 eggNwc24_80232698_caseD_ffffffd3
 802323bc EGG::NWC24Handler::CommitMsg
 802323f8 EGG::NWC24Handler::DeleteMsg
+80232438 EGG::NWC24Handler::DeleteMsg_switch
 8023243c EGG::NWC24Handler::DeleteMsg_caseD_0
 80232450 EGG::NWC24Handler::DeleteMsg_caseD_ffffffd2
 80232464 EGG::NWC24Handler::DeleteMsg_caseD_ffffffe5
@@ -10105,27 +10284,31 @@
 802326f0 EGG::NWC24Handler::ReadMsgAltName
 802327b8 EGG::NWC24Handler::ReadMsgMBNoReply
 802328ac EGG::NWC24Handler::ReadMsgMBRegDate
+802328fc EGG::NWC24Handler::ReadMsgMBRegDate_switch
 80232900 EGG::NWC24Handler::ReadMsgMBRegDate_caseD_0
 80232914 EGG::NWC24Handler::ReadMsgMBRegDate_caseD_ffffffd2
 80232928 EGG::NWC24Handler::ReadMsgMBRegDate_caseD_ffffffe8
 8023293c EGG::NWC24Handler::ReadMsgMBRegDate_caseD_ffffffd3
 80232968 EGG::NWC24Handler::ReadMsgMBDelay
+802329b0 EGG::NWC24Handler::ReadMsgMBDelay_switch
 802329b4 EGG::NWC24Handler::ReadMsgMBDelay_caseD_0
 802329c8 EGG::NWC24Handler::ReadMsgMBDelay_caseD_ffffffd2
 802329dc EGG::NWC24Handler::ReadMsgMBDelay_caseD_ffffffe8
 802329f0 EGG::NWC24Handler::ReadMsgMBDelay_caseD_ffffffd3
 80232a1c EGG::NWC24Handler::ReadFriendInfo
+80232a5c EGG::NWC24Handler::ReadFriendInfo_switch
 80232a60 EGG::NWC24Handler::ReadFriendInfo_caseD_0
 80232a74 EGG::NWC24Handler::ReadFriendInfo_caseD_ffffffd2
 80232a88 EGG::NWC24Handler::ReadFriendInfo_caseD_ffffffe5
 80232a9c EGG::NWC24Handler::ReadFriendInfo_caseD_ffffffd3
 80232ac4 EGG::NWC24Handler::IsFriendInfoInThere
+80232b08 EGG::NWC24Handler::IsFriendInfoInThere_switch
 80232b0c EGG::NWC24Handler::IsFriendInfoInThere_caseD_1
 80232b28 EGG::NWC24Handler::IsFriendInfoInThere_caseD_0
 80232b40 EGG::NWC24Handler::IsFriendInfoInThere_caseD_ffffffd2
 80232b54 0x80232b54
-80232b68 0x80232b68
 80232b94 EGG::NWC24Handler::GetNumFriendInfos
+80232bd0 EGG::NWC24Handler::GetNumFriendInfos_switch
 80232bd4 EGG::NWC24Handler::GetNumFriendInfos_caseD_0
 80232be8 EGG::NWC24Handler::GetNumFriendInfos_caseD_ffffffd2
 80232bfc EGG::NWC24Handler::GetNumFriendInfos_caseD_ffffffe5
@@ -10135,6 +10318,7 @@
 80232d3c EGG::NWC24Handler::SearchMsgs
 80232e00 0x80232e00
 80232e08 SchedSuspendTransError
+80232e28 SchedSuspendTransError_switch
 80232e2c SchedSuspendTransError_caseD_0
 80232e34 SchedSuspendTransError_caseD_ffffffd6
 80232e3c SchedSuspendTransError_caseD_ffffffd0
@@ -10169,6 +10353,7 @@
 802349a8 setNoIndStages
 802349b0 EGG::EGG__PostEffectBase2_SetAlphaZFogBlend
 80234a44 EGG::EGG__PostEffectBase2_SetBlendMode
+80234a64 EGG::EGG__PostEffectBase2_SetBlendMode_switch
 80234a68 EGG::EGG__PostEffectBase2_SetBlendMode_caseD_0
 80234a70 EGG::EGG__PostEffectBase2_SetBlendMode_caseD_1
 80234a78 EGG::EGG__PostEffectBase2_SetBlendMode_caseD_2
@@ -10316,7 +10501,7 @@
 8023b694 EGG::ScnRenderer::__dt
 8023b78c EGG::ScnRenderer::GetDrawPathCount
 8023b794 EGG::ScnRenderer::Init
-8023b87c 0x8023b87c
+8023b8c8 EGG::ScnRenderer::Init_switch
 8023b8cc EGG::ScnRenderer::Init_caseD_0
 8023b8d8 EGG::ScnRenderer::Init_caseD_1
 8023b8e4 EGG::ScnRenderer::Init_caseD_2
@@ -11134,6 +11319,7 @@
 8052690c ArchivesHolder::GetFirstMountedArchiveEnd
 80526994 ArchivesHolder::GetLoadedArchivesCount
 805269e8 NandUtils::SafeOpen
+80526a64 NandUtils::SafeOpen_NandUtils::SafeOpen_switch
 80526a68 NandUtils::SafeOpen_caseD_0
 80526a70 NandUtils::SafeOpen_caseD_-3
 80526a88 NandUtils::SafeOpen_caseD_-4
@@ -11249,6 +11435,7 @@
 8052d58c Raceinfo::DestroyInstance
 8052d5dc GMDataGP::__ct
 8052d640 Raceinfo::CreateGMData
+8052d680 Raceinfo::CreateGMData_Raceinfo::CreateGMData_switch
 8052d684 Raceinfo::CreateGMData_case_0
 8052d6d8 Raceinfo::CreateGMData_case_1
 8052d700 Raceinfo::CreateGMData_case_4
@@ -11320,6 +11507,7 @@
 805316e8 Raceinfo::IsAtLeastStage
 80531700 0x80531700
 80531794 Raceinfo::GetInitialPhysicsValues
+805317dc Raceinfo::GetInitialPhysicsValues::switch
 805317e0 Raceinfo::GetInitialPhysicsValues::case_3
 80531908 Raceinfo::GetInitialPhysicsValues::case_b
 8053193c Raceinfo::GetInitialPhysicsValues::case_c
@@ -11327,6 +11515,7 @@
 8053195c Raceinfo::GetInitialPhysicsValues::case_4
 805319f8 Raceinfo::GetInitialPhysicsValues::case_0
 80531a80 Raceinfo::GetKTPTHolder
+80531acc Raceinfo::GetKTPTHolder_switch
 80531ad0 Raceinfo::GetKTPTHolder_case_3
 80531bf0 Raceinfo::GetKTPTHolder_case_4
 80531c70 Raceinfo::GetKTPTHolder_case_b
@@ -11447,7 +11636,7 @@
 80536e44 0x80536e44
 80536f58 0x80536f58
 805370ac GMDataOnlineBalloonBattle::Update
-80537180 0x80537180
+80537214 GMDataOnlineBalloonBattle::Update_switch
 80537218 GMDataOnlineBalloonBattle::Update_case_1
 8053722c GMDataOnlineBalloonBattle::Update_case_2
 8053723c GMDataOnlineBalloonBattle::Update_case_3
@@ -11456,6 +11645,7 @@
 805372e4 GMDataOnlineBalloonBattle::Update_case_6
 80537328 GMDataOnlineBalloonBattle::Update_case_7
 80537330 GMDataOnlineBalloonBattle::Update_case_0
+80537334 GMDataOnlineBalloonBattle::Update_case_8
 80537fe4 0x80537fe4
 80538080 0x80538080
 805382c8 0x805382c8
@@ -12099,13 +12289,12 @@
 8054d3bc 0x8054d3bc
 8054d60c 0x8054d60c
 8054d734 0x8054d734
-8054d780 0x8054d780
+8054d7a4 0x8054d7a4
 8054d7a8 0x8054d7a8
 8054d7b0 0x8054d7b0
 8054d7c8 0x8054d7c8
 8054d7d0 0x8054d7d0
-8054d7d8 0x8054d7d8
-8054d830 GlobeScene::__ct
+8054d830 0x8054d830
 8054d874 GlobeScene::__dt
 8054d8cc GlobeScene::OnEnter
 8054d998 GlobeScene::CreateAndInitInstances
@@ -12156,6 +12345,7 @@
 8054fd90 ElineMgr::GetController
 8054fdf0 ElineMgr::Update
 8054fed4 Raceinfo::RaceinfoGamemodeDataMissionTournament
+8054ff10 Raceinfo::RaceinfoGamemodeDataMissionTournament_switch
 8054ff14 Raceinfo::RaceinfoGamemodeDataMissionTournament_caseD_0
 8054ff40 Raceinfo::RaceinfoGamemodeDataMissionTournament_caseD_1
 8054ff6c Raceinfo::RaceinfoGamemodeDataMissionTournament_caseD_7
@@ -12181,9 +12371,11 @@
 80550980 GetCupType
 805509e0 IsCupUnlocked
 80550c74 IsCharacterUnlocked
+80550ca8 IsCharacterUnlocked_switch
 80550cac IsCharacterUnlocked_caseD_11
 80550d44 IsCharacterUnlocked_caseD_18
 80550dcc IsCharacterUnlocked_caseD_1a
+80550e50 IsCharacterUnlocked_caseD_10
 80550e68 IsKartUnlocked
 80550f40 0x80550f40
 80550f60 0x80550f60
@@ -13866,6 +14058,7 @@
 805a0b60 0x805a0b60
 805a0d28 0x805a0d28
 805a0e2c 0x805a0e2c
+805a0ed0 0x805a0ed0
 805a0ed4 0x805a0ed4
 805a0ee4 0x805a0ee4
 805a0ef4 0x805a0ef4
@@ -14313,6 +14506,7 @@
 805b6b30 NotifyButton::InitSelf
 805b6c04 NotifyButton::OnUpdate
 805b6f9c NotifyButton::OnClick
+805b6fe0 NotifyButton::OnClick_switch
 805b6fe4 NotifyButton::OnClick_caseD_0
 805b6fec NotifyButton::OnClick_caseD_1
 805b6ff4 NotifyButton::OnClick_caseD_2
@@ -14337,6 +14531,7 @@
 805b71f8 NotifyButton::CheckStatusAvailabilities
 805b7420 Page::GetRuntimeTypeInfo
 805b742c NotifyButton::UpdateText
+805b7468 NotifyButton::UpdateText_switch
 805b746c NotifyButton::UpdateText_caseD_0
 805b7474 NotifyButton::UpdateText_caseD_1
 805b747c NotifyButton::UpdateText_caseD_2
@@ -14357,6 +14552,7 @@
 805b7ef0 Pages::Channel::OnActivate
 805b7f48 Pages::Channel::OnButtonClick
 805b81e0 Pages::Channel::OnButtonSelect
+805b8288 Pages::Channel::OnButtonSelect_switch
 805b828c Pages::Channel::OnButtonSelect_switch_805c0c20::CaseD_0
 805b8294 Pages::Channel::OnButtonSelect_switch_805c0c20::CaseD_1
 805b829c Pages::Channel::OnButtonSelect_switch_805c0c20::CaseD_2
@@ -14466,6 +14662,7 @@
 805bc840 0x805bc840
 805bc878 0x805bc878
 805bca98 0x805bca98
+805bcb68 0x805bcb68
 805bcb6c 0x805bcb6c
 805bcb74 0x805bcb74
 805bcb7c 0x805bcb7c
@@ -14581,6 +14778,7 @@
 805c1048 Text::Mgr::DestroyInstance
 805c10c4 Text::PaneHandler::Init
 805c11e0 Text::PaneHandler::SetMessage
+805c1918 Text::PaneHandler::SetMessage_switch
 805c191c Text::PaneHandler::SetMessage_case0
 805c19ac Text::PaneHandler::SetMessage_case10
 805c1a14 Text::PaneHandler::SetMessage_case12
@@ -14606,6 +14804,7 @@
 805c2a78 Text::GlyphDrawer::Draw
 805c2b60 Text::GlyphDrawer::DrawExternalUnicode
 805c2cc4 Text::GlyphDrawer::SetupGXColors
+805c2ecc Text::GlyphDrawer::SetupGXColors_switch
 805c2ed0 Text::GlyphDrawer::SetupGXColors_caseD_1
 805c2ee8 Text::GlyphDrawer::SetupGXColors_caseD_10
 805c2f00 Text::GlyphDrawer::SetupGXColors_caseD_11
@@ -14677,6 +14876,7 @@
 805c58c0 0x805c58c0
 805c58e8 0x805c58e8
 805c5934 FriendList::UpdateStatuses
+805c5a28 FriendList::UpdateStatuses_switch
 805c5a2c FriendList::UpdateStatuses_caseD_1
 805c5a34 FriendList::UpdateStatuses_caseD_2
 805c5a3c FriendList::UpdateStatuses_caseD_3
@@ -14737,6 +14937,7 @@
 805c7ff0 Pages::FriendList::OnBackPress
 805c8070 Pages::FriendList::CompareFriendIndexes
 805c8100 Pages::FriendList::FriendStatusToValue
+805c8120 Pages::FriendList::FriendStatusToValue_switch
 805c8124 Pages::FriendList::FriendStatusToValue_Case_fffffffe
 805c812c Pages::FriendList::FriendStatusToValue_Case_ffffffff
 805c8134 Pages::FriendList::FriendStatusToValue_Case_0
@@ -14840,6 +15041,7 @@
 805cb32c Pages::GhostManager::OnSectionChange
 805cb3d4 Pages::GhostManager::RequestAllGhosts
 805cb438 Pages::GhostManager::UpdateState
+805cb470 Pages::GhostManager::UpdateState_switch
 805cb474 Pages::GhostManager::UpdateState_case_1
 805cb584 Pages::GhostManager::UpdateState_case_2
 805cb5a8 Pages::GhostManager::UpdateState_case_3
@@ -14958,6 +15160,7 @@
 805d08dc 0x805d08dc
 805d092c 0x805d092c
 805d0968 Pages::Globe::GetFriendActivityBMG
+805d0984 Pages::Globe::GetFriendActivityBMG_switch
 805d0988 Pages::Globe::GetFriendActivityBMG_caseD_1
 805d0990 Pages::Globe::GetFriendActivityBMG_caseD_2
 805d0998 Pages::Globe::GetFriendActivityBMG_caseD_3
@@ -15142,10 +15345,12 @@
 805d7798 ControlsManipulatorManager::Func_805f226c
 805d7800 ControlsManipulatorManager::CheckPlayerPointer
 805d78b0 ControlManipulator::CalcDistance
+805d7978 ControlManipulator::CalcDistance_Switch
 805d797c ControlManipulator::CalcDistance_Case_1
 805d7bd0 ControlManipulator::CalcDistance_Case_5
 805d7e58 ControlManipulator::CalcDistance_Case_0
 805d7e74 ControlManipulator::CalcDistanceLinear
+805d8014 ControlManipulator::CalcDistanceLinear_Switch
 805d8018 ControlManipulator::CalcDistanceLinear_case_1
 805d8068 ControlManipulator::CalcDistanceLinear_case_4
 805d80b8 ControlManipulator::CalcDistanceLinear_case_5
@@ -15770,6 +15975,7 @@
 805f23d4 Section::TopLayerPage
 805f2434 Section::RemovePageLayers
 805f24dc Section::CreatePageById
+805f2504 Section::CreatePageById_switch
 805f2508 Section::CreatePageById_case0
 805f2520 Section::CreatePageById_case1
 805f2538 Section::CreatePageById_case2
@@ -16095,6 +16301,7 @@
 805faf70 Pages::Unlock::__ct
 805fb240 Pages::LicenseRecords::__ct
 805fb4f0 Section::CreateSectionPages
+805fb524 Section::CreateSectionPages_switch
 805fb528 Section::CreateSectionPages_case6
 805fb534 Section::CreateSectionPages_case7
 805fb540 Section::CreateSectionPages_case8
@@ -16239,6 +16446,7 @@
 805ff164 Section::CreateSectionPages_case93
 805ff194 Section::CreateSectionPages_case94
 805ff1e0 Section::AddInitialLayers
+805ff214 Section::AddInitialLayers_switch
 805ff218 Section::AddInitialLayers_caseD_6
 805ff224 Section::AddInitialLayers_caseD_7
 805ff230 Section::AddInitialLayers_caseD_8
@@ -16392,6 +16600,7 @@
 80601044 Section::GetGroupId
 806011cc 0x806011cc
 80601300 Section::GetAudioStreamIdx
+8060131c Section::GetAudioStreamIdx_switch
 80601320 Section::GetAudioStreamIdx_caseD_0
 80601328 Section::GetAudioStreamIdx_caseD_1
 80601330 Section::GetAudioStreamIdx_caseD_2
@@ -17153,12 +17362,14 @@
 80611b70 Pages::Vote::__ct
 80611c9c Pages::Vote::__dt
 80611d48 Pages::Vote::OnInit
+80611de8 Pages::Vote::OnInit_switch
 80611dec Pages::Vote::OnInit_case58
 80611df8 Pages::Vote::OnInit_case59
 80611e00 Pages::Vote::OnInit_case5a
 80611fa8 Pages::Vote::OnDispose
 80611fac Pages::Vote::BeforeEntranceAnimations
 806123c8 Pages::Vote::BeforeControlUpdate
+80612904 Pages::Vote::BeforeControlUpdate_switch
 80612908 Pages::Vote::BeforeControlUpdate_case58
 80612910 Pages::Vote::BeforeControlUpdate_case59
 80612918 Pages::Vote::BeforeControlUpdate_case5e
@@ -17175,6 +17386,7 @@
 80612a78 Pages::Vote::BeforeExitAnimations
 80612af8 Pages::Vote::GetNextPage
 80612b28 Pages::Vote::SetVotedCourseId
+80612b58 Pages::Vote::SetCourseButtonId_switch
 80612b5c Pages::Vote::SetCourseButtonId_case58
 80612b64 Pages::Vote::SetCourseButtonId_case59
 80612b68 Pages::Vote::SetCourseButtonId_case5a
@@ -17384,14 +17596,17 @@
 8061be54 Pages::WWRaceEndWait::__ct
 8061bea0 Pages::WWRaceEndWait::__dt
 8061bf14 Pages::WWRaceEndWait::OnInit
+8061bf58 Pages::WWRaceEndWait::OnInit_switch
 8061bf5c Pages::WWRaceEndWait::OnInit_case_68
 8061bf78 Pages::WWRaceEndWait::OnInit_case_69
 8061c00c Pages::WWRaceEndWait::OnActivate
 8061c060 Pages::WWRaceEndWait::AfterControlUpdate
+8061c110 Pages::WWRaceEndWait::AfterControlUpdate_switch
 8061c114 Pages::WWRaceEndWait::AfterControlUpdate_case_68
 8061c11c Pages::WWRaceEndWait::AfterControlUpdate_case_69
 8061c124 Pages::WWRaceEndWait::AfterControlUpdate_case_6c
 8061c12c Pages::WWRaceEndWait::AfterControlUpdate_case_6d
+8061c2a4 Pages::WWRaceEndWait::AfterControlUpdate_switch2D
 8061c2a8 Pages::WWRaceEndWait::AfterControlUpdate_case2_70
 8061c2b0 Pages::WWRaceEndWait::AfterControlUpdate_case2_71
 8061c2b8 Pages::WWRaceEndWait::AfterControlUpdate_case2_72
@@ -17401,9 +17616,9 @@
 8061c2d8 Pages::WWRaceEndWait::AfterControlUpdate_case2_76
 8061c2e0 Pages::WWRaceEndWait::AfterControlUpdate_case2_77
 8061c348 0x8061c348
+8061c5cc 0x8061c5cc
 8061c5d0 0x8061c5d0
 8061c628 0x8061c628
-8061c674 0x8061c674
 8061c6c4 Pages::DisableHomeButton::__ct
 8061c708 Pages::DisableHomeButton::__dt
 8061c770 Pages::DisableHomeButton::OnInit
@@ -17423,6 +17638,7 @@
 8061c8c8 Pages::SELECTStageMgr::__ct
 8061c95c Pages::SELECTStageMgr::__dt
 8061c9e8 Pages::SELECTStageMgr::OnInit
+8061ca40 Pages::SELECTStageMgr::OnInit_switch
 8061ca44 Pages::SELECTStageMgr::OnInit_case58
 8061ca50 Pages::SELECTStageMgr::OnInit_case60
 8061ca5c Pages::SELECTStageMgr::OnInit_case59
@@ -17430,9 +17646,11 @@
 8061ca70 Pages::SELECTStageMgr::OnInit_case5a
 8061cb1c Pages::SELECTStageMgr::OnDispose
 8061cb20 Pages::SELECTStageMgr::OnActivate
+8061cbf4 Pages::SELECTStageMgr::OnActivate_Pages::SELECTStageMgr::OnActivate_switch
 8061cbf8 Pages::SELECTStageMgr::OnActivate_case58
 8061cc18 Pages::SELECTStageMgr::OnActivate_case59
 8061cc34 Pages::SELECTStageMgr::OnActivate_case5a
+8061cd04 Pages::SELECTStageMgr::OnActivate_switch2
 8061cd08 Pages::SELECTStageMgr::OnActivate_2case58
 8061cec4 Pages::SELECTStageMgr::OnActivate_2case59
 8061cee4 Pages::SELECTStageMgr::OnActivate_2case5a
@@ -17440,16 +17658,19 @@
 8061cf04 Pages::SELECTStageMgr::BeforeControlUpdate
 8061cf60 Pages::SELECTStageMgr::AfterControlUpdate
 8061d48c Pages::SELECTStageMgr::OnResume
+8061d698 Pages::SELECTStageMgr::OnResume_Pages::SELECTStageMgr::OnResume_switch
 8061d69c Pages::SELECTStageMgr::OnResume_case58
 8061d6a4 Pages::SELECTStageMgr::OnResume_case59
 8061d6a8 Pages::SELECTStageMgr::OnResume_case5a
 8061d7e0 Pages::SELECTStageMgr::IsPublicBattle
+8061d810 Pages::SELECTStageMgr::IsPublicBattle_switch
 8061d814 Pages::SELECTStageMgr::IsPublicBattle_case58
 8061d81c Pages::SELECTStageMgr::IsPublicBattle_case59
 8061d824 Pages::SELECTStageMgr::IsPublicBattle_case5a
 8061d82c Pages::SELECTStageMgr::GetEngineClass
 8061d87c Pages::SELECTStageMgr::GetBattleType
 8061d8cc Pages::SELECTStageMgr::GetInstructionBmgId
+8061d8fc Pages::SELECTStageMgr::GetInstructionBmgId_switch
 8061d900 Pages::SELECTStageMgr::GetInstructionBmgId_case58
 8061d970 Pages::SELECTStageMgr::GetInstructionBmgId_case59
 8061d9d0 Pages::SELECTStageMgr::GetInstructionBmgId_case60
@@ -17459,12 +17680,14 @@
 8061dac0 Pages::SELECTStageMgr::GetInstructionBmgId_case5a
 8061dac8 Pages::SELECTStageMgr::GetPlayerId
 8061db10 Pages::SELECTStageMgr::PrepareRace
+8061dbd0 Pages::SELECTStageMgr::PrepareRace_switch
 8061dbd4 Pages::SELECTStageMgr::PrepareRace_case58
 8061dbf4 Pages::SELECTStageMgr::PrepareRace_case60
 8061dc14 Pages::SELECTStageMgr::PrepareRace_case61
 8061dc34 Pages::SELECTStageMgr::PrepareRace_case59
 8061dc54 Pages::SELECTStageMgr::PrepareRace_case62
 8061dc70 Pages::SELECTStageMgr::PrepareRace_case5a
+8061dca0 Pages::SELECTStageMgr::PrepareRace_case5a_switch
 8061dca4 Pages::SELECTStageMgr::PrepareRace_2case58
 8061dd68 Pages::SELECTStageMgr::PrepareRace_2case59
 8061dde0 Pages::SELECTStageMgr::PrepareRace_2case62
@@ -17473,17 +17696,16 @@
 8061e2b8 Pages::SELECTStageMgr::UpdateOnlineParams
 8061e49c Pages::SELECTStageMgr::OnDisconnect
 8061e540 Pages::SELECTStageMgr::SetModeTypes
+8061e584 Pages::SELECTStageMgr::SetModeTypes_switch
 8061e588 Pages::SELECTStageMgr::SetModeTypes_case58
 8061e59c Pages::SELECTStageMgr::SetModeTypes_case59
 8061e5b0 Pages::SELECTStageMgr::SetModeTypes_case60
 8061e5ec Pages::SELECTStageMgr::SetModeTypes_case62
 8061e5f8 Pages::SELECTStageMgr::SetModeTypes_case63
 8061e600 Pages::SELECTStageMgr::SetModeTypes_loop
-8061e670 0x8061e670
 8061e770 0x8061e770
 8061e77c 0x8061e77c
 8061e7bc 0x8061e7bc
-8061e808 0x8061e808
 8061e894 Pages::SELECTStageMgr::IsHomeMenuWorking
 8061e89c Pages::SELECTStageMgr::GetRuntimeTypeInfo
 8061e8a8 Pages::SELECTStageMgr::TriggerPtmf
@@ -17570,6 +17792,7 @@
 806229a0 Pages::AwardResults::PrepareCongratulations
 80622b40 Pages::AwardResults::PrepareResultItems
 80622cac Pages::AwardResults::PrepareCup
+80622d38 Pages::AwardResults::PrepareCup_switch
 80622d3c Pages::AwardResults::PrepareCup_caseD_0
 80622d44 Pages::AwardResults::PrepareCup_caseD_1
 80622d4c Pages::AwardResults::PrepareCup_caseD_2
@@ -17687,6 +17910,7 @@
 8062798c Pages::CreditsCongrats::AfterPublishMsg
 80627a8c Pages::CreditsCongrats::AfterDontPostTooMany
 80627b8c Pages::CreditsCongrats::HandlePublishError
+80627c5c Pages::CreditsCongrats::HandlePublishError_switch
 80627c60 Pages::CreditsCongrats::HandlePublishError_caseD_1
 80627c68 Pages::CreditsCongrats::HandlePublishError_caseD_2
 80627c70 Pages::CreditsCongrats::HandlePublishError_caseD_3
@@ -18032,10 +18256,12 @@
 8063bc50 Pages::BackModel::__ct
 8063bca4 Pages::BackModel::__dt
 8063bd24 Pages::BackModel::OnInit
+8063be40 Pages::BackModel::OnInit_switch
 8063be44 Pages::BackModel::OnInit_case_60
 8063be54 Pages::BackModel::OnInit_case_49
 8063be64 Pages::BackModel::OnInit_case_4b
 8063be74 Pages::BackModel::OnInit_case_4c
+8063be80 Pages::BackModel::OnInit_case_4d
 8063be94 Pages::BackModel::GetRuntimeTypeInfo
 8063bea0 BackModelPage_cpp_sinit_
 8063beb4 Pages::Options::__ct
@@ -18084,6 +18310,7 @@
 8063de78 Pages::MasterOptions::BeforeExitAnimations
 8063de7c Pages::MasterOptions::AfterControlUpdate
 8063e060 Pages::MasterOptions::OnResume
+8063e09c Pages::MasterOptions::OnResume_switch
 8063e0a0 Pages::MasterOptions::OnResume_case0
 8063e244 Pages::MasterOptions::OnResume_case1
 8063e2e4 Pages::MasterOptions::OnResume_case2
@@ -18101,6 +18328,7 @@
 8063f268 Pages::MasterOptions::LoadOptionWaiting
 8063f398 Pages::MasterOptions::LoadOptionChoiceSaved
 8063f75c Pages::MasterOptions::LoadOptionChoiceSavedNetwork
+8063f82c Pages::MasterOptions::LoadOptionChoiceSavedNetwork_switch
 8063f830 Pages::MasterOptions::LoadOptionChoiceSavedNetwork_case1
 8063f838 Pages::MasterOptions::LoadOptionChoiceSavedNetwork_case2
 8063f840 Pages::MasterOptions::LoadOptionChoiceSavedNetwork_case3
@@ -18195,6 +18423,7 @@
 806432b4 0x806432b4
 806432bc 0x806432bc
 80643a84 0x80643a84
+80643abc 0x80643abc
 80643ac0 0x80643ac0
 80643ac8 0x80643ac8
 80643c6c 0x80643c6c
@@ -18208,7 +18437,6 @@
 80644378 0x80644378
 80644380 0x80644380
 8064444c 0x8064444c
-80644464 0x80644464
 8064447c 0x8064447c
 806459a0 0x806459a0
 80645a7c 0x80645a7c
@@ -18219,6 +18447,7 @@
 806467c4 0x806467c4
 806468dc 0x806468dc
 80646a9c 0x80646a9c
+80646b6c 0x80646b6c
 80646b70 0x80646b70
 80646b78 0x80646b78
 80646b80 0x80646b80
@@ -18228,7 +18457,6 @@
 80646ba0 0x80646ba0
 80646ba8 0x80646ba8
 80646bb0 0x80646bb0
-80646be0 0x80646be0
 80646c54 0x80646c54
 80646cc0 0x80646cc0
 80646cc8 0x80646cc8
@@ -18255,6 +18483,7 @@
 80647900 RankingItemSelectable::__ct
 80647a14 RankingItemSelectable::__dt
 80647a84 RankingItemSelectable::Load
+80647ac8 RankingItemSelectable::Load_switch
 80647acc RankingItemSelectable::Load_caseD_0
 80647adc RankingItemSelectable::Load_caseD_1
 80647aec RankingItemSelectable::Load_caseD_2
@@ -18275,6 +18504,7 @@
 80648568 RankingItemSelectable::vf_0x60
 80648834 RankingItemSelectable::vf_0x64
 80648838 RankedItemSelectable::OnSelect
+80648e70 RankedItemSelectable::OnSelect_switch
 80648e74 RankedItemSelectable::OnSelect_caseD_0
 80648e7c RankedItemSelectable::OnSelect_caseD_1
 80648e84 RankedItemSelectable::OnSelect_caseD_3
@@ -18284,6 +18514,7 @@
 80649034 RankedItemSelectable::OnDeselect
 80649198 RankedItemSelectable::OnClick
 806493dc 0x806493dc
+80649404 0x80649404
 80649408 0x80649408
 80649410 0x80649410
 80649418 0x80649418
@@ -18359,6 +18590,7 @@
 8064b6c8 0x8064b6c8
 8064b6cc 0x8064b6cc
 8064bce8 0x8064bce8
+8064c000 0x8064c000
 8064c004 0x8064c004
 8064c00c 0x8064c00c
 8064c014 0x8064c014
@@ -18368,7 +18600,6 @@
 8064c034 0x8064c034
 8064c03c 0x8064c03c
 8064c044 0x8064c044
-8064c06c 0x8064c06c
 8064c10c 0x8064c10c
 8064c1b4 0x8064c1b4
 8064c1c0 TriggerPtmf
@@ -18425,10 +18656,12 @@
 8064db7c Pages::VR::__ct
 8064dc68 Pages::VR::__dt
 8064dd14 Pages::VR::OnInit
+8064ddf8 Pages::VR::OnInit_switch
 8064ddfc Pages::VR::OnInit_case58
 8064de10 Pages::VR::OnInit_case59
 8064de20 Pages::VR::OnInit_case5a
 8064dfd4 Pages::VR::OnActivate
+8064e090 Pages::VR::OnActivate_switch
 8064e094 Pages::VR::OnActivate_case58
 8064e09c Pages::VR::OnActivate_case59
 8064e0a0 Pages::VR::OnActivate_case5a
@@ -18793,6 +19026,7 @@
 8066199c 0x8066199c
 806619a4 0x806619a4
 80661b00 ServerMgr::Update
+80661b40 ServerMgr::Update_switch
 80661b44 ServerMgr::Update_caseD_1
 80661b68 ServerMgr::Update_caseD_8
 80661b70 ServerMgr::Update_caseD_16
@@ -18806,6 +19040,7 @@
 80662590 BundleSortProc
 806625a0 0x806625a0
 806625a8 0x806625a8
+80662684 0x80662684
 80662688 0x80662688
 806626f8 0x806626f8
 806628ec 0x806628ec
@@ -19111,6 +19346,7 @@
 80675e04 Page::EndExitState
 80675e08 0x80675e08
 80675e0c 0x80675e0c
+80676144 0x80676144
 80676148 0x80676148
 80676150 0x80676150
 80676158 0x80676158
@@ -19119,7 +19355,6 @@
 80676170 0x80676170
 80676178 0x80676178
 80676180 0x80676180
-806761a8 0x806761a8
 80676228 0x80676228
 80676310 0x80676310
 80676318 0x80676318
@@ -19147,6 +19382,7 @@
 806769b8 Page::EndExitState
 806769bc 0x806769bc
 806769c0 0x806769c0
+80676ca4 0x80676ca4
 80676ca8 0x80676ca8
 80676cb0 0x80676cb0
 80676cb8 0x80676cb8
@@ -19155,7 +19391,6 @@
 80676cd0 0x80676cd0
 80676cd8 0x80676cd8
 80676ce0 0x80676ce0
-80676d08 0x80676d08
 80676d88 0x80676d88
 80676e70 Effects::Mgr::GetRuntimeTypeInfo
 80676e7c EffectsMgrcpp_sinit_
@@ -19524,6 +19759,7 @@
 8068a520 Effects::Player::Init
 8068a5d0 Effects::Player::Reset
 8068abbc Effects::Player::LoadEffects
+8068c2f4 Effects::Player::LoadEffects_switch
 8068c2f8 Effects::Player::LoadEffects_case0
 8068c3c4 Effects::Player::LoadEffects_case1
 8068c490 Effects::Player::LoadEffects_case2
@@ -19614,6 +19850,7 @@
 8069bfa0 0x8069bfa0
 8069c6c4 0x8069c6c4
 8069cb54 Effects::Player::UpdateFromWheelCollision
+8069ccd4 Effects::Player::UpdateFromWheelCollision_switch
 8069ccd8 Effects::Player::UpdateFromWheelCollision_caseD_0
 8069ccf4 Effects::Player::UpdateFromWheelCollision_caseD_1
 8069cd10 Effects::Player::UpdateFromWheelCollision_caseD_4
@@ -21148,10 +21385,12 @@
 806f4108 Audio::SinglePlayer::StopSound
 806f4180 Audio::SinglePlayer::StartSound
 806f4380 Audio::SinglePlayer::SetupActiveHandle
+806f444c Audio::SinglePlayer::SetupActiveHandle_switch
 806f4450 Audio::SinglePlayer::SetupActiveHandle_caseD_83
 806f4480 Audio::SinglePlayer::SetupActiveHandle_caseD_91
 806f449c Audio::SinglePlayer::SetupActiveHandle_caseD_85
 806f44dc Audio::SinglePlayer::SetupActiveHandle_caseD_7b
+806f4508 Audio::SinglePlayer::SetupActiveHandle_caseD_7d
 806f4524 0x806f4524
 806f461c Audio::SinglePlayer::StartActiveSound
 806f46dc Audio::SinglePlayer::GetFreeHandle
@@ -21201,6 +21440,7 @@
 806f6d74 Audio::RaceAmbienceMgr::Update
 806f6eac Audio::RaceAmbienceMgr::StopGlobalSoundFadeOut
 806f6ec8 Audio::RaceAmbienceMgr::PlayIntroAmbience
+806f6f58 Audio::RaceAmbienceMgr::PlayIntroAmbience_switch
 806f6f5c Audio::RaceAmbienceMgr::PlayIntroAmbience_caseD_1
 806f7000 Audio::RaceAmbienceMgr::PlayIntroAmbience_caseD_2
 806f7028 Audio::RaceAmbienceMgr::PlayIntroAmbience_caseD_3
@@ -21587,6 +21827,7 @@
 80704e74 0x80704e74
 80704f38 Audio::KartActor::SetRoadState
 80704f4c Audio::KartActor::GetDriftAndSSMTRoadSoundId
+80704fb0 Audio::KartActor::GetDriftAndSSMTRoadSoundId_switch
 80704fb4 Audio::KartActor::GetDriftAndSSMTRoadSoundId_caseD_16
 80704fc8 Audio::KartActor::GetDriftAndSSMTRoadSoundId_caseD_15
 80704fd4 Audio::KartActor::GetDriftAndSSMTRoadSoundId_caseD_13
@@ -21599,7 +21840,9 @@
 80705060 Audio::KartActor::GetDriftAndSSMTRoadSoundId_caseD_0
 80705070 Audio::KartActor::GetDriftAndSSMTRoadSoundId_caseD_17
 80705084 Audio::KartActor::GetDriftAndSSMTRoadSoundId_caseD_1d
+80705094 Audio::KartActor::GetDriftAndSSMTRoadSoundId_caseD_10
 8070509c Audio::KartActor::GetLandingSoundId
+807050dc Audio::KartActor::GetLandingSoundId_switch
 807050e0 Audio::KartActor::GetLandingSoundId_caseD_16
 807050f4 Audio::KartActor::GetLandingSoundId_caseD_15
 80705100 Audio::KartActor::GetLandingSoundId_caseD_13
@@ -21612,6 +21855,7 @@
 8070518c Audio::KartActor::GetLandingSoundId_caseD_0
 8070519c Audio::KartActor::GetLandingSoundId_caseD_17
 807051b0 Audio::KartActor::GetLandingSoundId_caseD_1d
+807051c0 Audio::KartActor::GetLandingSoundId_caseD_10
 807051c8 Audio::KartActor::GetRoadSoundId
 80705230 Audio::KartActor::GetRoadSoundId_caseD_16
 80705244 Audio::KartActor::GetRoadSoundId_caseD_15
@@ -21625,6 +21869,7 @@
 807052dc Audio::KartActor::GetRoadSoundId_caseD_0
 807052ec Audio::KartActor::GetRoadSoundId_caseD_17
 80705300 Audio::KartActor::GetRoadSoundId_caseD_1d
+80705310 Audio::KartActor::GetRoadSoundId_caseD_10
 80705318 Audio::KartActor::GetBrakingSoundId
 80705380 Audio::KartActor::GetBrakingSoundId_caseD_16
 80705394 Audio::KartActor::GetBrakingSoundId_caseD_15
@@ -21638,6 +21883,7 @@
 8070542c Audio::KartActor::GetBrakingSoundId_caseD_0
 8070543c Audio::KartActor::GetBrakingSoundId_caseD_17
 80705450 Audio::KartActor::GetBrakingSoundId_caseD_1d
+80705460 Audio::KartActor::GetBrakingSoundId_caseD_10
 80705468 Audio::KartActor::SetNonLocalVolumeAndPriority
 80705ac4 0x80705ac4
 80705bc0 Audio::KartActor::PlayEngineSound
@@ -21730,6 +21976,7 @@
 80709f70 Audio::RaceMgr::SetNonTrackAndEngineVolume
 8070a020 Audio::RaceMgr::SetRaceState
 8070a71c 0x8070a71c
+8070a790 0x8070a790
 8070a794 0x8070a794
 8070a7a8 0x8070a7a8
 8070a7bc 0x8070a7bc
@@ -21876,6 +22123,7 @@
 80710680 Audio::SoundTriggerMgr::__ct
 807106d8 Audio::SoundTriggerMgr::__dt
 8071077c Audio::SoundTriggerMgr::Init
+807107d4 Audio::SoundTriggerMgr::Init_switch
 807107d8 Audio::SoundTriggerMgr::Init_caseD_3a
 80710854 Audio::SoundTriggerMgr::Init_caseD_1
 807108d0 Audio::SoundTriggerMgr::Init_caseD_4
@@ -21899,9 +22147,11 @@
 8071107c Audio::SoundTriggerMgr::Update
 807110b8 Audio::SoundTriggerMgr::IsPlayerAheadOfOtherLocal
 80711178 Audio::SoundTriggerMgr::ApplyTrigger
+807112d0 Audio::SoundTriggerMgr::ApplyTrigger_switch
 807112d4 Audio::SoundTriggerMgr::ApplyTrigger_caseD_3a
 80711428 Audio::SoundTriggerMgr::ApplyTrigger_caseD_2
 807116cc Audio::SoundTriggerMgr::ApplyTrigger_caseD_4
+807116ec Audio::SoundTriggerMgr::ApplyTrigger_switch
 807116f0 Audio::SoundTriggerMgr::ApplyTrigger_caseD_0
 80711774 Audio::SoundTriggerMgr::ApplyTrigger_caseD_1
 80711820 Audio::SoundTriggerMgr::ApplyTrigger_caseD_2
@@ -21921,6 +22171,7 @@
 80712670 Audio::SoundTriggerMgr::ApplyTrigger_caseD_a
 8071287c Audio::SoundTriggerMgr::ApplyTrigger_caseD_b
 80712940 Audio::SoundTriggerMgr::ApplyTrigger_caseD_c
+80712960 Audio::SoundTriggerMgr::ApplyTrigger_switch2
 80712964 Audio::SoundTriggerMgr::ApplyTrigger_case2D_0
 807129c0 Audio::SoundTriggerMgr::ApplyTrigger_case2D_1
 80712a30 Audio::SoundTriggerMgr::ApplyTrigger_case2D_2
@@ -21943,7 +22194,6 @@
 807135e0 Audio::SoundTriggerMgr::ApplyTrigger_case2D_16
 80713610 Audio::SoundTriggerMgr::ApplyTrigger_case2D_17
 807138f0 Audio::SoundTriggerMgr::ApplyTrigger_case2D_23
-80713920 Audio::SoundTriggerMgr::ApplyTrigger_case2D_1
 8071393c SetTRKConnected
 80713948 0x80713948
 80713994 0x80713994
@@ -22006,6 +22256,7 @@
 80716200 0x80716200
 80716208 0x80716208
 80716360 0x80716360
+8071639c 0x8071639c
 807163a0 0x807163a0
 807163dc 0x807163dc
 807163ec 0x807163ec
@@ -23083,7 +23334,7 @@
 80741b4c 0x80741b4c
 80741c08 0x80741c08
 80741cd4 0x80741cd4
-80741ea4 AI::CPUDrivingAction::OnEnd
+80741ea4 0x80741ea4
 8074213c 0x8074213c
 80742180 0x80742180
 807421ac 0x807421ac
@@ -23097,6 +23348,7 @@
 80742e9c AI::Character::StartDriving
 80742ef4 0x80742ef4
 80742fa4 0x80742fa4
+80742fe0 0x80742fe0
 80742fe4 0x80742fe4
 80742fec 0x80742fec
 80742ff0 0x80742ff0
@@ -23204,6 +23456,7 @@
 80746ec0 0x80746ec0
 80746f00 0x80746f00
 807472a4 0x807472a4
+807472e4 0x807472e4
 807472e8 0x807472e8
 807472f4 0x807472f4
 8074732c 0x8074732c
@@ -23212,7 +23465,6 @@
 807473e4 0x807473e4
 80747424 0x80747424
 80747430 0x80747430
-80747438 0x80747438
 80747454 0x80747454
 80747584 0x80747584
 807475f4 0x807475f4
@@ -23226,6 +23478,7 @@
 80747b30 0x80747b30
 80747b74 0x80747b74
 80747bb4 0x80747bb4
+80747bf4 0x80747bf4
 80747bf8 0x80747bf8
 80747c04 0x80747c04
 80747c3c 0x80747c3c
@@ -23235,7 +23488,6 @@
 80747d34 0x80747d34
 80747d6c 0x80747d6c
 80747d78 0x80747d78
-80747d80 0x80747d80
 80747d9c 0x80747d9c
 80747e04 0x80747e04
 80747e14 0x80747e14
@@ -24011,6 +24263,7 @@
 8076d140 AwardCupModel::__ct
 8076d1e4 AwardCupModel::__dt
 8076d2ac AwardCupModel::Load
+8076d318 AwardCupModel::Load_switch
 8076d31c AwardCupModel::Load_caseD_0
 8076d350 AwardCupModel::Load_caseD_1
 8076d384 AwardCupModel::Load_caseD_2
@@ -24433,6 +24686,7 @@
 8077f1cc RaceEndTallies::__dt
 8077f270 RaceEndTallies::__ct
 8077f2ec RaceEndTallies::Init
+8077f474 RaceEndTallies::Init_switch
 8077f478 RaceEndTallies::Init_caseD_0
 8077f484 RaceEndTallies::Init_caseD_3
 8077f48c RaceEndTallies::Init_caseD_4
@@ -25231,6 +25485,7 @@
 807ae070 0x807ae070
 807ae080 Item::InitAllBehavior
 807ae770 DriverMgr::SetParams
+807ae7b0 DriverMgr::SetParams_switch
 807ae7b4 DriverMgr::SetParams_caseD_2
 807ae7d0 DriverMgr::SetParams_caseD_3
 807ae7ec DriverMgr::SetParams_caseD_7
@@ -25347,9 +25602,9 @@
 807b7fc0 0x807b7fc0
 807b7fd8 0x807b7fd8
 807b7fe4 0x807b7fe4
+807b8038 0x807b8038
 807b803c 0x807b803c
 807b8078 0x807b8078
-807b80d4 0x807b80d4
 807b8110 0x807b8110
 807b8168 0x807b8168
 807b81a4 0x807b81a4
@@ -25419,7 +25674,6 @@
 807bf4b4 0x807bf4b4
 807bf730 0x807bf730
 807bf810 0x807bf810
-807bf8bc 0x807bf8bc
 807bf92c 0x807bf92c
 807bfb44 0x807bfb44
 807bfc70 0x807bfc70
@@ -25491,10 +25745,10 @@
 807c4694 0x807c4694
 807c46a0 0x807c46a0
 807c4728 0x807c4728
+807c48a0 0x807c48a0
 807c48a4 0x807c48a4
 807c48b4 0x807c48b4
 807c48d0 0x807c48d0
-807c48f8 0x807c48f8
 807c492c 0x807c492c
 807c49f8 0x807c49f8
 807c4d54 0x807c4d54
@@ -25578,6 +25832,7 @@
 807cbd40 0x807cbd40
 807cbd58 0x807cbd58
 807cbe50 MiiHeadsModel::SetExpression
+807cbea4 MiiHeadsModel::SetExpression_switch
 807cbea8 MiiHeadsModel::SetExpression_caseD_5
 807cbef4 MiiHeadsModel::SetExpression_caseD_6
 807cbf40 MiiHeadsModel::SetExpression_caseD_7
@@ -26542,6 +26797,7 @@
 8080a27c 0x8080a27c
 8080a2b0 0x8080a2b0
 8080a2e4 KartObjectCollision::Init
+8080a34c KartObjectCollision::Init_switch
 8080a350 KartObjectCollision::Init_case1
 8080a3c0 KartObjectCollision::Init_case0
 8080a40c KartObjectCollision::Init_case2
@@ -26811,9 +27067,9 @@
 8081b864 GetPositionBMGId
 8081b86c getOrangeOverlayBmgId
 8081b874 0x8081b874
+8081b8d4 0x8081b8d4
 8081b8d8 0x8081b8d8
 8081b8ec 0x8081b8ec
-8081b900 0x8081b900
 8081b91c GetMissionLevelNameMsgId
 8081b938 0x8081b938
 8081b940 ObjectCollisionCuboid::__ct
@@ -26904,6 +27160,7 @@
 808210d4 Pages::BattleModeSelect::CreateExternalControl
 80821280 Pages::BattleModeSelect::CreateControl
 80821288 Pages::BattleModeSelect::OnActivate
+80821660 Pages::BattleModeSelect::OnActivate_switch
 80821664 Pages::BattleModeSelect::OnActivate_case_0
 8082167c Pages::BattleModeSelect::OnActivate_case_1
 80821694 Pages::BattleModeSelect::OnActivate_case_2
@@ -27331,7 +27588,6 @@
 80838d7c 0x80838d7c
 80838f20 0x80838f20
 808391c4 0x808391c4
-80839358 0x80839358
 80839594 0x80839594
 80839648 0x80839648
 808396fc 0x808396fc
@@ -27349,7 +27605,6 @@
 80839f4c 0x80839f4c
 80839fb4 0x80839fb4
 8083a060 0x8083a060
-8083a10c 0x8083a10c
 8083a180 Pages::RaceMenu::IsFinalRace
 8083a2c8 Pages::RaceMenu::GetRuntimeTypeInfo
 8083a2d4 TriggerPtmf
@@ -27414,14 +27669,13 @@
 8083b6ec 0x8083b6ec
 8083b6f4 0x8083b6f4
 8083b6fc 0x8083b6fc
-8083b704 0x8083b704
 8083b70c 0x8083b70c
 8083b740 0x8083b740
 8083b748 0x8083b748
 8083b750 0x8083b750
 8083b758 0x8083b758
-8083b760 0x8083b760
 8083b768 0x8083b768
+8083b784 0x8083b784
 8083b788 0x8083b788
 8083b790 0x8083b790
 8083b798 0x8083b798
@@ -27433,8 +27687,8 @@
 8083b7d0 0x8083b7d0
 8083b7fc 0x8083b7fc
 8083b804 0x8083b804
+8083b824 0x8083b824
 8083b828 0x8083b828
-8083b830 0x8083b830
 8083b838 IsOnlineSection
 8083b874 IsGhostRaceSection
 8083b894 IsTournamentSection
@@ -28065,6 +28319,7 @@
 80857e20 Pages::VSModeSelect::CreateExternalControl
 80857fd0 Pages::VSModeSelect::CreateControl
 80857fd8 Pages::VSModeSelect::OnActivate
+80858490 Pages::VSModeSelect::OnActivate_switch
 80858494 Pages::VSModeSelect::OnActivate_case_0
 808584ac Pages::VSModeSelect::OnActivate_case_1
 808584c4 Pages::VSModeSelect::OnActivate_case_2
@@ -28100,6 +28355,7 @@
 808595d0 0x808595d0
 80859630 0x80859630
 80859690 Pages::Unlock::SetModels
+8085978c Pages::Unlock::SetModels_switch
 80859790 Pages::Unlock::SetModels_caseD_1b
 8085979c Pages::Unlock::SetModels_caseD_10
 808597a4 Pages::Unlock::SetModels_caseD_d
@@ -28174,6 +28430,7 @@
 8085ceec Pages::LicenseRecords::GetRuntimeTypeInfo
 8085cef8 LicenseRecordsPagecpp_sinit_
 8085cf0c 0x8085cf0c
+8085cf74 0x8085cf74
 8085cf78 0x8085cf78
 8085cff4 0x8085cff4
 8085d05c 0x8085d05c
@@ -28228,6 +28485,7 @@
 8085e82c 0x8085e82c
 8085e884 0x8085e884
 8085e968 0x8085e968
+8085e984 0x8085e984
 8085e988 0x8085e988
 8085e990 0x8085e990
 8085e998 0x8085e998
@@ -28261,8 +28519,8 @@
 8085ea78 0x8085ea78
 8085ea80 0x8085ea80
 8085ea88 0x8085ea88
-8085ea90 0x8085ea90
 8085ea98 0x8085ea98
+8085eab4 0x8085eab4
 8085eab8 0x8085eab8
 8085eac0 0x8085eac0
 8085eac8 0x8085eac8
@@ -28316,6 +28574,7 @@
 8085ec48 0x8085ec48
 8085ec58 0x8085ec58
 8085ec7c 0x8085ec7c
+8085ec98 0x8085ec98
 8085ec9c 0x8085ec9c
 8085eca4 0x8085eca4
 8085ecac 0x8085ecac
@@ -28332,6 +28591,7 @@
 8085ed04 0x8085ed04
 8085ed14 0x8085ed14
 8085ed38 0x8085ed38
+8085ed58 0x8085ed58
 8085ed5c 0x8085ed5c
 8085ed64 0x8085ed64
 8085ed6c 0x8085ed6c
@@ -28352,10 +28612,10 @@
 8085ede4 0x8085ede4
 8085edec 0x8085edec
 8085edf4 0x8085edf4
-8085edfc 0x8085edfc
 8085ee04 0x8085ee04
 8085ee6c 0x8085ee6c
 8085ee94 0x8085ee94
+8085eec0 0x8085eec0
 8085eec4 0x8085eec4
 8085eed0 0x8085eed0
 8085eedc 0x8085eedc
@@ -28368,6 +28628,7 @@
 8085ef2c 0x8085ef2c
 8085ef54 0x8085ef54
 8085ef7c 0x8085ef7c
+8085ef9c 0x8085ef9c
 8085efa0 0x8085efa0
 8085efac 0x8085efac
 8085efb8 0x8085efb8
@@ -28387,6 +28648,7 @@
 8085f060 0x8085f060
 8085f068 0x8085f068
 8085f06c 0x8085f06c
+8085f08c 0x8085f08c
 8085f090 0x8085f090
 8085f09c 0x8085f09c
 8085f0a8 0x8085f0a8
@@ -28405,6 +28667,7 @@
 8085f144 0x8085f144
 8085f14c 0x8085f14c
 8085f150 0x8085f150
+8085f170 0x8085f170
 8085f174 0x8085f174
 8085f180 0x8085f180
 8085f18c 0x8085f18c
@@ -28415,9 +28678,9 @@
 8085f1c8 0x8085f1c8
 8085f1d4 0x8085f1d4
 8085f1e0 0x8085f1e0
-8085f1e8 0x8085f1e8
 8085f208 0x8085f208
 8085f230 0x8085f230
+8085f250 0x8085f250
 8085f254 0x8085f254
 8085f260 0x8085f260
 8085f26c 0x8085f26c
@@ -28430,8 +28693,8 @@
 8085f2c0 0x8085f2c0
 8085f2cc 0x8085f2cc
 8085f2d8 0x8085f2d8
-8085f2e0 0x8085f2e0
 8085f32c 0x8085f32c
+8085f368 0x8085f368
 8085f36c 0x8085f36c
 8085f378 0x8085f378
 8085f384 0x8085f384
@@ -28440,9 +28703,9 @@
 8085f3a8 0x8085f3a8
 8085f3b4 0x8085f3b4
 8085f3c0 0x8085f3c0
-8085f3e4 0x8085f3e4
 8085f3f8 0x8085f3f8
 8085f3fc 0x8085f3fc
+8085f424 0x8085f424
 8085f428 0x8085f428
 8085f434 0x8085f434
 8085f440 0x8085f440
@@ -28467,6 +28730,7 @@
 8085fbd0 Audio::CharacterActor::Update
 80860294 Audio::CharacterActor::HoldSound
 808602c0 Audio::CharacterActor::PlayCharacterSoundConditional
+80860318 Audio::CharacterActor::PlayCharacterSoundConditional_switch
 8086031c Audio::CharacterActor::PlayCharacterSoundConditional_case1a
 80860398 Audio::CharacterActor::PlayCharacterSoundConditional_case1b
 80860424 Audio::CharacterActor::PlayCharacterSoundConditional_case16
@@ -28582,7 +28846,7 @@
 80864844 0x80864844
 808648bc thunk_0x808691fc
 808648c0 0x808648c0
-808648e4 0x808648e4
+808648e0 0x808648e0
 808648f0 0x808648f0
 808648fc 0x808648fc
 80864908 0x80864908

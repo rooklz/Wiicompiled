@@ -10,7 +10,7 @@
 #include <cstring>
 
 
-extern "C" void func_8012B830(CpuContext* ctx);
+extern "C" void MKW_GUEST_FUNC(8012B830)(CpuContext* ctx);
 
 #if defined(__clang__)
 // PowerPC uses discrete fmuls/fadds; a fused multiply-add would change sample rounding.
@@ -346,7 +346,7 @@ extern "C" void AXFXReverbStdExpCallback_8012b830(CpuContext* ctx) {
     try {
         flags = Memory::Read32(stateAddr + ReverbStd::kFieldFlags);
     } catch (const Memory::AccessViolation&) {
-        func_8012B830(ctx);
+        MKW_GUEST_FUNC(8012B830)(ctx);
         return;
     }
     if (flags != 0) {
@@ -364,7 +364,7 @@ extern "C" void AXFXReverbStdExpCallback_8012b830(CpuContext* ctx) {
         built = false;
     }
     if (!built) {
-        func_8012B830(ctx);
+        MKW_GUEST_FUNC(8012B830)(ctx);
         return;
     }
 

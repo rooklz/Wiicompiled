@@ -14,6 +14,9 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#if defined(__APPLE__)
+#include <mach/mach_time.h>
+#endif
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
@@ -195,6 +198,37 @@ void SleepPreciselyUntil(Clock::time_point deadline, bool finishWithSpin = false
             }
         }
     }
+#endif
+#if defined(__APPLE__)
+    // mach_wait_until() sleeps to an absolute host-clock deadline and wakes within tens of
+    // microseconds on Apple silicon, so the busy-wait tail below only ever covers that residual
+    // (kDarwinSpinWindow), not the 500-750 us a coarser timer would need: at 60 Hz that is the
+    // difference between a core spinning 3-4% of every frame and not at all.
+    constexpr std::chrono::microseconds kDarwinSpinWindow{80};
+    static const mach_timebase_info_data_t timebase = [] {
+        mach_timebase_info_data_t info{};
+        mach_timebase_info(&info);
+        return info;
+    }();
+    const auto waitUntil = [&](Clock::time_point target) {
+        const auto remaining = target - Clock::now();
+        if (remaining <= std::chrono::nanoseconds::zero()) return;
+        const uint64_t nanos = static_cast<uint64_t>(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(remaining).count());
+        const uint64_t ticks = nanos * timebase.denom / timebase.numer;
+        mach_wait_until(mach_absolute_time() + ticks);
+    };
+    if (!finishWithSpin) {
+        waitUntil(deadline);
+        return;
+    }
+    const auto darwinTimerDeadline =
+        deadline - now > kDarwinSpinWindow ? deadline - kDarwinSpinWindow : now;
+    waitUntil(darwinTimerDeadline);
+    while (Clock::now() < deadline) {
+        __asm__ __volatile__("yield");
+    }
+    return;
 #endif
     if (!finishWithSpin) {
         std::this_thread::sleep_until(deadline);

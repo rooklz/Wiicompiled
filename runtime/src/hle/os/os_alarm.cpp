@@ -11,11 +11,11 @@
 #include "ppc_runtime.h"
 #include "runtime_log.h"
 #include "hle/net/network.h"
-#include "generated/RuntimeConfig.h"
+#include "RuntimeConfig.h"
 #include "os_internal.h"
 
-extern "C" void func_801AADE0(CpuContext* ctx);
-extern "C" void func_801A0620(CpuContext* ctx);
+extern "C" void MKW_GUEST_FUNC(801AADE0)(CpuContext* ctx);
+extern "C" void MKW_GUEST_FUNC(801A0620)(CpuContext* ctx);
 
 // ============================================================================
 // Alarm queue helpers
@@ -208,7 +208,7 @@ bool ProcessAlarmQueue(CpuContext* cpu, int maxToProcess)
                     cpu->gpr[5] = 0;
                     cpu->gpr[6] = 0;
                     cpu->gpr[7] = handler;
-                    func_801A0620(cpu);
+                    MKW_GUEST_FUNC(801A0620)(cpu);
                 }
 
                 if (handler != 0) {
@@ -423,7 +423,7 @@ extern "C" void OS__SetPeriodicAlarm_801a08e0(CpuContext* ctx)
 
     cpu->gpr[3] = startHi;
     cpu->gpr[4] = startLo;
-    func_801AADE0(cpu);
+    MKW_GUEST_FUNC(801AADE0)(cpu);
     Memory::Write32(alarm + 0x20u, cpu->gpr[3]);
     Memory::Write32(alarm + 0x24u, cpu->gpr[4]);
 
@@ -431,7 +431,7 @@ extern "C" void OS__SetPeriodicAlarm_801a08e0(CpuContext* ctx)
     cpu->gpr[5] = 0;
     cpu->gpr[6] = 0;
     cpu->gpr[7] = handler;
-    func_801A0620(cpu);
+    MKW_GUEST_FUNC(801A0620)(cpu);
 
     cpu->gpr[3] = static_cast<uint32_t>(OS__RestoreInterrupts_801a65d4(level));
 }

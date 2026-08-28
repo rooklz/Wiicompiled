@@ -29,6 +29,12 @@
 #define MKW_GADDR_I(tok) MKW_GADDR_II(tok)
 #define MKW_GADDR_II(tok) 0x##tok##u
 
+// The C symbol of a translated guest function (func_<address>) from its PAL identity, for the
+// few native wrappers that call the original translated body directly.
+#define MKW_GUEST_FUNC(pal_hex) MKW_GUEST_FUNC_I(MKW_REGION_TOKEN(pal_hex))
+#define MKW_GUEST_FUNC_I(tok) MKW_GUEST_FUNC_II(tok)
+#define MKW_GUEST_FUNC_II(tok) func_##tok
+
 #ifndef MKW_REGION_GAME_ID
 #error "The guest region header must define MKW_REGION_GAME_ID and the other MKW_REGION_* facts"
 #endif

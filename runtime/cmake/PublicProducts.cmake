@@ -4,15 +4,15 @@
 # functions are compiled once into mkw_base_shared; only callers whose direct
 # ABI differs between profiles receive small base/RR variants.
 
-set(DATA_INIT_FILE "${MKW_RUNTIME_SOURCE_DIR}/../generated/data_sections_init.cpp")
-set(DATA_INIT_BLOB_ASM "${MKW_RUNTIME_SOURCE_DIR}/../generated/data_sections_init_blobs.S")
+set(DATA_INIT_FILE "${MKW_GENERATED_DIR}/data_sections_init.cpp")
+set(DATA_INIT_BLOB_ASM "${MKW_GENERATED_DIR}/data_sections_init_blobs.S")
 if(EXISTS "${DATA_INIT_FILE}")
     list(APPEND SOURCES "${DATA_INIT_FILE}")
 endif()
 # Crash-report symbolization table emitted by generate-data-init. The stub
 # (deliberately outside the globbed src/ tree so it is never picked up twice)
 # keeps link succeeding when the generated table has not been produced yet.
-set(GUEST_SYMBOL_TABLE_FILE "${MKW_RUNTIME_SOURCE_DIR}/../generated/guest_symbol_table.cpp")
+set(GUEST_SYMBOL_TABLE_FILE "${MKW_GENERATED_DIR}/guest_symbol_table.cpp")
 if(EXISTS "${GUEST_SYMBOL_TABLE_FILE}")
     list(APPEND SOURCES "${GUEST_SYMBOL_TABLE_FILE}")
 else()
@@ -38,8 +38,8 @@ function(mkw_configure_object_target target)
     target_include_directories(${target} PRIVATE
         "${MKW_RUNTIME_SOURCE_DIR}/include"
         "${MKW_RUNTIME_SOURCE_DIR}/src"
-        # Workspace root, so translator output is spelled "generated/<x>.h"
-        # instead of a ../ chain whose depth depends on the includer.
+        # This build's translator output (RuntimeConfig.h), wherever it was written.
+        "${MKW_GENERATED_DIR}"
         "${MKW_RUNTIME_SOURCE_DIR}/.."
         "${MKW_RUNTIME_SOURCE_DIR}/../aurora-main/include")
     target_compile_definitions(${target} PRIVATE
@@ -178,8 +178,8 @@ function(mkw_configure_product target)
     target_include_directories(${target} PRIVATE
         "${MKW_RUNTIME_SOURCE_DIR}/include"
         "${MKW_RUNTIME_SOURCE_DIR}/src"
-        # Workspace root, so translator output is spelled "generated/<x>.h"
-        # instead of a ../ chain whose depth depends on the includer.
+        # This build's translator output (RuntimeConfig.h), wherever it was written.
+        "${MKW_GENERATED_DIR}"
         "${MKW_RUNTIME_SOURCE_DIR}/.."
         "${MKW_RUNTIME_SOURCE_DIR}/../aurora-main/include")
     target_compile_definitions(${target} PRIVATE

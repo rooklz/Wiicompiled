@@ -10,7 +10,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
-#include "generated/RuntimeConfig.h"
+#include "RuntimeConfig.h"
 #include "runtime_log.h"
 
 // Nothing reads CpuContext by offset; these asserts just canary accidental field reordering

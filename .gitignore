@@ -72,3 +72,11 @@ project.lock.json
 *.log
 output.txt
 
+
+# macOS local build products (build-macos.sh)
+/native-build-*/
+/dist/
+/generated-*/
+/build-macos.log
+# Patched game archives are derived from the disc and never committed; the README stays.
+/overlays/*/Scene/

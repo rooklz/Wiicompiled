@@ -18,18 +18,18 @@
 #include "runtime_log.h"
 #include "system_bridge.h"
 
-extern "C" void func_801A961C(CpuContext* ctx);
-extern "C" void func_8055531C(CpuContext* ctx);
+extern "C" void MKW_GUEST_FUNC(801A961C)(CpuContext* ctx);
+extern "C" void MKW_GUEST_FUNC(8055531C)(CpuContext* ctx);
 
 extern "C" void OSInitAlarm_RecompModLateInit_801a961c(CpuContext* ctx) {
-    func_801A961C(ctx);
+    MKW_GUEST_FUNC(801A961C)(ctx);
 }
 
 REGISTER_NATIVE_FUNCTION_AS(MKW_GADDR(801A961C), OSInitAlarm_RecompModLateInit_801a961c, "OSInitAlarm_RecompModLateInit_801a961c");
 
 extern "C" void StaticRProlog_RecompModInit_8055531c(CpuContext* ctx) {
     RecompMod::RunMemoryInitializers();
-    func_8055531C(ctx);
+    MKW_GUEST_FUNC(8055531C)(ctx);
     RecompMod::RunPostRelInitializers();
 }
 
