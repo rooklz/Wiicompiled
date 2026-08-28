@@ -1,6 +1,6 @@
 # NTSC-U (RMCE01) function map, ported from ../mkwii/MAP.txt (PAL RMCP01) by tools/region/port_map.py.
 # Every entry was validated against the RMCE01 main.dol/StaticR.rel; see MAP_REPORT.md next to this file.
-# Verdicts: PROVEN=11951, REFERENCED=12792, PLAUSIBLE=4507, IDENTITY=15, INTERPOLATED=0, TERTIARY=0; entries=29265
+# Verdicts: PROVEN=11951, REFERENCED=12793, PLAUSIBLE=4507, IDENTITY=15, INTERPOLATED=0, TERTIARY=0; entries=29266
 800018a8 0x800018a8
 80001d50 0x80001d50
 80001d6c 0x80001d6c
@@ -22194,6 +22194,7 @@
 807135e0 Audio::SoundTriggerMgr::ApplyTrigger_case2D_16
 80713610 Audio::SoundTriggerMgr::ApplyTrigger_case2D_17
 807138f0 Audio::SoundTriggerMgr::ApplyTrigger_case2D_23
+80713920 Audio::SoundTriggerMgr::ApplyTrigger_case2D_1
 8071393c SetTRKConnected
 80713948 0x80713948
 80713994 0x80713994

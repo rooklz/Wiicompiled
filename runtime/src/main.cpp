@@ -40,6 +40,7 @@
 #include <signal.h>
 #include <unistd.h>
 #if defined(__APPLE__)
+#include <pthread/qos.h>
 #include <sys/ucontext.h>
 #else
 #include <ucontext.h>
@@ -1319,6 +1320,12 @@ int RuntimeMain(int argc, char** argv) {
     WindowsTimerResolutionGuard timerResolutionGuard;
 #else
     InstallPosixMemoryFaultHandler();
+#if defined(__APPLE__)
+    // The guest runs on this thread (every guest OSThread is a fiber on it): tell the scheduler
+    // it is the interactive, latency-bound work of the process so it is placed on performance
+    // cores and never demoted behind background QoS work on Apple silicon.
+    pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
 #endif
     InitializeProcessTranscript(argc, argv);
     std::signal(SIGABRT, AbortSignalHandler);

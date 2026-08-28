@@ -208,9 +208,13 @@ else()
         # at run time. Refusing those makes aurora build zlib, libpng and FreeType from its pinned
         # sources as static archives. SDL's hidapi keeps libusb (GameCube adapters) as a run-time
         # dlopen rather than a link-time dependency for the same reason.
-        set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB ON)
+        # zlib and bzip2 are part of the macOS SDK (libz.tbd / libbz2.tbd), so those system
+        # libraries stay; libpng and FreeType are what Homebrew would otherwise supply.
         set(CMAKE_DISABLE_FIND_PACKAGE_PNG ON)
         set(CMAKE_DISABLE_FIND_PACKAGE_Freetype ON)
+        set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+        set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
+        set(FT_DISABLE_PNG ON CACHE BOOL "" FORCE)
         set(SDL_HIDAPI_LIBUSB ON CACHE BOOL "" FORCE)
         set(SDL_HIDAPI_LIBUSB_SHARED ON CACHE BOOL "" FORCE)
     endif()

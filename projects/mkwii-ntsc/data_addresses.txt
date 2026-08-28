@@ -1,0 +1,85 @@
+# NTSC-U (RMCE01) addresses for the PAL (RMCP01) data globals named by the WiiCompiled runtime.
+# Format: <PAL hex> <NTSC hex> <evidence: PALfuncname@ntscaddr [rawword] instr ...>
+# Every cited instruction was disassembled from disc/RMCE01/sys/main.dol (or StaticR.rel) at the
+# stated NTSC-U address; the function names are the PAL MAP.txt names of the function that the
+# validated PAL->NTSC-U port table (CHUNKS_E) maps onto that NTSC-U code.
+# Small-data bases: NTSC-U r13=0x80388880 r2=0x8038AC20; PAL r13=0x8038CC00 r2=0x8038EFA0.
+# Deltas observed: all .data/.bss objects, .sdata2 and every .sbss global up to (at least) PAL 0x80386F27
+# are PAL-0x4380; .sbss from PAL 0x80386F60 onward is PAL-0x4388 (r13 offset 8 less). See notes at end.
+
+# ---------------------------------------------------------------- GX
+# Display-list fifo object (GXBeginDisplayList/GXEndDisplayList): NTSC base 0x8033FD10 = PAL 0x80344090 - 0x4380
+80344090 8033FD10 GX::BeginDisplayList@80172d78 [3fe08034] lis r31,0x8034; @80172d7c [3bfffd10] addi r31,r31,-0x2f0 (=0x8033FD10 dlFifo); @80172d8c [3bbf0000] addi r29,r31,0; @80172dc4 [937d0000] stw r27,0x0(r29) (dlFifo.base=list); @80172df0 [387f0000] addi r3,r31,0 -> GXSetCPUFifo(&dlFifo); GX::EndDisplayList@80172e2c [3bdefd10] addi r30,r30,-0x2f0; @80172e34 [387e0000] addi r3,r30,0 -> GXGetCPUFifo(&dlFifo)
+80344094 8033FD14 GX::BeginDisplayList@80172dcc [909d0004] stw r4,0x4(r29) (dlFifo.end = list+size-4, r29=0x8033FD10; r4 from @80172db8 add r4,r27,r28 / @80172dc0 addi r4,r4,-4)
+80344098 8033FD18 GX::BeginDisplayList@80172dd0 [939d0008] stw r28,0x8(r29) (dlFifo.size = size)
+803440A4 8033FD24 GX::BeginDisplayList@80172dd8 [937d0014] stw r27,0x14(r29) (dlFifo.rdPtr = list)
+803440A8 8033FD28 GX::BeginDisplayList@80172ddc [937d0018] stw r27,0x18(r29) (dlFifo.wrPtr = list)
+803440AC 8033FD2C GX::BeginDisplayList@80172dd4 [907d001c] stw r3,0x1c(r29) (dlFifo.count = 0, li r3,0 @80172dbc)
+80344110 8033FD90 GX::BeginDisplayList@80172dac [387f0080] addi r3,r31,0x80 -> memcpy(0x8033FD90, gx, 0x600) (li r5,0x600 @80172db0, saved GXData copy); GX::EndDisplayList@80172e6c [389e0080] addi r4,r30,0x80 (memcpy src)
+80344710 80340390 GX::BeginDisplayList@80172de8 [387f0680] addi r3,r31,0x680 -> GXGetCPUFifo(0x80340390) (saved CPU fifo); GX::EndDisplayList@80172e48 [387e0680] addi r3,r30,0x680 -> GXSetCPUFifo(0x80340390)
+803867D8 80382458 GX::DrawDone@8016ea84 [9bed9bd8] stb r31,-0x6428(r13); GX::DrawDone@8016eaa4 [880d9bd8] lbz r0,-0x6428(r13); GX::FinishInterruptHandler@8016ed20 [986d9bd8] stb r3,-0x6428(r13)   # r13-0x6428 in both regions (PAL 0x8038CC00-0x6428=0x803867D8)
+803886C8 80384348 GX::Init@8016b7d4 [83e29728] lwz r31,-0x68d8(r2); GX::SetCPUFifo@8016c978 [80a29728] lwz r5,-0x68d8(r2); GX::DrawDone@8016ea3c [80829728] lwz r4,-0x68d8(r2); GX::BeginDisplayList@80172d74 [83c29728] lwz r30,-0x68d8(r2)   # .sdata2 `gx` (__GXData ptr), r2-0x68d8 in both regions (PAL 0x8038EFA0-0x68D8=0x803886C8)
+
+# ---------------------------------------------------------------- DVD
+80343230 8033EEB0 __DVDClearWaitingQueue@80163520 [3cc08034] lis r6,0x8034; @80163524 [38c6eeb0] addi r6,r6,-0x1150 (=0x8033EEB0); @8016352c [90c60000] stw r6,0x0(r6); @80163538 [90c60004] stw r6,0x4(r6) (4 self-linked queues of 8 bytes: +0..+0x1c); __DVDPushWaitingQueue@80163580 [3884eeb0] addi r4,r4,-0x1150; __DVDPopWaitingQueue@801635e0 [3884eeb0] addi r4,r4,-0x1150
+803434E0 8033F160 DVD::LowInit@801648e0 [3c808034] lis r4,0x8034; @801648e4 [94a4f160] stwu r5,-0xea0(r4) (r4=0x8033F160=ctx[0], ctx[0]+0=0); @801648e8 [3c60feec] lis r3,0xfeec; @801648f8 [3863daed] addi r3,r3,-0x2513 (=0xFEEBDAED); @80164900 [9064000c] stw r3,0xc(r4) (ctx[0]+0xC=magic); @80164904 [90a40010] stw r5,0x10(r4) (ctx[0]+0x10=0); @80164918 [90040030] stw r0,0x30(r4) (ctx[1]+0x10=1); @8016492c [90c40050] stw r6,0x50(r4) (ctx[2]+0x10=2); @80164944 [90c40070] stw r6,0x70(r4) (ctx[3]+0x10=3)
+80386664 803822E4 DVD::Pause@80162b74 [908d9a64] stw r4,-0x659c(r13); DVD::Resume@80162bb4 [908d9a64] stw r4,-0x659c(r13); DVD::CancelAll@80163070 [908d9a64] stw r4,-0x659c(r13); DVD::InquiryAsync@801629b4 [800d9a64] lwz r0,-0x659c(r13)   # r13-0x659c both regions
+80386668 803822E8 DVD::Resume@80162bb8 [800d9a68] lwz r0,-0x6598(r13); DVD::Resume@80162bc4 [908d9a68] stw r4,-0x6598(r13); DVD::Pause@80162b80 [908d9a68] stw r4,-0x6598(r13); DVD::GetDriveStatus@80162ae0 [800d9a68] lwz r0,-0x6598(r13)
+80386670 803822F0 __DVDPrepareReset@801633f0 [800d9a70] lwz r0,-0x6590(r13); __DVDPrepareResetAsync@801632c0 [800d9a70] lwz r0,-0x6590(r13)
+8038667C 803822FC DVD::CancelAll@80163058 [900d9a7c] stw r0,-0x6584(r13); DVD::CancelAll@801630d4 [900d9a7c] stw r0,-0x6584(r13); DVD::CancelAll@80163128 [800d9a7c] lwz r0,-0x6584(r13)
+803866A8 80382328 __DVDPrepareReset@801633e0 [93ed9aa8] stw r31,-0x6558(r13); __DVDPrepareReset@80163488 [900d9aa8] stw r0,-0x6558(r13); __DVDPrepareReset@801634cc [800d9aa8] lwz r0,-0x6558(r13)
+803866F0 80382370 DVD::Pause@80162b6c [800d9af0] lwz r0,-0x6510(r13); DVD::CancelAll@80163068 [800d9af0] lwz r0,-0x6510(r13); __DVDPrepareReset@8016340c [806d9af0] lwz r3,-0x6510(r13); DVD::ReadAbsAsyncPrio@801628c8 [800d9af0] lwz r0,-0x6510(r13)   # `executing` command block
+80386720 803823A0 DVD::LowInit@80164948 [90ad9b20] stw r5,-0x64e0(r13) (r5=0, current context index, right after the 4-context init); DVD::LowReadDiskID@80164a3c [812d9b20] lwz r9,-0x64e0(r13)
+80386724 803823A4 DVD::LowInit@801648d0 [880d9b24] lbz r0,-0x64dc(r13) (skip context init if already set); DVD::LowInit@8016494c [980d9b24] stb r0,-0x64dc(r13) (=1)
+80386725 803823A5 DVD::LowInit@801647c4 [880d9b25] lbz r0,-0x64db(r13); DVD::LowInit@801647d4 [980d9b25] stb r0,-0x64db(r13) (=1); DVD::LowFinalize@80164794 [980d9b25] stb r0,-0x64db(r13) (=0)
+803866A0 80382320 DVD::Init@8015e990 [800d9aa0] lwz r0,-0x6560(r13) (return if already initialized); DVD::Init@8015e9a8 [900d9aa0] stw r0,-0x6560(r13) (=1)
+
+# ---------------------------------------------------------------- NAND
+80346D20 803429A0 nandGetHomeDir@8019e7d4 [3c608034] lis r3,0x8034; @8019e7d8 [386329a0] addi r3,r3,0x29a0 (returns &NANDHomeDir=0x803429A0); NAND::Init@8019e178 [3ca08034] lis r5,0x8034; @8019e184 [38a529a0] addi r5,r5,0x29a0 (ESP_GetDataDir out buffer); NAND::Init@8019e198 [3c808034] lis r4,0x8034; @8019e1a0 [388429a0] addi r4,r4,0x29a0
+80386848 803824C8 NAND::Init@8019e10c [800d9c48] lwz r0,-0x63b8(r13) (cmpwi 1 / cmpwi 2 = init state); NAND::Init@8019e13c [900d9c48] stw r0,-0x63b8(r13) (=1); NAND::Init@8019e1d0 [900d9c48] stw r0,-0x63b8(r13) (=2 on success); NAND::GetCurrentDir@8019e308 [800d9c48] lwz r0,-0x63b8(r13)
+
+# ---------------------------------------------------------------- VI
+# VI HorVer struct (.bss): NTSC 0x8034C4E0 = PAL 0x80350860 - 0x4380; fields +4 DispSizeX, +6 DispSizeY, +0x12 FBSizeX, +0x1C PanSizeY, +0x30 bufAddr
+80350864 8034C4E4 VIInit@801b962c [3fc08035] lis r30,0x8035; @801b9630 [3bfec4e0] addi r31,r30,-0x3b20 (=0x8034C4E0 HorVer); @801b965c [38e00280] li r7,640; @801b969c [b0ff0004] sth r7,0x4(r31) (HorVer.DispSizeX=640)
+80350866 8034C4E6 VIInit@801b96b0 [b01f0006] sth r0,0x6(r31) (HorVer.DispSizeY = timing->acv*2; r31=0x8034C4E0)
+80350872 8034C4F2 VIInit@801b970c [3c808035] lis r4,0x8035; @801b9714 [3884c4e0] addi r4,r4,-0x3b20 (=0x8034C4E0); @801b9718 [39200280] li r9,640; @801b97b4 [b1240012] sth r9,0x12(r4) (HorVer.FBSizeX=640)
+8035087C 8034C4FC VIInit@801b9804 [b0a4001c] sth r5,0x1c(r4) (HorVer.PanSizeY; r4=0x8034C4E0)
+80350890 8034C510 VISetNextFrameBuffer@801baa34 [3ce08035] lis r7,0x8035; @801baa3c [38e7c4e0] addi r7,r7,-0x3b20 (=0x8034C4E0); @801baa44 [93c70030] stw r30,0x30(r7) (HorVer.bufAddr=fb); @801baa4c [38870034] addi r4,r7,0x34; @801baa50 [38a70038] addi r5,r7,0x38 (setFbbRegs(&HorVer,&tfbb,&bfbb,...))
+80386B38 803827B8 VIInit@801b9418 [800d9f38] lwz r0,-0x60c8(r13) (already-initialised check); VIInit@801b9434 [900d9f38] stw r0,-0x60c8(r13)   # r13-0x60c8 both regions
+80386BA8 80382828 VIGetTvFormat@801bac4c [83ed9fa8] lwz r31,-0x6058(r13); VIInit@801b9690 [910d9fa8] stw r8,-0x6058(r13) (CurrTvMode=HorVer.tv); __VIRetraceHandler@801b8b10 [906d9fa8] stw r3,-0x6058(r13)
+80386BE4 80382864 VIWaitForRetrace@801b9968 [83cd9fe4] lwz r30,-0x601c(r13); VIWaitForRetrace@801b9974 [800d9fe4] lwz r0,-0x601c(r13); VIGetRetraceCount@801bab04 [806d9fe4] lwz r3,-0x601c(r13); __VIRetraceHandler@801b8974 [900d9fe4] stw r0,-0x601c(r13) (retraceCount++)
+80386B44 803827C4 VIInit@801b9904 [900d9f44] stw r0,-0x60bc(r13) (=1, VIInit tail); __VIRetraceHandler@801b8da4 [800d9f44] lwz r0,-0x60bc(r13); __VIRetraceHandler@801b8dcc [900d9f44] stw r0,-0x60bc(r13)
+80386BB8 80382838 VISetPreRetraceCallback@801b906c [83ed9fb8] lwz r31,-0x6048(r13); VISetPreRetraceCallback@801b9074 [93cd9fb8] stw r30,-0x6048(r13); __VIRetraceHandler@801b8984 [818d9fb8] lwz r12,-0x6048(r13); VIInit@801b984c [93ad9fb8] stw r29,-0x6048(r13)
+80386BB4 80382834 VISetPostRetraceCallback@801b90b0 [83ed9fb4] lwz r31,-0x604c(r13); VISetPostRetraceCallback@801b90b8 [93cd9fb4] stw r30,-0x604c(r13); __VIRetraceHandler@801b8d7c [818d9fb4] lwz r12,-0x604c(r13); VIInit@801b9850 [93ad9fb4] stw r29,-0x604c(r13)
+80386BA0 80382820 VIGetNextFrameBuffer@801baa84 [806d9fa0] lwz r3,-0x6060(r13); __VIRetraceHandler@801b8b14 [900d9fa0] stw r0,-0x6060(r13)
+80386BC0 80382840 VIWaitForRetrace@801b996c [386d9fc0] addi r3,r13,-0x6040 -> OSSleepThread(&retraceQueue); VIInit@801b97f8 [386d9fc0] addi r3,r13,-0x6040 -> OSInitThreadQueue; __VIRetraceHandler@801b8d8c [386d9fc0] addi r3,r13,-0x6040 -> OSWakeupThread
+
+# ---------------------------------------------------------------- EGG
+# NOTE: past the .sbss gap: PAL r13-0x5ca0, NTSC r13-0x5ca8 (delta 0x4388)
+80386F60 80382BD8 RKSystem::Main@80008ec0 [3fe0802a] lis r31,0x802a; @80008ec4 [3bfffd00] addi r31,r31,-0x300 (=0x8029FD00 system instance, .bss start); @80008ed8 [93eda358] stw r31,-0x5ca8(r13) (BaseSystem::sSystem = instance, then virtual call via vtable+0x38); EGG::AsyncDisplay::beginFrame@8020fe74 [806da358] lwz r3,-0x5ca8(r13) (sSystem->vtable[2] call); EGG::Display::beginFrame@80219e50 [806da358] lwz r3,-0x5ca8(r13); EGG::SceneManager::createScene@8023ad94 [808da358] lwz r4,-0x5ca8(r13); EGG::DrawDoneCallback@8020fc48 [806da358] lwz r3,-0x5ca8(r13); EGG::StateGX::InitFrame@80240054 [806da358] lwz r3,-0x5ca8(r13)
+
+# ---------------------------------------------------------------- Range constants (section tables)
+# NTSC-U DOL header: section 9 = .ctors  file off 0x240E40 addr 0x80244D40 size 0xC0 (end 0x80244E00)
+#                    section 10 = .dtors file off 0x240F00 addr 0x80244E00 size 0x20 (end 0x80244E20)
+# .ctors contents: 80244D40 __init_cpp_exceptions(0x80020684), 80244D44 __sinit_\RKSystem_cpp(0x8000998C), ... 80244DE8 __sinit__eggVector_cpp(0x80242D2C), 80244DEC..80244DFC zero
+# .dtors contents: 80244E00 __destroy__global_chain(0x800207F0), 80244E04 __fini_cpp_exceptions(0x800206C0), rest zero
+80244DE0 80244D40 DOL section table: .ctors start (sec9 addr), delta 0xA0 like the surrounding text
+80244EA0 80244E00 DOL section table: .ctors end = .dtors start (sec9 addr+size = sec10 addr)
+# NTSC-U StaticR.rel section table (load base 0x8050BF60): section 2 = .ctors file off 0x37F070 size 0x304 -> 0x8088AFD0..0x8088B2D4 (193 words: 192 R_PPC_ADDR32 self-relocations + null terminator);
+#   section 3 = .dtors file off 0x37F374 size 0xC -> 0x8088B2D4..0x8088B2E0 (2 ADDR32 relocations); section 4 (.rodata) starts 0x8088B2E0
+8088F400 8088AFD0 REL section table: .ctors start (sec2 off 0x37F070 + base 0x8050BF60)
+8088F704 8088B2D4 REL section table: .ctors end (0x8088AFD0 + 0x304) = .dtors (sec3) start
+
+# ---------------------------------------------------------------- Notes
+# * No PAL binary is available on this machine (both MKW images found are RMCE01), so PAL-side offsets are
+#   PAL_addr - PAL_r13/r2 by definition; each NTSC-U instruction above was matched by function identity (port table +
+#   PAL MAP name), by the instruction's role in the SDK/EGG function, and by consistency with sibling globals.
+# * .sbss gap: delta 0x4380 is directly witnessed up to PAL 0x80386F27 (EGG::Screen gScreenScale Vector2f at
+#   PAL 0x80386F20/24 -> NTSC 0x80382BA0/A4: EGG_Screen_cpp_sinit_@8023e38c [d02da320] stfs f1,-0x5ce0(r13),
+#   @8023e390 stfs f1,4(r4) with @8023e380 addi r4,r13,-0x5ce0; EGG::Screen::SetTVModeDefault@8023e1cc lwz r6,-0x5cec(r13)
+#   = PAL 0x80386F14 active-screen ptr), and delta 0x4388 at PAL 0x80386F60 (sSystem). The extra 8 PAL bytes therefore
+#   lie in PAL 0x80386F28..0x80386F5F (NTSC 0x80382BA8..0x80382BD7: EGG::Screen/StateGX statics); which object was
+#   added/removed could not be identified without the PAL binary. None of the identities above fall inside that window.
+# * The runtime's comment labels for some DVD .sbss globals do not match the SDK roles visible in the code
+#   (0x80386664 is the flag DVDPause sets / DVDResume clears, 0x80386668 the one DVDResume tests-and-clears,
+#   0x80386670 the one __DVDPrepareReset tests); the address identities are unaffected.
