@@ -63,7 +63,7 @@ extern "C" void NHTTPStartup_Reentrant_HLE_801d8d30(CpuContext* ctx) {
     }
 }
 
-REGISTER_NATIVE_FUNCTION_AS(0x801D8D30, NHTTPStartup_Reentrant_HLE_801d8d30, "NHTTPStartup_Reentrant_HLE_801d8d30");
+REGISTER_NATIVE_FUNCTION_AS(MKW_GADDR(801D8D30), NHTTPStartup_Reentrant_HLE_801d8d30, "NHTTPStartup_Reentrant_HLE_801d8d30");
 
 static void WriteNcdConfig(uint32_t addr, uint32_t len) {
     if (!addr || len == 0) {

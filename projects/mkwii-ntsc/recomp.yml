@@ -41,6 +41,9 @@ runtime:
   native_registration_root: runtime/src
   native_abi_directories:
     - runtime/src/hle/gx
+  # The runtime names guest addresses by their PAL identity; this table (also the header the
+  # compiler resolves them through) gives the translator the RMCE01 addresses it registers.
+  guest_address_table: runtime/include/region/rmce01.h
 
 output:
   root: generated

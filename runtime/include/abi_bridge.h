@@ -1,4 +1,6 @@
 #pragma once
+
+#include "region/guest_region.h"
 #include "memory.h"
 #include "ppc_runtime.h"
 #include "system_bridge.h"

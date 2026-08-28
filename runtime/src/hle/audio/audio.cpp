@@ -191,7 +191,7 @@ extern "C" uint32_t AICheckInit_80124094()
     Memory::TryRead32(kAIInitializedAddr, initialized);
     return initialized;
 }
-REGISTER_NATIVE_FUNCTION(0x80124094, AICheckInit_80124094);
+REGISTER_NATIVE_FUNCTION(MKW_GADDR(80124094), AICheckInit_80124094);
 
 
 
@@ -207,13 +207,13 @@ extern "C" uint32_t DSPCheckInit_8015d504()
 {
     return AxDspHle::CheckInit();
 }
-REGISTER_NATIVE_FUNCTION(0x8015D504, DSPCheckInit_8015d504);
+REGISTER_NATIVE_FUNCTION(MKW_GADDR(8015D504), DSPCheckInit_8015d504);
 
 extern "C" uint32_t DSPAddTask_8015d50c(uint32_t task_ptr)
 {
     return AxDspHle::AddTask(task_ptr);
 }
-REGISTER_NATIVE_FUNCTION(0x8015D50C, DSPAddTask_8015d50c);
+REGISTER_NATIVE_FUNCTION(MKW_GADDR(8015D50C), DSPAddTask_8015d50c);
 
 extern "C" void __DSP_boot_task_8015dc60(uint32_t task_ptr)
 {
@@ -335,13 +335,13 @@ extern "C" uint32_t DSPCheckMailFromDSP_8015d40c()
 {
     return AxDspHle::CheckMailFromDSP();
 }
-REGISTER_NATIVE_FUNCTION(0x8015D40C, DSPCheckMailFromDSP_8015d40c);
+REGISTER_NATIVE_FUNCTION(MKW_GADDR(8015D40C), DSPCheckMailFromDSP_8015d40c);
 
 extern "C" uint32_t DSPReadMailFromDSP_8015d41c()
 {
     return AxDspHle::ReadMailFromDSP();
 }
-REGISTER_NATIVE_FUNCTION(0x8015D41C, DSPReadMailFromDSP_8015d41c);
+REGISTER_NATIVE_FUNCTION(MKW_GADDR(8015D41C), DSPReadMailFromDSP_8015d41c);
 
 extern "C" uint32_t DSPAssertTask_8015d57c(uint32_t taskPtr)
 {

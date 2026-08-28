@@ -28,6 +28,18 @@ endif()
 # aurora-main and its third-party tree stay unaffected.
 set(MKW_PROJECT_COMPILE_DEFINITIONS NOMINMAX)
 
+# Which executable's addresses the runtime binds to. The runtime names guest addresses by their
+# PAL identity and resolves them through runtime/include/region/<region>.h (see
+# region/guest_region.h); this selects that header for every first-party and translated TU.
+# It must agree with the translation project that produced generated/ (projects/mkwii for
+# rmcp01, projects/mkwii-ntsc for rmce01).
+set(MKW_GUEST_REGION "rmcp01" CACHE STRING "Guest executable region: rmcp01 (PAL) or rmce01 (NTSC-U)")
+if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/include/region/${MKW_GUEST_REGION}.h")
+    message(FATAL_ERROR "No region header for MKW_GUEST_REGION=${MKW_GUEST_REGION}: "
+        "expected runtime/include/region/${MKW_GUEST_REGION}.h (generate it with tools/region/gen_region_headers.py)")
+endif()
+list(APPEND MKW_PROJECT_COMPILE_DEFINITIONS "MKW_GUEST_REGION_HEADER=\"region/${MKW_GUEST_REGION}.h\"")
+
 set(CMAKE_CXX_STANDARD 17)
 
 # Declared before the vendored libraries so the third-party block below can

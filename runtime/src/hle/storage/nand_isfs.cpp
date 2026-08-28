@@ -369,7 +369,7 @@ extern "C" void NAND_IOS_OpenBody_HLE_801938FC(CpuContext* ctx) {
     ctx->gpr[3] = static_cast<uint32_t>(result);
     ctx->gpr[1] = ctx->gpr[1] + 32u;
 }
-REGISTER_NATIVE_FUNCTION_AS(0x801938FC, NAND_IOS_OpenBody_HLE_801938FC, "NAND_IOS_OpenBody_HLE_801938FC");
+REGISTER_NATIVE_FUNCTION_AS(MKW_GADDR(801938FC), NAND_IOS_OpenBody_HLE_801938FC, "NAND_IOS_OpenBody_HLE_801938FC");
 
 extern "C" int32_t NAND_IOS_Close_HLE(uint32_t fd) {
     if (fd == ISFS_DEV_FD) {
@@ -893,7 +893,7 @@ extern "C" void ISFS_OpenLib_HLE_80169BCC(CpuContext* ctx) {
     ctx->gpr[3] = static_cast<uint32_t>(ISFS_OpenLib_Initialize(ctx));
 }
 
-REGISTER_NATIVE_FUNCTION_AS(0x80169BCC, ISFS_OpenLib_HLE_80169BCC, "ISFS_OpenLib_HLE_80169BCC");
+REGISTER_NATIVE_FUNCTION_AS(MKW_GADDR(80169BCC), ISFS_OpenLib_HLE_80169BCC, "ISFS_OpenLib_HLE_80169BCC");
 
 // ============================================================================
 // IOS_Ioctlv HLE - Vector Ioctl for complex ISFS operations

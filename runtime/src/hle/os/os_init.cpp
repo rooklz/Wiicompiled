@@ -25,7 +25,7 @@ extern "C" void OSInitAlarm_RecompModLateInit_801a961c(CpuContext* ctx) {
     func_801A961C(ctx);
 }
 
-REGISTER_NATIVE_FUNCTION_AS(0x801A961C, OSInitAlarm_RecompModLateInit_801a961c, "OSInitAlarm_RecompModLateInit_801a961c");
+REGISTER_NATIVE_FUNCTION_AS(MKW_GADDR(801A961C), OSInitAlarm_RecompModLateInit_801a961c, "OSInitAlarm_RecompModLateInit_801a961c");
 
 extern "C" void StaticRProlog_RecompModInit_8055531c(CpuContext* ctx) {
     RecompMod::RunMemoryInitializers();
@@ -33,7 +33,7 @@ extern "C" void StaticRProlog_RecompModInit_8055531c(CpuContext* ctx) {
     RecompMod::RunPostRelInitializers();
 }
 
-REGISTER_NATIVE_FUNCTION_AS(0x8055531C, StaticRProlog_RecompModInit_8055531c, "StaticRProlog_RecompModInit_8055531c");
+REGISTER_NATIVE_FUNCTION_AS(MKW_GADDR(8055531C), StaticRProlog_RecompModInit_8055531c, "StaticRProlog_RecompModInit_8055531c");
 
 namespace {
 std::string ReadGuestCStringLimited(uint32_t address, size_t limit = 4096) {
@@ -78,7 +78,7 @@ extern "C" void OSFatal_HLE_801a4ec4(CpuContext* ctx) {
     std::exit(EXIT_FAILURE);
 }
 
-REGISTER_NATIVE_FUNCTION_AS(0x801A4EC4, OSFatal_HLE_801a4ec4, "OSFatal_HLE_801a4ec4");
+REGISTER_NATIVE_FUNCTION_AS(MKW_GADDR(801A4EC4), OSFatal_HLE_801a4ec4, "OSFatal_HLE_801a4ec4");
 
 extern "C" void GKI_delay_HLE_801301b4(CpuContext* ctx)
 {
@@ -124,16 +124,17 @@ extern "C" void HLE_SISetSamplingRate_801b3acc(uint32_t msec)
 
 // Video Interface (VI) - TV output.
 
-// VIGetTvFormat (0x801bacd8): CRITICAL, must return 1 (VI_PAL) not 0, or PAL builds
-// misbehave/panic.
+// VIGetTvFormat (0x801bacd8): CRITICAL, must report the executable's own TV format
+// (VI_PAL for RMCP01, VI_NTSC for RMCE01) or the game misbehaves/panics.
 extern "C" uint32_t HLE_VIGetTvFormat_801bacd8()
 {
     // VI_NTSC = 0, VI_PAL = 1, VI_MPAL = 2
-    RT_LOG(RT_TAG_OS) << "HLE_VIGetTvFormat_801bacd8 called: returning VI_PAL (1)" << std::endl;
-    return 1;
+    RT_LOG(RT_TAG_OS) << "HLE_VIGetTvFormat_801bacd8 called: returning " << MKW_REGION_VI_TV_FORMAT
+                      << std::endl;
+    return MKW_REGION_VI_TV_FORMAT;
 }
 
-REGISTER_NATIVE_FUNCTION(0x801B2DE0, SIInit_801b2de0);
+REGISTER_NATIVE_FUNCTION(MKW_GADDR(801B2DE0), SIInit_801b2de0);
 PPC_NATIVE_OVERRIDE_VOID(801B3ACC, HLE_SISetSamplingRate_801b3acc, (uint32_t msec), (msec));
 
 // OS____InitMemoryProtection (0x801A7DFC): real version touches MMU/MMIO we don't emulate;
@@ -311,7 +312,7 @@ extern "C" void PPCMfhid2_HLE_8012e630(CpuContext* ctx)
 {
     ctx->gpr[3] = PPCMfhid2_8012e630_impl();
 }
-REGISTER_TRANSLATED_FUNCTION(0x8012e630, PPCMfhid2_HLE_8012e630);
+REGISTER_TRANSLATED_FUNCTION(MKW_GADDR(8012e630), PPCMfhid2_HLE_8012e630);
 
 extern "C" void PPCMthid2_8012e638(CpuContext* ctx)
 {
