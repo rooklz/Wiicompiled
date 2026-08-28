@@ -299,10 +299,16 @@ else()
 endif()
 
 # x86-64-v3 (SSE3/SSSE3/SSE4.1/FMA/AVX2/BMI2) is the baseline runtime/src/host_cpu_baseline.cpp
-# guards against; there is no equivalent optional-feature baseline to set on AArch64 (ASIMD/NEON is
-# mandatory in the base architecture), so this flag is x86_64-only.
+# guards against - a fixed, portable floor since an x86_64 build may run on a different machine
+# than the one that built it. AArch64 has no such redistribution path here: every build this
+# project produces runs only on the machine that built it (local-build.sh, and the AppImage which
+# wraps it, always build from source on the target), so -mcpu=native is safe and strictly better -
+# real per-core tuning (scheduling, whatever NEON/atomic extensions that exact CPU actually has)
+# instead of the generic armv8-a baseline Clang would otherwise assume.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
     set(MKW_BASELINE_ARCH_FLAG -march=x86-64-v3)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+    set(MKW_BASELINE_ARCH_FLAG -mcpu=native)
 else()
     set(MKW_BASELINE_ARCH_FLAG "")
 endif()
