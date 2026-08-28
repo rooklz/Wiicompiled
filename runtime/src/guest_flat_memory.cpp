@@ -33,6 +33,20 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#if defined(__APPLE__)
+// The two-alias guest RAM (one always-accessible host view, one guest view whose protection the
+// fault handler drives) is built on Mach named memory entries here: macOS has no memfd, and
+// shm_open would put a filesystem-visible name on what is purely process-private memory.
+#include <mach/mach.h>
+#include <mach/mach_error.h>
+#include <mach/mach_vm.h>
+#include <mach/vm_map.h>
+#elif defined(__linux__)
+#include <sys/syscall.h>
+#endif
+#ifndef MAP_NORESERVE
+#define MAP_NORESERVE 0
+#endif
 #endif
 
 namespace GuestFlat {
@@ -46,7 +60,25 @@ constexpr DWORD kMemReservePlaceholder = 0x00040000;
 constexpr DWORD kMemPreservePlaceholder = 0x00000002;
 #endif
 constexpr size_t kAllocationGranularity = 0x10000;  // 64 KiB
-constexpr size_t kHostPageSize = 0x1000;
+
+// Host page granularity for the fault-interception protections below. It is 4 KiB on Windows
+// and x86-64, but Apple silicon (and some Linux AArch64 kernels) use 16 KiB pages, and mprotect
+// rejects any range that is not page aligned - so the shift is read from the host once instead
+// of being assumed. Every page-indexed table in this file is sized from the same value.
+#if defined(_WIN32)
+constexpr size_t kHostPageShift = 12;
+#else
+const size_t kHostPageShift = []() -> size_t {
+    const long pageSize = sysconf(_SC_PAGESIZE);
+    size_t shift = 12;
+    if (pageSize > 0) {
+        shift = 0;
+        while ((size_t{1} << shift) < static_cast<size_t>(pageSize)) ++shift;
+    }
+    return shift;
+}();
+#endif
+const size_t kHostPageSize = size_t{1} << kHostPageShift;
 
 // Named, platform-neutral protection modes so every fault-interception call site below (the
 // MMIO window, the executable-write guard, deferred-EFB-read protection, the on-demand
@@ -102,6 +134,8 @@ struct SectionKeyHash {
 struct Section {
 #if defined(_WIN32)
     HANDLE handle = nullptr;
+#elif defined(__APPLE__)
+    mach_port_t entry = MACH_PORT_NULL;  // named memory entry over the backing pages
 #else
     int fd = -1;
 #endif
@@ -137,9 +171,9 @@ std::vector<GuardedRange>& ExecutableRanges() {
     return ranges;
 }
 
-// 4 KiB guest pages currently PAGE_READONLY for the executable-write guard.
+// Host-page-sized guest pages currently read-only for the executable-write guard.
 std::vector<uint8_t>& ExecutableProtectedPages() {
-    static std::vector<uint8_t> pages(1u << 20, 0);  // 2^32 / 4 KiB
+    static std::vector<uint8_t> pages(size_t{1} << (32 - kHostPageShift), 0);  // 2^32 / page
     return pages;
 }
 
@@ -186,6 +220,14 @@ std::string LastErrorText(const char* what) {
 #endif
     return oss.str();
 }
+
+#if defined(__APPLE__)
+std::string MachErrorText(const char* what, kern_return_t result) {
+    std::ostringstream oss;
+    oss << what << " failed (" << mach_error_string(result) << ", kr=" << result << ")";
+    return oss.str();
+}
+#endif
 
 // Protects [address, address+size) with `protection`, bridging VirtualProtect (Windows) and
 // mprotect (POSIX) so every fault-interception call site below can stay platform-neutral.
@@ -310,6 +352,23 @@ void MapGuestView(const Section& section, uint64_t sectionOffset, uint32_t guest
             << ")";
         throw std::runtime_error(oss.str());
     }
+#elif defined(__APPLE__)
+    // VM_FLAGS_OVERWRITE replaces exactly this sub-range of the PROT_NONE reservation this
+    // module owns (see EnsureReservation) with a second mapping of the section's pages - the
+    // Mach spelling of MapViewOfFile3 over a placeholder / mmap(MAP_FIXED) over our own range.
+    mach_vm_address_t address = reinterpret_cast<mach_vm_address_t>(target);
+    const kern_return_t result = mach_vm_map(
+        mach_task_self(), &address, static_cast<mach_vm_size_t>(mappedSize), 0,
+        VM_FLAGS_FIXED | VM_FLAGS_OVERWRITE, section.entry,
+        static_cast<memory_object_offset_t>(sectionOffset), FALSE,
+        VM_PROT_READ | VM_PROT_WRITE, VM_PROT_READ | VM_PROT_WRITE, VM_INHERIT_NONE);
+    if (result != KERN_SUCCESS || reinterpret_cast<uint8_t*>(address) != target) {
+        std::ostringstream oss;
+        oss << "Unable to map guest region 0x" << std::hex << guestBase << " (+0x" << mappedSize
+            << ") into the flat reservation" << std::dec << " (" << mach_error_string(result)
+            << ")";
+        throw std::runtime_error(oss.str());
+    }
 #else
     // MAP_FIXED is safe (and needs no particular kernel version) here specifically because we're
     // deliberately overwriting a sub-range of the PROT_NONE reservation this module already owns
@@ -358,7 +417,7 @@ void ApplyExecutableProtectionLocked() {
         const uint64_t last = static_cast<uint64_t>(range.end) & ~(kHostPageSize - 1u);
         if (last <= first) continue;
         for (uint64_t page = first; page < last; page += kHostPageSize) {
-            const uint32_t pageIndex = static_cast<uint32_t>(page >> 12);
+            const uint32_t pageIndex = static_cast<uint32_t>(page >> kHostPageShift);
             if (protectedPages[pageIndex] != 0) continue;
             if (ProtectRange(g_base + page, kHostPageSize, kProtRead)) {
                 protectedPages[pageIndex] = 1;
@@ -549,6 +608,30 @@ void Initialize(const std::vector<RegionRequest>& regions) {
         if (section.hostView == nullptr) {
             throw std::runtime_error(LastErrorText("MapViewOfFile for the host guest-RAM alias"));
         }
+#elif defined(__APPLE__)
+        // Same two-alias arrangement as the other platforms, in Mach terms: the backing pages
+        // are an ordinary anonymous allocation (which doubles as the always-accessible host
+        // view), and a named memory entry over them is what each guest view maps a second time.
+        mach_vm_address_t hostAddress = 0;
+        kern_return_t result = mach_vm_allocate(mach_task_self(), &hostAddress,
+                                                static_cast<mach_vm_size_t>(rounded),
+                                                VM_FLAGS_ANYWHERE);
+        if (result != KERN_SUCCESS) {
+            throw std::runtime_error(MachErrorText("mach_vm_allocate for guest RAM", result));
+        }
+        memory_object_size_t entrySize = rounded;
+        mach_port_t entry = MACH_PORT_NULL;
+        result = mach_make_memory_entry_64(mach_task_self(), &entrySize, hostAddress,
+                                           VM_PROT_READ | VM_PROT_WRITE, &entry, MACH_PORT_NULL);
+        if (result != KERN_SUCCESS) {
+            throw std::runtime_error(
+                MachErrorText("mach_make_memory_entry_64 for guest RAM", result));
+        }
+        if (entrySize < rounded) {
+            throw std::runtime_error("The guest RAM memory entry is smaller than its backing");
+        }
+        section.entry = entry;
+        section.hostView = reinterpret_cast<uint8_t*>(hostAddress);
 #else
         // The section is an anonymous shared-memory object: the SAME physical pages get mapped
         // twice below (once here as the always-accessible host view, once per-region as the
@@ -741,7 +824,7 @@ bool HandleAccessViolation(void* faultAddress, bool isWrite) noexcept {
     // 2) Executable-write guard. Only writes trap (the pages are PAGE_READONLY),
     //    so a fault here is exactly the event the guard exists to report.
     {
-        const uint32_t pageIndex = guestAddress >> 12;
+        const uint32_t pageIndex = static_cast<uint32_t>(guestAddress >> kHostPageShift);
         bool guarded = false;
         {
             std::lock_guard<std::mutex> lock(StateMutex());
@@ -757,8 +840,8 @@ bool HandleAccessViolation(void* faultAddress, bool isWrite) noexcept {
                 // Those arrive in bulk, so the page is opened permanently
                 // rather than trapping every relocation.
                 std::lock_guard<std::mutex> lock(StateMutex());
-                if (ProtectRange(g_base + (static_cast<uint64_t>(pageIndex) << 12), kHostPageSize,
-                                 kProtReadWrite)) {
+                if (ProtectRange(g_base + (static_cast<uint64_t>(pageIndex) << kHostPageShift),
+                                 kHostPageSize, kProtReadWrite)) {
                     ExecutableProtectedPages()[pageIndex] = 0;
                 }
             }

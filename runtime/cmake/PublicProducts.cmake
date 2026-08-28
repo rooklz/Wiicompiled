@@ -213,6 +213,12 @@ function(mkw_configure_product target)
             dbghelp user32 winmm ws2_32 iphlpapi secur32 crypt32 windowsapp setupapi winusb)
 
         set_target_properties(${target} PROPERTIES WIN32_EXECUTABLE TRUE)
+    elseif(APPLE)
+        target_link_libraries(${target} PRIVATE mkw::libco)
+        # Every symbol the products never reference (unused aurora paths, dead third-party code,
+        # translated functions only reachable through profiles this product does not carry) is
+        # discarded at link time; the executable only pays for what it can execute.
+        target_link_options(${target} PRIVATE "LINKER:-dead_strip")
     else()
         # mkw_runtime_common is an OBJECT library: WiiCompiled/RetroRewind only pull in its .o
         # files via $<TARGET_OBJECTS:>, which does not propagate mkw_runtime_common's own
@@ -308,7 +314,11 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
     set(MKW_BASELINE_ARCH_FLAG -march=x86-64-v3)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-    set(MKW_BASELINE_ARCH_FLAG -mcpu=native)
+    # Overridable so a build can pin an explicit core model (e.g. -mcpu=apple-m4) when the
+    # compiler's notion of "native" trails the silicon it runs on.
+    set(MKW_AARCH64_CPU_FLAG "-mcpu=native" CACHE STRING
+        "Compiler -mcpu flag applied to every first-party and translated TU on AArch64")
+    set(MKW_BASELINE_ARCH_FLAG ${MKW_AARCH64_CPU_FLAG})
 else()
     set(MKW_BASELINE_ARCH_FLAG "")
 endif()

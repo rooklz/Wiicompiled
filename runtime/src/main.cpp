@@ -38,8 +38,16 @@
 #include <dbghelp.h>
 #else
 #include <signal.h>
-#include <ucontext.h>
 #include <unistd.h>
+#if defined(__APPLE__)
+#include <sys/ucontext.h>
+#else
+#include <ucontext.h>
+#endif
+#if defined(__linux__) && defined(__aarch64__)
+#include <asm/sigcontext.h>
+#endif
+#include <vector>
 #endif
 
 #include "abi_bridge.h"
@@ -1067,15 +1075,56 @@ void ReportUnhandledSignalFault(int sig, void* faultAddress) {
     std::cerr.flush();
 }
 
+#if defined(__aarch64__)
+// AArch64 reports the access direction of a data abort in ESR_ELx: exception class 0x24/0x25
+// (data abort from a lower / the same exception level) with the WnR bit (bit 6) set for a
+// write. Everything downstream (the executable-write guard, the deferred-EFB read trap, the
+// crash report) keys on this, so it is read from the real syndrome rather than assumed.
+bool IsDataAbortWrite(uint64_t esr) {
+    const uint32_t exceptionClass = static_cast<uint32_t>((esr >> 26) & 0x3Fu);
+    if (exceptionClass != 0x24u && exceptionClass != 0x25u) {
+        return false;
+    }
+    return (esr & (uint64_t{1} << 6)) != 0;
+}
+#endif
+
 void PosixMemoryFaultHandler(int sig, siginfo_t* info, void* ucontextVoid) {
     void* faultAddress = info != nullptr ? info->si_addr : nullptr;
     bool isWrite = false;
-#if defined(__x86_64__)
+#if defined(__x86_64__) && !defined(__APPLE__)
     // Standard glibc technique for a POSIX fastmem-style handler: bit 1 (0x2) of the hardware
     // error code x86 pushes on a page fault records whether it was a write.
     if (ucontextVoid != nullptr) {
         auto* uc = static_cast<ucontext_t*>(ucontextVoid);
         isWrite = (uc->uc_mcontext.gregs[REG_ERR] & 0x2) != 0;
+    }
+#elif defined(__x86_64__) && defined(__APPLE__)
+    if (ucontextVoid != nullptr) {
+        auto* uc = static_cast<ucontext_t*>(ucontextVoid);
+        isWrite = (uc->uc_mcontext->__es.__err & 0x2) != 0;
+    }
+#elif defined(__aarch64__) && defined(__APPLE__)
+    if (ucontextVoid != nullptr) {
+        auto* uc = static_cast<ucontext_t*>(ucontextVoid);
+        isWrite = IsDataAbortWrite(uc->uc_mcontext->__es.__esr);
+    }
+#elif defined(__aarch64__) && defined(__linux__)
+    // The kernel appends an esr_context record to the signal frame's reserved area; walk the
+    // {magic, size} chain to find it.
+    if (ucontextVoid != nullptr) {
+        auto* uc = static_cast<ucontext_t*>(ucontextVoid);
+        const uint8_t* cursor = uc->uc_mcontext.__reserved;
+        const uint8_t* end = cursor + sizeof(uc->uc_mcontext.__reserved);
+        while (cursor + sizeof(_aarch64_ctx) <= end) {
+            const auto* header = reinterpret_cast<const _aarch64_ctx*>(cursor);
+            if (header->magic == 0 || header->size == 0) break;
+            if (header->magic == ESR_MAGIC && header->size >= sizeof(esr_context)) {
+                isWrite = IsDataAbortWrite(reinterpret_cast<const esr_context*>(cursor)->esr);
+                break;
+            }
+            cursor += header->size;
+        }
     }
 #endif
 
@@ -1132,14 +1181,25 @@ void PosixMemoryFaultHandler(int sig, siginfo_t* info, void* ucontextVoid) {
 }
 
 void InstallPosixMemoryFaultHandler() {
+    // Guest threads run on libco coroutine stacks that are far smaller than a host thread's, and
+    // the handler below takes locks, formats diagnostics and may longjmp; an alternate signal
+    // stack on the scheduler thread keeps all of that off whichever fiber stack was active when
+    // the fault hit (and makes a fiber stack overflow into its guard page reportable at all).
+    static std::vector<uint8_t> alternateStack(256 * 1024);
+    stack_t altStack{};
+    altStack.ss_sp = alternateStack.data();
+    altStack.ss_size = alternateStack.size();
+    altStack.ss_flags = 0;
+    sigaltstack(&altStack, nullptr);
+
     struct sigaction action {};
     action.sa_sigaction = PosixMemoryFaultHandler;
-    action.sa_flags = SA_SIGINFO;
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&action.sa_mask);
     sigaction(SIGSEGV, &action, nullptr);
-    // A touch beyond a memfd-backed mapping's ftruncate()'d size raises SIGBUS rather than
-    // SIGSEGV on Linux; region sizing should make this unreachable, but routing it to the same
-    // handler costs nothing and avoids a silent gap if it ever isn't.
+    // macOS delivers a protection violation on a PROT_NONE page as SIGBUS, not SIGSEGV, so the
+    // whole fault-interception design depends on both signals reaching this handler there. On
+    // Linux a touch beyond a memfd-backed mapping's ftruncate()'d size raises SIGBUS as well.
     sigaction(SIGBUS, &action, nullptr);
 }
 #endif

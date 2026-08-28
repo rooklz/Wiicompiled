@@ -14,9 +14,11 @@ namespace GuestFlat {
 // Fixed base so the emitted access is `[reg + imm64-in-register]` with no load
 // of a global.
 inline constexpr uint64_t kGuestSpaceSize = 0x1'0000'0000ull;
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__APPLE__)
 // 16 TiB: clear of the Windows ASan shadow (32 TiB) and of the usual image/heap
-// placement.
+// placement. macOS on Apple silicon exposes a 47-bit user address space, so the
+// same base is reachable there (probed: mmap honours the hint exactly) and it
+// sits far above the dyld shared cache, the image and the malloc zones.
 inline constexpr uintptr_t kFixedFlatGuestBase = 0x0000'1000'0000'0000ull;
 #elif defined(__aarch64__)
 // 16 TiB (this arch's x86_64 sibling value) is unreachable on any AArch64

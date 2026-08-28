@@ -1,5 +1,7 @@
 #include "wup028_adapter.h"
 
+#if defined(_WIN32)
+
 #include "runtime_log.h"
 #include "runtime_config.h"
 
@@ -448,3 +450,28 @@ AdapterInfo GetInfo() {
 }
 
 } // namespace Wup028Adapter
+
+#else  // !defined(_WIN32)
+
+// The direct WUP-028 transport is WinUSB-specific. Elsewhere the adapter is reached through
+// SDL's controller layer like any other gamepad; this stub keeps the public surface identical
+// so the callers (PAD polling, the settings overlay) need no platform branches of their own.
+namespace Wup028Adapter {
+
+void Initialize() {}
+void Shutdown() {}
+bool Read(std::array<PADStatus, 4>&) { return false; }
+void SetPortAssignment(uint32_t, int) {}
+int GetPortAssignment(uint32_t) { return -1; }
+bool SetRumble(uint32_t, bool) { return false; }
+AdapterInfo GetInfo() {
+    AdapterInfo info;
+    info.state = ConnectionState::DriverError;
+    info.detail = "The direct WUP-028 driver is Windows-only on this build; the adapter is used "
+                  "through SDL controller support instead.";
+    return info;
+}
+
+} // namespace Wup028Adapter
+
+#endif  // defined(_WIN32)

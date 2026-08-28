@@ -26,6 +26,9 @@
 #else
 #include <cstdlib>
 #include <unistd.h>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 #endif
 
 struct RuntimeUserConfig {
@@ -158,6 +161,22 @@ inline std::optional<std::filesystem::path> ExecutableDirectory() {
         }
         buffer.resize(buffer.size() * 2);
     }
+#elif defined(__APPLE__)
+    // _NSGetExecutablePath reports the needed size when the buffer is too small; the result may
+    // still contain symlinks or relative components, which canonical() resolves.
+    uint32_t size = 0;
+    _NSGetExecutablePath(nullptr, &size);
+    if (size == 0) {
+        return std::nullopt;
+    }
+    std::string buffer(size, '\0');
+    if (_NSGetExecutablePath(buffer.data(), &size) != 0) {
+        return std::nullopt;
+    }
+    buffer.resize(std::char_traits<char>::length(buffer.c_str()));
+    std::error_code ec;
+    const std::filesystem::path canonical = std::filesystem::canonical(buffer, ec);
+    return (ec ? std::filesystem::path(buffer) : canonical).parent_path();
 #else
     // /proc/self/exe is a Linux-specific magic symlink to the running executable; readlink()
     // does not NUL-terminate and silently truncates if the buffer is too small, so this grows
@@ -214,6 +233,12 @@ inline std::filesystem::path ApplicationDataDirectory() {
         const std::filesystem::path directory = std::filesystem::path(rawPath) / kApplicationDirectoryName;
         CoTaskMemFree(rawPath);
         return directory;
+    }
+#elif defined(__APPLE__)
+    // The macOS home for per-user application state (the FOLDERID_LocalAppData equivalent).
+    if (const char* home = std::getenv("HOME"); home && *home) {
+        return std::filesystem::path(home) / "Library" / "Application Support" /
+               kApplicationDirectoryName;
     }
 #else
     // XDG Base Directory spec equivalent of FOLDERID_LocalAppData: $XDG_DATA_HOME if set and

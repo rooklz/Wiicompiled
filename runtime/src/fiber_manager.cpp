@@ -15,6 +15,8 @@
 
 #if !defined(_WIN32)
 #include "libco.h"
+#include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 namespace Fiber {
@@ -28,6 +30,46 @@ namespace {
 // OS thread: nothing else can run (and so nothing else can overwrite this) between the staging
 // write and the trampoline's read of it.
 thread_local uint32_t s_pendingFiberArg = 0;
+
+// Host stack behind each guest fiber. Windows' CreateFiber(64 KiB) only commits that much; the
+// reservation behind it is the executable's default 1 MiB, so translated code was always free
+// to grow into it. libco's co_create() would malloc exactly the requested size with nothing
+// past it, which turns the same growth into silent heap corruption. So the stack is a private
+// mapping of the full reserve (pages materialise on first touch, so the cost is what the fiber
+// actually uses) with an inaccessible guard page below it that turns an overflow into a fault
+// the process-wide handler reports instead.
+constexpr size_t kHostStackReserve = 1024 * 1024;
+
+size_t HostPageSize() {
+    static const size_t pageSize = []() {
+        const long value = sysconf(_SC_PAGESIZE);
+        return value > 0 ? static_cast<size_t>(value) : size_t{4096};
+    }();
+    return pageSize;
+}
+
+cothread_t CreateGuardedCothread(void (*entrypoint)()) {
+    const size_t guard = HostPageSize();
+    const size_t total = guard + kHostStackReserve;
+    void* mapping = mmap(nullptr, total, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (mapping == MAP_FAILED) {
+        return nullptr;
+    }
+    if (mprotect(mapping, guard, PROT_NONE) != 0) {
+        munmap(mapping, total);
+        return nullptr;
+    }
+    // co_derive returns the memory it was handed as the handle: the register save area lives at
+    // the bottom and the stack grows down from the top, so the guard sits directly below both.
+    return co_derive(static_cast<uint8_t*>(mapping) + guard, static_cast<unsigned int>(kHostStackReserve),
+                     entrypoint);
+}
+
+void DeleteGuardedCothread(cothread_t handle) {
+    if (handle == nullptr) return;
+    const size_t guard = HostPageSize();
+    munmap(static_cast<uint8_t*>(handle) - guard, guard + kHostStackReserve);
+}
 } // namespace
 #endif
 
@@ -56,7 +98,7 @@ void GuestFiberManager::PurgePendingFibers() {
     const void* current = co_active();
     for (void* f : toDelete) {
         if (f && f != current) {
-            co_delete(static_cast<cothread_t>(f));
+            DeleteGuardedCothread(static_cast<cothread_t>(f));
         }
     }
 #endif
@@ -257,7 +299,7 @@ void GuestFiberManager::Shutdown() {
 #else
     for (auto& [addr, fiber] : s_fibers) {
         if (fiber.fiber && !fiber.isSchedulerFiber) {
-            co_delete(static_cast<cothread_t>(fiber.fiber));
+            DeleteGuardedCothread(static_cast<cothread_t>(fiber.fiber));
             fiber.fiber = nullptr;
         }
     }
@@ -291,7 +333,7 @@ bool GuestFiberManager::CreateGuestFiber(uint32_t guestThreadAddr, uint32_t entr
 #if defined(_WIN32)
             DeleteFiber(existingIt->second.fiber);
 #else
-            co_delete(static_cast<cothread_t>(existingIt->second.fiber));
+            DeleteGuardedCothread(static_cast<cothread_t>(existingIt->second.fiber));
 #endif
         }
         s_fibers.erase(existingIt);
@@ -326,13 +368,12 @@ bool GuestFiberManager::CreateGuestFiber(uint32_t guestThreadAddr, uint32_t entr
         return false;
     }
 #else
-    // libco's co_create() entry point takes no argument; SwitchToThread() stages guestThreadAddr
-    // into s_pendingFiberArg immediately before the co_switch that first activates this handle.
-    constexpr unsigned int kHostStackSize = 64 * 1024;
-    gf.fiber = co_create(kHostStackSize, &FiberProcTrampoline);
+    // libco's entry point takes no argument; SwitchToThread() stages guestThreadAddr into
+    // s_pendingFiberArg immediately before the co_switch that first activates this handle.
+    gf.fiber = CreateGuardedCothread(&FiberProcTrampoline);
 
     if (!gf.fiber) {
-        RT_LOG(RT_TAG_OS) << "co_create failed for thread 0x"
+        RT_LOG(RT_TAG_OS) << "Guest fiber stack allocation failed for thread 0x"
                   << std::hex << guestThreadAddr << std::dec << std::endl;
         return false;
     }
@@ -405,7 +446,7 @@ void GuestFiberManager::ExitGuestThread(uint32_t guestThreadAddr, ThreadState fi
             // active, exactly like the Windows branch above.
             s_fibersPendingDelete.push_back(it->second.fiber);
         } else {
-            co_delete(static_cast<cothread_t>(it->second.fiber));
+            DeleteGuardedCothread(static_cast<cothread_t>(it->second.fiber));
         }
 #endif
         it->second.fiber = nullptr;

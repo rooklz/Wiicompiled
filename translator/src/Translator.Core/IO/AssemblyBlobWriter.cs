@@ -27,10 +27,17 @@ internal static class AssemblyBlobWriter
         // allocatable-only flag plus an explicit @progbits type. The build always targets
         // whichever platform the translator itself runs on (there is no cross-compilation
         // support), so that's what this picks the section syntax from.
+        // Mach-O (macOS) is different again: read-only data goes in the __TEXT segment's __const
+        // section, and C-linkage symbols carry a leading underscore, so the label the C++ side
+        // declares as `extern "C" const uint8_t kData_x[]` must be spelled `_kData_x` here.
+        var isMacOS = OperatingSystem.IsMacOS();
         assembly.AppendLine(OperatingSystem.IsWindows()
             ? ".section .rdata,\"dr\""
-            : ".section .rodata,\"a\",@progbits");
+            : isMacOS
+                ? ".section __TEXT,__const"
+                : ".section .rodata,\"a\",@progbits");
         assembly.AppendLine();
+        var symbolPrefix = isMacOS ? "_" : "";
 
         foreach (var blob in blobs)
         {
@@ -40,8 +47,8 @@ internal static class AssemblyBlobWriter
             var hash = ChecksumUtilities.Sha256Hex(blob.Data.Span);
             assembly.AppendLine($"// {blob.Comment}; sha256={hash}");
             assembly.AppendLine(".p2align 4");
-            assembly.AppendLine($".globl {blob.Symbol}");
-            assembly.AppendLine($"{blob.Symbol}:");
+            assembly.AppendLine($".globl {symbolPrefix}{blob.Symbol}");
+            assembly.AppendLine($"{symbolPrefix}{blob.Symbol}:");
             var referencePath = Path.Combine(blobReferenceDirectory, blob.FileName);
             assembly.AppendLine($".incbin \"{SanitizeAssemblyPath(referencePath)}\"");
             assembly.AppendLine();
@@ -51,7 +58,7 @@ internal static class AssemblyBlobWriter
         {
             if (!expectedFiles.Contains(Path.GetFullPath(stalePath))) File.Delete(stalePath);
         }
-        if (!OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindows() && !isMacOS)
         {
             // Absence of a .note.GNU-stack section makes the linker assume the oldest, most
             // conservative default for this object (an executable stack) and warn about it; this

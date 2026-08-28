@@ -1,13 +1,20 @@
 ﻿cmake_minimum_required(VERSION 3.16)
 project(mkw_recompiled)
 
-if((NOT (WIN32 AND MINGW)) AND (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux"))
-    message(FATAL_ERROR "WiiCompiled requires Windows (LLVM-MinGW) or native Linux")
+if((NOT (WIN32 AND MINGW)) AND (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux") AND (NOT APPLE))
+    message(FATAL_ERROR "WiiCompiled requires Windows (LLVM-MinGW), native Linux, or macOS")
 endif()
-if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+# AppleClang reports its own compiler id; both are the LLVM Clang front end this project targets.
+if(NOT CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$" OR
    NOT CMAKE_SIZEOF_VOID_P EQUAL 8 OR
    NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64|aarch64|arm64|ARM64)$")
     message(FATAL_ERROR "WiiCompiled requires 64-bit Clang targeting x86_64 or aarch64")
+endif()
+if(APPLE)
+    # aurora's Metal surface binding (lib/dawn/MetalBinding.mm) and system_info_mac.mm are
+    # Objective-C++; CMake only compiles .mm sources once the language is enabled here, in the
+    # top-level project, before aurora-main is added as a subdirectory.
+    enable_language(OBJC OBJCXX)
 endif()
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     message(FATAL_ERROR "WiiCompiled only supports Release builds")
@@ -134,6 +141,19 @@ else()
         set(DAWN_ENABLE_D3D12 ON CACHE BOOL "" FORCE)
         set(TINT_BUILD_HLSL_WRITER ON CACHE BOOL "" FORCE)
         set(DAWN_USE_WINDOWS_UI OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_VULKAN ON CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
+    elseif(APPLE)
+        # macOS: Metal is the only GPU API the platform exposes natively; the prebuilt Dawn
+        # package for darwin is built with the Metal backend alone. Selecting it here (before
+        # aurora-main's add_subdirectory()) makes aurora compile its MetalBinding.mm surface
+        # glue and weak-link the Metal framework, and keeps the Vulkan (MoltenVK) path out of
+        # the binary entirely - one fewer translation layer between the GX stream and the GPU.
+        set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
+        set(TINT_BUILD_HLSL_WRITER OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_METAL ON CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_NULL ON CACHE BOOL "" FORCE)
     else()
         # Non-Windows (Linux): mirrors aurora-main's own
         # _aurora_dawn_set_platform_backends() choice for this platform - Vulkan only, no
@@ -142,8 +162,9 @@ else()
         # auto-detection (CACHE ... INTERNAL "" without FORCE never overrides an existing value).
         set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
         set(TINT_BUILD_HLSL_WRITER OFF CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_VULKAN ON CACHE BOOL "" FORCE)
+        set(DAWN_ENABLE_METAL OFF CACHE BOOL "" FORCE)
     endif()
-    set(DAWN_ENABLE_VULKAN ON CACHE BOOL "" FORCE)
     set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     set(DAWN_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
