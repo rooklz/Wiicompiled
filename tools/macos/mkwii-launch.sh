@@ -19,25 +19,27 @@ region=${MKW_REGION:-rmce01}
 case "$profile" in
     base)         exe=$workspace/dist/$region/WiiCompiled;                 overlays="" ;;
     wiimmfi)      exe=$workspace/dist/$region-wiimmfi/WiiCompiled-Wiimmfi; overlays="\"$workspace/overlays/wiimmfi\"" ;;
-    retro-rewind) exe=$workspace/dist/$region-retro-rewind/RetroRewind;    overlays="\"$workspace/PulsarPacks/completed/RetroRewind/RetroRewind6\"" ;;
+    retro-rewind) exe=$workspace/dist/$region-retro-rewind/RetroRewind;    overlays=""; retro_root=$workspace/PulsarPacks/completed/RetroRewind/RetroRewind6 ;;
     *) echo "usage: $0 [base|wiimmfi|retro-rewind] [-- runtime args]" >&2; exit 2 ;;
 esac
 [[ -x "$exe" ]] || { echo "$profile is not built: $exe (run ./build-macos.sh --profile $profile)" >&2; exit 1; }
 [[ -f "$config" ]] || { echo "no Config.toml at $config; run the base product once or create it (see docs/MACOS.md)" >&2; exit 1; }
 
-# Replace (or append) the overlay_roots line inside [paths].
-python3 - "$config" "$overlays" <<'PY'
+# Replace (or append) the overlay_roots / retro_rewind_root lines inside [paths]. The Retro Rewind
+# product reads its pack through retro_rewind_root (the runtime mounts the pack's Riivolution XML
+# from there); the other products use plain disc-shaped overlays.
+python3 - "$config" "$overlays" "${retro_root:-}" <<'PY'
 import re, sys
-path, overlays = sys.argv[1], sys.argv[2]
+path, overlays, retro_root = sys.argv[1], sys.argv[2], sys.argv[3]
 text = open(path, encoding="utf-8").read()
-line = f"overlay_roots = [{overlays}]\n" if overlays else ""
-if re.search(r"^\s*#?\s*overlay_roots\s*=.*$", text, re.M):
-    text = re.sub(r"^\s*#?\s*overlay_roots\s*=.*\n?", line, text, count=1, flags=re.M)
-elif line:
-    if "[paths]" in text:
-        text = text.replace("[paths]\n", "[paths]\n" + line, 1)
-    else:
-        text += "\n[paths]\n" + line
+def set_line(text, key, line):
+    if re.search(rf"^\s*#?\s*{key}\s*=.*$", text, re.M):
+        return re.sub(rf"^\s*#?\s*{key}\s*=.*\n?", line, text, count=1, flags=re.M)
+    if line:
+        return text.replace("[paths]\n", "[paths]\n" + line, 1) if "[paths]" in text else text + "\n[paths]\n" + line
+    return text
+text = set_line(text, "overlay_roots", f"overlay_roots = [{overlays}]\n" if overlays else "")
+text = set_line(text, "retro_rewind_root", f'retro_rewind_root = "{retro_root}"\n' if retro_root else "")
 open(path, "w", encoding="utf-8").write(text)
 PY
 echo "launching $profile: $exe"
