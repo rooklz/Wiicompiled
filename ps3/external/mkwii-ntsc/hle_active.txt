@@ -1,0 +1,110 @@
+# Native HLE overrides that are IMPLEMENTED and active.
+#
+# Format: <NTSC address> <implementation>.  tools/wc_gen_calls.py binds these
+# into the call layer, so every call site -- direct or indirect -- reaches the
+# native version instead of the translated guest function.
+#
+# The full catalogue of candidates is in hle_overrides.txt; a line only moves
+# here once there is a PS3 implementation behind it. Anything not listed keeps
+# running as translated guest code, which is the correct default: the system software talks
+# to hardware through loads and stores and the device model answers.
+
+# ---- diagnostics: the game explaining its own boot ----
+801a2530 wc_hle_OSReport      # OSReport
+801a25c0 wc_hle_OSPanic       # OSPanic
+801a4e24 wc_hle_OSFatal       # OSFatal
+
+# ---- cache maintenance: nothing to do on a coherent host, except dcbz ----
+801a158c wc_hle_DCFlushRange
+801a15ec wc_hle_DCFlushRange       # DCFlushRangeNoSync
+801a15bc wc_hle_DCStoreRange
+801a1618 wc_hle_DCStoreRange       # DCStoreRangeNoSync
+801a1560 wc_hle_DCInvalidateRange
+801a1644 wc_hle_DCZeroRange
+
+# ---- Gekko locked cache: a scratchpad the emulator already backs ----
+801a17f4 wc_hle_LCLoadBlocks
+801a1818 wc_hle_LCStoreBlocks
+801a183c wc_hle_LCStoreData
+801a18dc wc_hle_LCQueueLength
+801a18e8 wc_hle_LCQueueWait
+
+# ---- SPRs and barriers the translator cannot model ----
+8012e4fc wc_hle_PPCSync
+8012e590 wc_hle_PPCMfhid2
+8012e598 wc_hle_PPCMthid2
+8012e4f4 wc_hle_PPCMtdec
+
+# ---- machine queries with one right answer on this host ----
+801aacdc wc_hle_OSGetSystemTime
+801a89b0 wc_hle_OSGetResetCode
+8019f29c wc_hle_OSGetConsoleType
+
+# ---- interrupts: NOT overridden, deliberately ----
+#
+# The premise of the original override -- "the port has no MSR" -- is wrong.
+# It has one: CpuContext::msr, and the translator maintains it faithfully.
+# Every one of these three functions is a short mfmsr/mtmsr sequence that the
+# translated body reads and writes exactly as the hardware would, and the
+# translator has ALSO inlined copies of them into callers such as SelectThread,
+# which do the same.
+#
+# Overriding them created a second, disagreeing representation: the host mask
+# moved while ctx->msr did not. Interrupt delivery is gated on MSR[EE] -- as it
+# must be, or a handler runs inside a guest critical section -- so once the two
+# diverged the port stopped delivering interrupts entirely. The game reached
+# SCInit, polled SCCheckStatus for a NAND read that had already completed, and
+# spun there for billions of calls with the completion permanently pending.
+#
+# Leave them translated. ctx->msr is then the single source of truth.
+# 801a650c OSDisableInterrupts
+# 801a6520 OSEnableInterrupts
+# 801a6534 OSRestoreInterrupts
+
+# ---- hardware bring-up belongs to the host on a port ----
+80006348 wc_hle_init_hardware
+
+# ---- threading (4) ----
+# The guest's scheduler stays translated and stays authoritative. Only the
+# three points that depend on the register file being a real register file are
+# replaced, plus the adoption of the thread the system software starts on.
+#
+# OSLoadContext is the one that matters: the translator turned its `rfi` into a
+# plain return, so the guest loaded another thread's registers and carried on
+# in the same thread. Every switch silently did nothing.
+801a1eb8 wc_hle_OSLoadContext     # OSLoadContext -- the switch itself
+801a9de4 wc_hle_OSCreateThread    # OSCreateThread -- register the pairing
+801aa050 wc_hle_OSExitThread      # OSExitThread -- hand off, then die
+801a957c wc_hle_OSThreadInit      # __OSThreadInit -- adopt the initial thread
+
+# ---- printf family (5): the translated MSL formatter diverges (difftest
+# FAIL, deterministic); its output buffer stayed all-zero on console and the
+# USB stack opened "" -> Wiimote init slept forever. Native replaces the
+# whole cluster.
+8001198c wc_hle_sprintf
+80011898 wc_hle_snprintf
+80011814 wc_hle_vsprintf
+8001178c wc_hle_vsnprintf
+80010dd8 wc_hle_vsnprintf_helper   # internal bl-target with snprintf's contract
+
+# ---- diagnostics (1) ----
+80218b8c wc_hle_decodeSZS   # EGG::Decomp::decodeSZS arg logger (one-shot x6)
+80060da0 wc_hle_Copy32ByteBlocks   # null-dst trap (one-shot x4)
+
+# ---- stomp hunt: the 800207D8 list push (window suspect) ----
+800207d8 wc_hle_TrkListPush   # unnamed list-push in TRK cluster; called by sinit_ef_effectsystem
+80226744 wc_hle_EggExpHeapCreate   # EGG::ExpHeap::create freeze instrument
+801acfdc wc_hle_OSInitPlayTime   # play-time accounting: irrelevant, was panicking Expired
+801a9b68 wc_hle_SelectThread   # SelectThread: fiber-build scheduler (forwards to translated when flag off)
+80194ef4 wc_hle_IPCiProfQueueReq   # sync-IPC completion edge (fiber build)
+80193500 wc_hle_iosIpc2   # __ios_Ipc2: host-side sync IPC (kills the call-free wait class)
+80162ab0 wc_hle_DVDGetDriveStatus   # disc-error latch timeline
+801a1dd0 wc_hle_OSSetCurrentContext   # insane-context writer trap
+80131748 wc_hle_BtaTick   # does the BTA 2ms tick ever fire?
+8015e794 wc_hle_DVDReadPrio   # read return telemetry
+80222448 wc_hle_EggDvdFileOpen   # which file fails to open
+80218b04 wc_hle_EggDecompDecode   # decode-call vs magic-mismatch
+8000b49c wc_hle_ProcessRipRequest   # rip result telemetry
+80241ddc wc_hle_TaskThreadIdleQuery   # holds the strap wait while the rip runs
+80241d5c wc_hle_TaskThreadPost   # arms rip in-flight at enqueue
+8000b2d0 wc_hle_RipFromDisc1   # strap rip enter/exit probe

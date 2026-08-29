@@ -1,0 +1,35 @@
+# build output
+build/
+*.self
+*.pkg
+*.elf
+
+# game data — you supply your own dump; nothing here is distributed
+assets/
+*.dol
+*.fst
+*.szs
+*.arc
+*.brres
+*.wbfs
+*.rvz
+*.iso
+src/platform/ps3/mkwii_blobs.S
+
+# generated from your dump by the translator / recompiler (regenerated locally)
+src/core/ppc/wc/gen/
+tools/rec/aot_fns.c
+tools/rec/aot_manifest.c
+tools/rec/aot_difftest.c
+external/mkwii-ntsc/full/
+external/mkwii-ntsc/generated/
+external/mkwii-ntsc/Assets/
+external/mkwii-ntsc/MAP_*
+
+# local scratch
+*.orig
+*.bak
+*.log
+*.core
+__pycache__/
+.DS_Store

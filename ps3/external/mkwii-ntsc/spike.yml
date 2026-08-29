@@ -1,0 +1,39 @@
+schema_version: 1
+workspace_root: ../Wiicompiled
+
+project:
+  id: mkwii-rmce01-spike
+  display_name: Mario Kart Wii NTSC-U spike
+  game_id: RMCE01
+  region: E
+  base_manifest_format: mkwii-recomp-base-manifest
+  base_manifest_stem: mkwii_spike
+
+memory:
+  base: 0x80000000
+  size: 0x01A00000
+  sda_base: 0x80388880
+  sda2_base: 0x8038ac20
+
+inputs:
+  dol:
+    path: ../mkwii-ntsc/Assets/main.dol
+
+translation:
+  entry_points:
+    - 0x801b5ad4
+  function_map:
+    path: ../mkwii-ntsc/MAP_thp.txt
+  allow_unsupported_instructions: false
+
+runtime:
+  native_registration_root: runtime/src
+  native_abi_directories:
+    - runtime/src/hle/gx
+
+output:
+  root: ../mkwii-ntsc/generated
+  functions: functions
+  runtime_config: RuntimeConfig.h
+  data_initializer: data_sections_init.cpp
+  base_manifest: ../mkwii-ntsc/generated/base_manifest.json
