@@ -80,3 +80,9 @@ output.txt
 /build-macos.log
 # Patched game archives are derived from the disc and never committed; the README stays.
 /overlays/*/Scene/
+
+# This port keeps its own tooling under tools/ (upstream ignores /tools/ for local scratch tools).
+!/tools/
+/tools/*
+!/tools/region/
+!/tools/macos/

@@ -1,6 +1,6 @@
 # NTSC-U (RMCE01) function map, ported from ../mkwii/MAP.txt (PAL RMCP01) by tools/region/port_map.py.
 # Every entry was validated against the RMCE01 main.dol/StaticR.rel; see MAP_REPORT.md next to this file.
-# Verdicts: PROVEN=11951, REFERENCED=12793, PLAUSIBLE=4507, IDENTITY=15, INTERPOLATED=0, TERTIARY=0; entries=29266
+# Verdicts: PROVEN=12178, REFERENCED=12573, PLAUSIBLE=4500, IDENTITY=15, INTERPOLATED=0, TERTIARY=0, ADDED=143 (binary-proven entries no PAL entry covers); entries=29409
 800018a8 0x800018a8
 80001d50 0x80001d50
 80001d6c 0x80001d6c
@@ -10701,6 +10701,7 @@
 80243e74 nw4r::g3d::ScnRfl::GetTypeObj
 80243e80 nw4r::g3d::ScnRfl::GetTypeName
 80243eb0 nw4r::g3d::ScnRfl::IsDerivedFrom
+80243f18 0x80243f18
 802441fc shadTex_802402E0
 80244274 EGG::EGG__GlobalScreenCapture_Take
 80244760 EGG::EGG__GlobalScreenCapture_Release
@@ -12337,6 +12338,8 @@
 8054f5ac Random::NextLimited
 8054f608 Random::NextFloat
 8054f688 Random::NextFloatLimited
+8054f70c 0x8054f70c
+8054f734 0x8054f734
 8054f800 ElineController::__ct
 8054f878 0x8054f878
 8054f8ec 0x8054f8ec
@@ -12380,6 +12383,13 @@
 80550f40 0x80550f40
 80550f60 0x80550f60
 80551204 isFastStaffGhostUnlocked
+805512e4 0x805512e4
+80551328 0x80551328
+80551380 0x80551380
+80551384 0x80551384
+80551388 0x80551388
+80551394 0x80551394
+805513a0 0x805513a0
 805513ac 0x805513ac
 805513d0 ModelTransformator::__ct
 805514dc ModelTransformator::AppendAnmHolder
@@ -14038,6 +14048,7 @@
 8059ecf8 0x8059ecf8
 8059ed08 0x8059ed08
 8059ed18 0x8059ed18
+8059eea4 0x8059eea4
 8059eeac 0x8059eeac
 8059ef24 0x8059ef24
 8059f108 0x8059f108
@@ -14053,9 +14064,13 @@
 8059fc34 0x8059fc34
 8059fcd8 0x8059fcd8
 8059ff34 AutoCameraMoverRace::__ct
+805a0544 0x805a0544
+805a0584 0x805a0584
+805a05c4 0x805a05c4
 805a0604 AutoCameraMoverRace::ResetActions
 805a060c AutoCameraMoverRace::vf_0x10
 805a0b60 0x805a0b60
+805a0d20 0x805a0d20
 805a0d28 0x805a0d28
 805a0e2c 0x805a0e2c
 805a0ed0 0x805a0ed0
@@ -14099,6 +14114,7 @@
 805a2b7c 0x805a2b7c
 805a2bd8 0x805a2bd8
 805a2d48 0x805a2d48
+805a2e30 0x805a2e30
 805a2e70 0x805a2e70
 805a2eb0 0x805a2eb0
 805a2ef8 0x805a2ef8
@@ -14387,6 +14403,7 @@
 805b3974 ScnMgrMii::__ct
 805b39cc ScnMgrMii::__dt
 805b3a24 ScnMgrMii::LoadLights
+805b3a8c 0x805b3a8c
 805b3adc 0x805b3adc
 805b3b1c 0x805b3b1c
 805b3ca4 0x805b3ca4
@@ -14499,6 +14516,8 @@
 805b6968 0x805b6968
 805b696c PushButtonScaleFade::GetRuntimeTypeInfo
 805b6978 PushButton::GetRuntimeTypeInfo
+805b6984 0x805b6984
+805b69b4 0x805b69b4
 805b69d4 NotifyButton::GetClassName
 805b69e0 NotifyButton::__ct
 805b6a1c NotifyButton::__dt
@@ -17039,6 +17058,7 @@
 806065dc SheetSelectControl::GetArrowAnimationType
 806065e4 SheetSelectControlScaleFade::GetClassName
 806065f4 SheetSelectControlScaleFade::GetArrowAnimationType
+806065fc 0x806065fc
 806066a4 SheetSelectControlScaleFade::GetRuntimeTypeInfo
 806066b0 SheetSelectControl::GetRuntimeTypeInfo
 806066bc SheetSelectControl::SheetSelectButton::GetRuntimeTypeInfo
@@ -17145,6 +17165,7 @@
 8060a768 Pages::TitleMovie::__ct
 8060a7cc Pages::TitleMovie::__dt
 8060a844 Pages::TitleMovie::OnInit
+8060a958 0x8060a958
 8060aa24 Pages::TitleMovie::AfterExitAnimations
 8060aa68 Pages::TitleMovie::OnDeactivate
 8060aa7c Pages::TitleMovie::BeforeControlUpdate
@@ -17709,6 +17730,7 @@
 8061e894 Pages::SELECTStageMgr::IsHomeMenuWorking
 8061e89c Pages::SELECTStageMgr::GetRuntimeTypeInfo
 8061e8a8 Pages::SELECTStageMgr::TriggerPtmf
+8061e8d8 0x8061e8d8
 8061e8ec Pages::YesNo::__ct
 8061e990 Pages::YesNo::__dt
 8061ea1c Pages::YesNo::OnInit
@@ -17828,6 +17850,13 @@
 80623be8 Pages::MKChannelExplanation::GetNextPage
 80623c20 Pages::MKChannelExplanation::OnButtonClick
 80623ccc Pages::MKChannelExplanation::OnBackPress
+80623d14 0x80623d14
+80623d20 0x80623d20
+80623d2c 0x80623d2c
+80623d5c 0x80623d5c
+80623d8c 0x80623d8c
+80623dbc 0x80623dbc
+80623dec 0x80623dec
 80623e08 Pages::BatteryMgr::__ct
 80623e4c Pages::BatteryMgr::__dt
 80623eb4 Pages::BatteryMgr::OnInit
@@ -17866,6 +17895,7 @@
 806253a4 0x806253a4
 806253b0 TriggerPtmf
 806253e0 TriggerPtmf
+80625410 0x80625410
 80625424 0x80625424
 80625430 0x80625430
 8062546c StaffRollControl::__dt
@@ -17895,6 +17925,7 @@
 806263d0 Pages::EndingMovie::__ct
 8062646c Pages::EndingMovie::__dt
 806264ec Pages::EndingMovie::OnInit
+806266f0 0x806266f0
 8062675c Pages::EndingMovie::AfterEntranceAnimations
 80626760 Pages::EndingMovie::AfterControlUpdate
 80626890 Pages::EndingMovie::OnMovieActivate
@@ -18621,6 +18652,7 @@
 8064c688 SystemBMGHolder::__ct
 8064c6b8 SystemBMGHolder::__dt
 8064c710 SystemBMGHolder::Init
+8064c754 0x8064c754
 8064c78c 0x8064c78c
 8064c798 0x8064c798
 8064c7d4 0x8064c7d4
@@ -18947,6 +18979,9 @@
 8065c9dc 0x8065c9dc
 8065ca70 RKNet::RH1Handler::ExportDefaultPacket
 8065cb28 RKNet::RH1Handler::ExportDefaultPacket2
+8065cbe0 0x8065cbe0
+8065cc44 0x8065cc44
+8065cc98 0x8065cc98
 8065cd74 RKNet::ITEMHandler::CreateInstance
 8065cff0 RKNet::ITEMHandler::DestroyInstance
 8065d030 RKNet::ITEMHandler::__ct
@@ -20532,6 +20567,9 @@
 806c703c Objects::K_car_tire::GetPropertiesBitfield
 806c7044 Objects::K_car_tire::GetID
 806c704c Objects::K_car_tire::__dt
+806c708c 0x806c708c
+806c7090 0x806c7090
+806c7094 0x806c7094
 806c7098 0x806c7098
 806c709c 0x806c709c
 806c70a4 Objects::HighwayCar::__ct
@@ -20840,6 +20878,7 @@
 806d90f0 0x806d90f0
 806d9188 0x806d9188
 806d91cc 0x806d91cc
+806d92e0 0x806d92e0
 806d92e8 RouteController::__dt
 806d9328 RouteCurved::__ct(POTI)
 806d946c RouteArc::__ct
@@ -21252,6 +21291,8 @@
 806ec7e8 0x806ec7e8
 806ec8c0 0x806ec8c0
 806eca0c 0x806eca0c
+806eca4c 0x806eca4c
+806eca50 0x806eca50
 806eca58 Objects::KoopaFigure64::__ct
 806ecb88 Objects::KoopaFigure64::OnStart
 806ecca0 Objects::KoopaFigure64::Update
@@ -22088,6 +22129,7 @@
 8070fe54 Audio::Manager::Unlock
 8070fe60 Audio::Manager::PauseOnDVDBusy
 8070ff10 Audio::Manager::SetupMemoryArchive
+8070ff20 0x8070ff20
 8070ffac Audio::Manager::HoldSound
 8070ffe0 Audio::Manager::HoldSound(str)
 80710050 Audio::Manager::PrepareSound
@@ -22200,6 +22242,7 @@
 80713994 0x80713994
 80713998 0x80713998
 8071399c 0x8071399c
+807139a0 0x807139a0
 80713a88 Audio::ItemWarning::Init
 80713adc Audio::ItemWarningMgr::PlayTargetedWarning
 80713d08 Audio::ItemWarningMgr::PlayUntargetedWarning
@@ -22539,6 +22582,7 @@
 8072288c 0x8072288c
 807228b4 0x807228b4
 807228c0 0x807228c0
+8072297c 0x8072297c
 80722984 0x80722984
 8072298c 0x8072298c
 80722998 0x80722998
@@ -22574,6 +22618,8 @@
 8072359c 0x8072359c
 80723640 0x80723640
 80723688 AI::CPUDriving::IsBattle
+80723690 0x80723690
+80723694 0x80723694
 80723698 0x80723698
 8072369c 0x8072369c
 807236a4 0x807236a4
@@ -22593,6 +22639,8 @@
 80724484 0x80724484
 80724670 0x80724670
 80724678 0x80724678
+80724760 0x80724760
+80724768 0x80724768
 80724770 0x80724770
 80724778 0x80724778
 80724788 0x80724788
@@ -22648,6 +22696,25 @@
 80726bc4 0x80726bc4
 80726bf8 0x80726bf8
 80726c38 0x80726c38
+80726c78 0x80726c78
+80726c7c 0x80726c7c
+80726c84 0x80726c84
+80726c8c 0x80726c8c
+80726c94 0x80726c94
+80726c9c 0x80726c9c
+80726ca4 0x80726ca4
+80726cac 0x80726cac
+80726cb4 0x80726cb4
+80726cb8 0x80726cb8
+80726cf8 0x80726cf8
+80726d00 0x80726d00
+80726d08 0x80726d08
+80726d10 0x80726d10
+80726d18 0x80726d18
+80726d20 0x80726d20
+80726d28 0x80726d28
+80726d70 0x80726d70
+80726da0 0x80726da0
 80726de8 AI::CPUDrivingRace::__ct
 80726f74 AI::CPUDrivingAction::__dt
 80726fb4 AI::CPUDrivingRace::__dt
@@ -22660,6 +22727,12 @@
 8072752c 0x8072752c
 807276c8 0x807276c8
 807276cc 0x807276cc
+807276d0 0x807276d0
+807276d8 0x807276d8
+807276e0 0x807276e0
+807276e8 0x807276e8
+80727730 0x80727730
+80727760 0x80727760
 807277a8 AI::Inputs::__ct
 807277cc AI::Inputs::Reset
 807277e4 AI::Inputs::AddInputs
@@ -23258,6 +23331,7 @@
 8073f160 0x8073f160
 8073f1dc 0x8073f1dc
 8073f26c 0x8073f26c
+8073f38c 0x8073f38c
 8073f394 0x8073f394
 8073f674 0x8073f674
 8073f6b4 0x8073f6b4
@@ -23979,6 +24053,10 @@
 8075fdac 0x8075fdac
 8075fec8 0x8075fec8
 8075ffb8 0x8075ffb8
+8076005c 0x8076005c
+807600c0 0x807600c0
+807600c8 0x807600c8
+807600d0 0x807600d0
 80760110 0x80760110
 80760150 0x80760150
 807604bc 0x807604bc
@@ -24171,6 +24249,7 @@
 807682f4 0x807682f4
 807682f8 0x807682f8
 80768378 0x80768378
+807683b8 0x807683b8
 807683f8 Objects::W_Woodbox::__ct
 80768578 Objects::SubObjectArray<W_Woodbox::Box>::__dt
 807685f0 Objects::SubObjectArray<W_Woodbox::Box>::vf_0x18
@@ -24431,6 +24510,9 @@
 80775588 0x80775588
 807755c8 0x807755c8
 80775608 0x80775608
+80775640 0x80775640
+80775648 0x80775648
+80775650 0x80775650
 80775658 0x80775658
 807756d0 0x807756d0
 80775710 0x80775710
@@ -24509,6 +24591,11 @@
 80777c10 0x80777c10
 80777c78 0x80777c78
 80777cb4 0x80777cb4
+80777cf4 0x80777cf4
+80777db0 0x80777db0
+80777e4c 0x80777e4c
+80777e58 0x80777e58
+80777e64 0x80777e64
 80777e6c 0x80777e6c
 80777e78 0x80777e78
 80777e84 0x80777e84
@@ -24598,6 +24685,7 @@
 8077b6b0 Objects::ItemDropper::OnImperviousCollision
 8077b6b4 Objects::ItemDropper::OnItemCollision
 8077b7b0 Objects::ItemDropper::OnNormalItemCollision
+8077b7b4 0x8077b7b4
 8077b7b8 0x8077b7b8
 8077b7f8 0x8077b7f8
 8077b810 0x8077b810
@@ -24621,6 +24709,8 @@
 8077c9e4 Objects::MiiKanban::__ct
 8077ca24 Objects::MiiKanban::LoadModels
 8077ccbc Objects::MiiKanban::OnStart
+8077ccc8 0x8077ccc8
+8077ccd0 0x8077ccd0
 8077cd10 Objects::Dokan_sfc::__ct
 8077cd50 Objects::Dokan_sfc::OnStart
 8077cde8 Objects::Dokan_sfc::Update
@@ -25254,6 +25344,8 @@
 8079efe0 Item::ObjFIB::UpdateModelPosition
 8079f128 Item::ObjFIB::OnKill
 8079f12c Item::ObjGesso::CreateArray
+8079f1a8 0x8079f1a8
+8079f1fc 0x8079f1fc
 8079f218 __sinit_ItemObjKinokoBig_cpp
 8079f240 Item::ObjKinokoPowerful::CreateArray
 8079f2bc Item::Player::UseGoldenMushroom
@@ -25925,6 +26017,7 @@
 807d3ad8 0x807d3ad8
 807d3b68 IKParams::__ct
 807d3d44 IKParams::Load
+807d4ef8 0x807d4ef8
 807d4f74 Item::Player::UseBlooper
 807d5138 Item::ObjGesso::InitSelf
 807d5154 0x807d5154
@@ -25954,6 +26047,8 @@
 807d6a58 __sinit_ItemObjKiller_cpp
 807d6a80 Item::ObjKinoko::CreateArray
 807d6afc Item::Player::UseMushroom
+807d6b50 0x807d6b50
+807d6b6c 0x807d6b6c
 807d6b94 Item::ObjKumo::CreateArray
 807d6c10 Item::Player::UseTC
 807d6c54 Item::ObjKumo::SpawnModel
@@ -26013,6 +26108,9 @@
 807da978 DriverCalcWorldCB::__ct
 807dabcc DriverCalcWorldCB::ExecCallbackB
 807dacec DriverCalcWorldCB::ExecCallbackC
+807dad60 0x807dad60
+807dad68 0x807dad68
+807dad70 0x807dad70
 807dad78 ToadetteHair::__ct(ResFile, ModelDirector)
 807db0ac ToadetteHair::__ct(DriverController)
 807db408 0x807db408
@@ -26025,6 +26123,7 @@
 807dc434 ToadetteHair::CalcWorldCB::__dt
 807dc474 ToadetteHair::CalcWorldCB::ExecCallbackC(thunk)
 807dc47c ToadetteHair::CalcWorldCB::__dt(thunk)
+807dc484 0x807dc484
 807dc50c CtrlMenuCharacterSelect::GetClassName
 807dc518 CtrlMenuCharacterSelect::Load
 807dc778 CtrlMenuCharacterSelect::ButtonDriver::__ct
@@ -26067,6 +26166,13 @@
 807df3fc CtrlMenuCourseSelectCourse::OnCourseButtonSelect
 807df568 CtrlMenuCourseSelectCourse::GetRuntimeTypeInfo
 807df574 CourseButton::GetRuntimeTypeInfo
+807df580 0x807df580
+807df588 0x807df588
+807df594 0x807df594
+807df5a0 0x807df5a0
+807df5cc 0x807df5cc
+807df5d4 0x807df5d4
+807df5dc 0x807df5dc
 807df5e4 CourseButton::__dt(PushButton)
 807df5ec 0x807df5ec
 807df5f4 CourseButton::GetRuntimeTypeInfo(PushButton)
@@ -26301,6 +26407,11 @@
 807eddb8 CtrlRaceTime::Func_0x58
 807eddc0 CtrlRaceTime::OnDefocus
 807edde8 CtrlRaceTime::OnFocus
+807ede0c 0x807ede0c
+807ede68 0x807ede68
+807ede74 0x807ede74
+807ede88 0x807ede88
+807edf58 0x807edf58
 807edf98 Objects::Aurora::__ct
 807ee004 Objects::Aurora::OnStart
 807ee0c4 Objects::Aurora::Update
@@ -26503,6 +26614,7 @@
 807f7de4 Objects::VolcanoPiece::GetTransformationMatrix
 807f7dfc Objects::VolcanoPiece::GetPropertiesBitfield
 807f7e04 Objects::bblock::UpdateModelScale
+807f7e94 0x807f7e94
 807f7ed4 Objects::Kinoko::__ct
 807f80a4 Objects::Kinoko::OnStart
 807f80e4 Objects::Kinoko::Update
@@ -27074,6 +27186,7 @@
 8081b91c GetMissionLevelNameMsgId
 8081b938 0x8081b938
 8081b940 ObjectCollisionCuboid::__ct
+8081bc00 0x8081bc00
 8081bc08 ObjectCollisionCuboid::SetPositionAndScale
 8081bff4 ObjectCollisionCuboid::SetPositionAndScale(translation)
 8081c3f0 0x8081c3f0
@@ -27618,6 +27731,7 @@
 8083a6dc 0x8083a6dc
 8083a900 Pages::Leaderboard::GetRuntimeTypeInfo
 8083a90c TriggerPtmf
+8083a93c 0x8083a93c
 8083a950 Pages::TeamVSLeaderboardBase::OnInit
 8083aa7c Pages::TeamVSLeaderboardBase::AfterControlUpdate
 8083aad8 Pages::TeamVSLeaderboardBase::CanEnd
@@ -27712,6 +27826,7 @@
 8083bf70 GetBattleCupIconPaneName
 8083bfa4 0x8083bfa4
 8083c1bc GetMapIconPaneName
+8083c2e0 0x8083c2e0
 8083c6f0 CtrlMenuBattleCupSelectCup::GetClassName
 8083c6fc CtrlMenuBattleCupSelectStage::GetClassName
 8083c70c CtrlMenuBattleCupSelectCup::Load
@@ -27741,6 +27856,13 @@
 8083e0c0 CtrlMenuBattleStageSelectStage::OnStageButtonSelect
 8083e2bc CtrlMenuBattleStageSelectStage::GetRuntimeTypeInfo
 8083e2c8 StageButton::GetRuntimeTypeInfo
+8083e2d4 0x8083e2d4
+8083e2e0 0x8083e2e0
+8083e2ec 0x8083e2ec
+8083e318 0x8083e318
+8083e320 0x8083e320
+8083e328 0x8083e328
+8083e330 0x8083e330
 8083e33c 0x8083e33c
 8083e34c 0x8083e34c
 8083e594 0x8083e594
@@ -27865,6 +27987,21 @@
 808423fc CtrlRaceGhostDiffTime::SubtractTimers
 8084247c CtrlRaceGhostDiffTime::Load
 8084252c CtrlRaceGhostDiffTime::__dt
+808425b0 0x808425b0
+808425bc 0x808425bc
+808425d0 0x808425d0
+808425dc 0x808425dc
+8084264c 0x8084264c
+80842650 0x80842650
+80842654 0x80842654
+80842664 0x80842664
+808426b8 0x808426b8
+8084276c 0x8084276c
+808427fc 0x808427fc
+80842858 0x80842858
+80842864 0x80842864
+808428c0 0x808428c0
+808428cc 0x808428cc
 808428e8 CtrlRaceScore::GetClassName
 808428f4 CtrlRaceScore::InitSelf
 80842a48 CtrlRaceScore::OnUpdate
@@ -27902,6 +28039,7 @@
 80843684 CtrlRaceWifiStartMessage::GetRuntimeTypeInfo
 80843690 CtrlRaceWifi_cpp_sinit_
 808436b0 GeoHitTableHolder::__ct
+808437f4 0x808437f4
 808438a4 Objects::Airblock::LoadCollision
 808439c4 Objects::Airblock::UpdateCollision
 80843a90 Objects::Airblock::vf_0xb4
@@ -28094,6 +28232,7 @@
 80850084 MenuKartModelMgr::ToggleVisible
 8085011c 0x8085011c
 8085014c MenuKartModelMgr::GetMenuKartModel
+80850178 0x80850178
 808501b8 Pages::BattleCupSelect::GetPageById
 808502c8 Pages::BattleCupSelect::OnInit
 80850340 Pages::BattleCupSelect::CreateExternalControl
@@ -28137,6 +28276,7 @@
 8085235c Pages::BattleKartSelect::GetLocalPlayerCount
 80852364 Pages::BattleKartSelect::GetManipulatorManager
 8085236c Pages::BattleKartSelect::__dt
+80852418 0x80852418
 80852424 BattleSettingsPage_cpp_sinit_
 80852438 Pages::BattleStageSelect::GetPageById
 80852548 Pages::BattleStageSelect::OnInit
@@ -28253,6 +28393,7 @@
 80855028 0x80855028
 80855030 0x80855030
 8085508c 0x8085508c
+80855178 0x80855178
 80855184 MultiKartSelectPage_cpp_sinit_
 80855198 Pages::MultiDriftSelect::GetPageById
 808552a8 Pages::MultiDriftSelect::OnInit
@@ -28339,6 +28480,7 @@
 80858704 Pages::VSModeSelect::GetActivePlayerBitfield
 8085870c Pages::VSModeSelect::SetButtonHandlers
 80858768 Pages::VSModeSelect::__dt
+808587e8 0x808587e8
 808587f4 VSSettingsPage_cpp_sinit_
 80858808 Pages::Unlock::GetPageById
 80858918 0x80858918
@@ -28916,6 +29058,7 @@
 80867fb4 0x80867fb4
 80867fc8 0x80867fc8
 80868040 0x80868040
+8086868c 0x8086868c
 808686fc 0x808686fc
 8086886c 0x8086886c
 80868924 0x80868924
