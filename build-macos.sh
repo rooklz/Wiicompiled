@@ -167,7 +167,8 @@ dol_in=$assets/main.dol; rel_in=$assets/StaticR.rel
 # translator build itself, and the runtime sources (their native registrations decide which
 # functions are excluded from translation and which call sites bind natively).
 runtime_sources_hash=$(find "$workspace/runtime/src" "$workspace/runtime/include" -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.inc' \) -not -path '*/third_party/*' | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -d' ' -f1)
-fingerprint=$(cat "$dol_in" "$rel_in" "$project" "$workspace/runtime/include/region/$region.h" "$translator_dll" <(echo "$runtime_sources_hash") | shasum -a 256 | cut -d' ' -f1)
+function_map=$(awk '/^translation:/{t=1} t && /^[[:space:]]*path:/{sub(/^[[:space:]]*path:[[:space:]]*/,""); print; exit}' "$project")
+fingerprint=$(cat "$dol_in" "$rel_in" "$project" "$workspace/$function_map" "$workspace/runtime/include/region/$region.h" "$translator_dll" <(echo "$runtime_sources_hash") | shasum -a 256 | cut -d' ' -f1)
 reuse=0
 if [[ -f "$provenance" ]] && grep -q "\"$fingerprint\"" "$provenance" && [[ -f "$base_metadata" && -f "$base_manifest" ]]; then reuse=1; fi
 if (( reuse )); then

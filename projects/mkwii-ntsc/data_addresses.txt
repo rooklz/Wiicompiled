@@ -133,6 +133,48 @@
 # DOL: PAL .ctors 80244DE0..80244EA0 -> NTSC 80244D40..80244E00 (sec9); .dtors NTSC 80244E00..80244E20 (sec10). REL: PAL .ctors 8088F400..8088F704 -> NTSC 8088AFD0..8088B2D4 (sec2); .dtors 8088B2D4..8088B2E0 (sec3).
 # The NTSC base manifest agrees: .ctors 0x80244d40-0x80244e00, .dtors 0x80244e00-0x80244e20, StaticR.rel:2 0x8088afd0-0x8088b2d4, StaticR.rel:3 0x8088b2d4-0x8088b2e0.
 
+# ================================================================ Batch 3
+# ---------------------------------------------------------------- AX / DSP (DOL .data/.bss/.sbss/.sdata2)
+# __AXOutInitDSP fills the DSPTaskInfo __AXDSPTask (NTSC 0x802F3E20): +0xC iram_mmem_addr, +0x10 iram_length, +0x18 dram_mmem_addr, +0x1C dram_length(64), +0x20 dram_addr(3282), +0x28.. callbacks 0x801268a8/0x801268b4/0x80126908/0x80126918 (= PAL 80126948/54/9A8/9B8 - 0xA0)
+8027F820 8027B4E0 __AXOutInitDSP@80126960 [3fa08028] lis r29,0x8028; @80126964 [3bbdb4e0] addi r29,r29,-0x4b20 (=0x8027B4E0, DSP ucode image: vector table 029f 0f3c 029f 0f48 ... at that address); @80126990 [93be000c] stw r29,0xc(r30) (task.iram_mmem_addr; r30 = __AXDSPTask)   # .data delta 0x4340 for this object (not 0x4380)
+802F81A0 802F3E20 __AXOutInitDSP@80126950 [3fc0802f] lis r30,0x802f; @80126954 [3bde3e20] addi r30,r30,0x3e20 (=0x802F3E20 __AXDSPTask); @801269d8 [3c60802f] lis r3,0x802f; @801269dc [38633e20] addi r3,r3,0x3e20 -> DSPAddTask(&__AXDSPTask); __AXOutAiCallback@80126830 [3c60802f] lis r3,0x802f; @80126838 [38633e20] addi r3,r3,0x3e20
+802F8200 802F3E80 __AXOutInitDSP@80126924 [3d60802f] lis r11,0x802f; @80126944 [396b3e80] addi r11,r11,0x3e80 (=0x802F3E80 DRAM image); @8012699c [917e0018] stw r11,0x18(r30) (task.dram_mmem_addr); @80126978 [39400040] li r10,64; @801269a0 [915e001c] stw r10,0x1c(r30) (dram_length = 64); @80126980 [39200cd2] li r9,3282; @801269a4 [913e0020] stw r9,0x20(r30) (dram_addr)
+80386608 80382288 DSPInit@8015d3d0 [800d9a08] lwz r0,-0x65f8(r13) (already-initialised check); DSPInit@8015d448 [900d9a08] stw r0,-0x65f8(r13) (=1); DSPCheckInit@8015d464 [806d9a08] lwz r3,-0x65f8(r13)
+80386610 80382290 DSPAssertTask@8015d510 [900d9a10] stw r0,-0x65f0(r13) (=1); DSPAssertTask@8015d538 [900d9a10] stw r0,-0x65f0(r13); __DSPHandler@8015d6d8 [800d9a10] lwz r0,-0x65f0(r13)
+80386614 80382294 DSPAssertTask@8015d50c [93cd9a14] stw r30,-0x65ec(r13) (= task being asserted); DSPAssertTask@8015d534 [93cd9a14] stw r30,-0x65ec(r13)
+80386618 80382298 DSPInit@8015d438 [908d9a18] stw r4,-0x65e8(r13) (=0, cleared with the task pointers below)
+8038661C 8038229C DSPInit@8015d440 [908d9a1c] stw r4,-0x65e4(r13) (=0); __DSPHandler@8015d96c [806d9a1c] lwz r3,-0x65e4(r13); __DSP_insert_task@8015dd60 [906d9a1c] stw r3,-0x65e4(r13)
+80386620 803822A0 DSPInit@8015d444 [908d9a20] stw r4,-0x65e0(r13) (=0); DSPAddTask@8015d4ac [800d9a20] lwz r0,-0x65e0(r13); __DSPHandler@8015d968 [800d9a20] lwz r0,-0x65e0(r13)
+80386624 803822A4 DSPInit@8015d43c [908d9a24] stw r4,-0x65dc(r13) (=0); DSPAssertTask@8015d4f8 [80ad9a24] lwz r5,-0x65dc(r13); __DSPHandler@8015d634 [80ad9a24] lwz r5,-0x65dc(r13)
+80388588 80384208 AXFXReverbStdExpCallback@8012b81c [c04295e8] lfs f2,-0x6a18(r2) (cell 0x80384208 = 1.0f in the DOL image); AXFXReverbStdExp__InitParams@8012becc [c02295e8] lfs f1,-0x6a18(r2)   # r2-0x6a18 in both regions (PAL 0x8038EFA0-0x6A18=0x80388588)
+8038858C 8038420C AXFXReverbStdExpCallback@8012b82c [c06295ec] lfs f3,-0x6a14(r2) (cell 0x8038420C = 0.6f in the DOL image)
+
+# ---------------------------------------------------------------- AI (DOL .sbss)
+80386448 803820C8 AIInit@8012402c [800d9848] lwz r0,-0x67b8(r13) (already-initialised check); AIInit@80124170 [900d9848] stw r0,-0x67b8(r13) (=1); AICheckInit@80123ff4 [806d9848] lwz r3,-0x67b8(r13)
+8038644C 803820CC __AIDHandler@801241d8 [800d984c] lwz r0,-0x67b4(r13) (callback-busy check); __AIDHandler@801241ec [908d984c] stw r4,-0x67b4(r13) (=1)
+8038647C 803820FC AIInit@8012415c [93ed987c] stw r31,-0x6784(r13); __AIDHandler@801241e4 [800d987c] lwz r0,-0x6784(r13); __AICallbackStackSwitch@8012425c [3ca08038] lis r5,0x8038; @80124260 [38a520fc] addi r5,r5,0x20fc (=0x803820FC)
+80386480 80382100 AIRegisterDMACallback@80123f00 [83ed9880] lwz r31,-0x6780(r13) (old callback); AIRegisterDMACallback@80123f08 [93cd9880] stw r30,-0x6780(r13) (new callback); AIInit@80124150 [900d9880] stw r0,-0x6780(r13) (=0); __AIDHandler@801241cc [806d9880] lwz r3,-0x6780(r13)
+
+# ---------------------------------------------------------------- OS thread/interrupt globals (DOL .bss/.sdata/.sbss)
+80347130 80342DB0 OS::CreateThread@801a9ea8 [3c808034] lis r4,0x8034; @801a9eac [38842d70] addi r4,r4,0x2d70; @801a9eb0 [80040040] lwz r0,0x40(r4) (=0x80342DB0); @801a9eb4 [2c000000] cmpwi r0,0 -> skip the FP/PS context init; when set: @801a9ecc [60a50900] ori r5,r5,0x900 (srr1), @801a9ed4 [60840001] ori r4,r4,1 (mode), fpscr from the .sdata word below (exactly the sequence os_thread.cpp mirrors)
+80347498 80343118 OS::__ThreadInit@801a95a0 [3fe08034] lis r31,0x8034; @801a95a4 [3bff3118] addi r31,r31,0x3118 (=0x80343118 DefaultThread; RunQueue[32] at 0x80343430 = +0x318 follows it)
+803478B0 80343530 SelectThread@801a9ca0 [3c608034] lis r3,0x8034; @801a9ca8 [38633530] addi r3,r3,0x3530 (=0x80343530 IdleContext -> OSLoadContext); SelectThread@801a9cd0 [3c608034] lis r3,0x8034; @801a9cd4 [38633530] addi r3,r3,0x3530
+80385AA8 80381728 OS::CreateThread@801a9ee0 [808d8ea8] lwz r4,-0x7158(r13) (__OSFpscrEnableBits); @801a9ee4 [54840638] rlwinm r4,r4,0,24,28 (&0xF8); @801a9ee8 [60840004] ori r4,r4,4; @801a9eec [909f0194] stw r4,0x194(r31) (thread->context.fpscr); OS::SetErrorHandler@801a28ac [808d8ea8] lwz r4,-0x7158(r13)   # .sdata, r13-0x7158 both regions
+80385AE0 80381760 OS::SetSwitchThreadCallback@801a952c [83ed8ee0] lwz r31,-0x7120(r13) (old callback); @801a9540 [93cd8ee0] stw r30,-0x7120(r13) (new); SelectThread@801a9c84 [818d8ee0] lwz r12,-0x7120(r13) (called on switch); OS::__ThreadInit@801a9620 [818d8ee0] lwz r12,-0x7120(r13)   # .sdata, r13-0x7120 both regions
+803868F8 80382578 OS::__SetInterruptHandler@801a6558 [80ad9cf8] lwz r5,-0x6308(r13) (InterruptHandlerTable ptr, then stwx handler); OS::__GetInterruptHandler@801a656c [808d9cf8] lwz r4,-0x6308(r13); OS::__InterruptInit@801a65a4 [906d9cf8] stw r3,-0x6308(r13); OS::__DispatchInterrupt@801a6bc0 [806d9cf8] lwz r3,-0x6308(r13)
+80386298 80381F18 RFL::iGetManager@800bc3d0 [806d9698] lwz r3,-0x6968(r13) (returns the RFL manager pointer); RFL::Init@800bbb34 [800d9698] lwz r0,-0x6968(r13)
+80336278 80331EF8 BTM_IsDeviceUp@8013a260 [3c608033] lis r3,0x8033; @8013a264 [38631ef8] addi r3,r3,0x1ef8 (=0x80331EF8 btm_cb); @8013a268 [8863064e] lbz r3,0x64e(r3) (device state; compared with 5, matching os_init.cpp's +0x64E/5); btm_acl_init@80137bc4 [38631ef8] addi r3,r3,0x1ef8
+
+# ---------------------------------------------------------------- StaticR.rel THP player state and movie mode table (relocation method, bss base 0x809B8F20)
+# THP ActivePlayer struct = REL bss+0x1420 in both regions (PAL 0x809BEB00 = 0x809BD6E0+0x1420; NTSC 0x809BA340); the runtime's 809BEBA0..A7 are its +0xA0 (open) and +0xA4..+0xA7 byte fields.
+809BEBA0 809BA3E0 THP::PlayerOpen@8054ad7c [3fa00000] lis r29 (ADDR16_HA -> sec6+0x1420); @8054ad84 [3bbd0000] addi r29,r29 (ADDR16_LO -> 0x809BA340 ActivePlayer); @8054ada0 [3bdd0000] addi r30,r29,0; @8054ada4 [801e00a0] lwz r0,0xa0(r30) (already-open check); @8054afc8 [901e00a0] stw r0,0xa0(r30) (open = 1); THP::PlayerClose@8054aff8 [3c600000] lis r3; @8054b000 [38630000] addi r3,r3 (-> 0x809BA340); @8054b020 [900300a0] stw r0,0xa0(r3) (open = 0)   [reloc-base 0x809BA340 + 0xA0]
+809BEBA4 809BA3E4 THP::PlayerOpen@8054afbc [989e00a4] stb r4,0xa4(r30) (r30 = ActivePlayer 0x809BA340 from @8054ad7c [3fa00000] / @8054ad84 [3bbd0000] / @8054ada0 [3bdd0000])   [reloc-base 0x809BA340 + 0xA4]
+809BEBA5 809BA3E5 THP::PlayerOpen@8054afb4 [989e00a5] stb r4,0xa5(r30) (same base: @8054ad7c [3fa00000] / @8054ad84 [3bbd0000] / @8054ada0 [3bdd0000])   [reloc-base 0x809BA340 + 0xA5]
+809BEBA6 809BA3E6 THP::PlayerOpen@8054afc0 [989e00a6] stb r4,0xa6(r30) (same base: @8054ad7c [3fa00000] / @8054ad84 [3bbd0000] / @8054ada0 [3bdd0000])   [reloc-base 0x809BA340 + 0xA6]
+809BEBA7 809BA3E7 THP::PlayerOpen@8054aec4 [981e00a7] stb r0,0xa7(r30) (same base: @8054ad7c [3fa00000] / @8054ad84 [3bbd0000] / @8054ada0 [3bdd0000])   [reloc-base 0x809BA340 + 0xA7]
+809BECF0 809BA530 THP::PlayerQuit@8054ad48 [3c600000] lis r3 (ADDR16_HA -> sec6+0x1610); @8054ad50 [90030000] stw r0,0(r3) (ADDR16_LO -> sec6+0x1610 = 0x809BA530, Initialized = 0); THP::PlayerDrawDone@8054bee0 [3c600000] lis r3; @8054bee4 [80030000] lwz r0,0(r3) (-> 0x809BA530)   # PAL +0x1610 under base 0x809BD6E0, same offset
+8088FDB8 8088B960 MovieManager::Prepare@805258b0 [801f00a8] lwz r0,0xa8(r31) (mode); @805258b4 [3c800000] lis r4 (ADDR16_HA -> sec4+0x680); @805258b8 [38840000] addi r4,r4 (ADDR16_LO -> sec4+0x680 = 0x8088B960); @805258c0 [5400103a] slwi r0,r0,2; @805258c8 [7c84002e] lwzx r4,r4,r0 (audioSystem = table[mode]) -> THP::PlayerPrepare; MovieManager::PrepareAsync@8052594c [3c800000] lis r4; @80525950 [38840000] addi r4,r4 (-> 0x8088B960); @80525960 [7c84002e] lwzx r4,r4,r0   # REL .rodata: PAL 0x8088FDB8 is .rodata+0x698 from 0x8088F720 but the NTSC table is .rodata+0x680; matched by function, not by delta
+
 # ---------------------------------------------------------------- Notes
 # * No PAL binary is available on this machine (both MKW images found are RMCE01), so PAL-side offsets are
 #   PAL_addr - PAL_r13/r2 by definition; each NTSC-U instruction above was matched by function identity (port table +
