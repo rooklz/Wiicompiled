@@ -86,3 +86,4 @@ output.txt
 /tools/*
 !/tools/region/
 !/tools/macos/
+__pycache__/
