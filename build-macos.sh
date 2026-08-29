@@ -8,7 +8,11 @@
 #   ./build-macos.sh --clean                             discard translation and build caches
 #   ./build-macos.sh --parallel N                        pin all parallelism to N
 #   ./build-macos.sh --cpu <-mcpu flag>                  e.g. -mcpu=apple-m4 (default -mcpu=native)
-#   ./build-macos.sh --profile base|wiimmfi              wiimmfi: translate the executables patched by
+#   ./build-macos.sh --profile base|wiimmfi|retro-rewind
+#                                                        retro-rewind: also translate the Retro Rewind
+#                                                        pack (PulsarPacks/completed/RetroRewind/RetroRewind6)
+#                                                        and build the RetroRewind product
+#                                                        wiimmfi: translate the executables patched by
 #                                                        Wiimm's patcher (WIIMMFI_PATCHER_DIR, run under
 #                                                        Rosetta) and build the Wiimmfi UI overlay
 #
@@ -92,6 +96,11 @@ case "$region" in
 esac
 product_name=WiiCompiled
 generated_name=generated
+retro_root=$workspace/PulsarPacks/completed/RetroRewind/RetroRewind6
+if [[ "$profile" == "retro-rewind" ]]; then
+    [[ -f "$retro_root/Binaries/Code.pul" ]] || fail "Retro Rewind pack missing: $retro_root/Binaries/Code.pul (download the full pack and place/symlink RetroRewind6 there)"
+    product_name=RetroRewind
+fi
 if [[ "$profile" == "wiimmfi" ]]; then
     [[ "$region" == "rmce01" ]] || fail "the wiimmfi profile is only wired for RMCE01 here"
     patcher=${WIIMMFI_PATCHER_DIR:-$HOME/Downloads/wiimmfi-patcher-v7.5}
@@ -134,6 +143,8 @@ base_metadata=$generated/base_translation_output.json
 # substitution returns non-zero - which that idiom does whenever the test is false - aborts.)
 if [[ "$profile" == "wiimmfi" ]]; then
     base_manifest_dir=$workspace/build/wiimmfi; build=$workspace/native-build-$region-wiimmfi; dist=$workspace/dist/$region-wiimmfi
+elif [[ "$profile" == "retro-rewind" ]]; then
+    base_manifest_dir=$workspace/build/base; build=$workspace/native-build-$region; dist=$workspace/dist/$region-retro-rewind
 else
     base_manifest_dir=$workspace/build/base; build=$workspace/native-build-$region; dist=$workspace/dist/$region
 fi
@@ -173,11 +184,24 @@ else
         --functions-dir "$functions" --translation-output-metadata "$base_metadata" --region "$manifest_region"
     printf '{"SchemaVersion":1,"TranslationFingerprint":"%s"}\n' "$fingerprint" > "$provenance"
 fi
+if [[ "$profile" == "retro-rewind" ]]; then
+    retro_out=$workspace/build/mods/retro_rewind_full_cpp
+    step translate-mod "Translating the Retro Rewind Code.pul (region $manifest_region)"
+    translator translate-mod --project "$project" --profile retro-rewind \
+        --base-manifest "$base_manifest" --base-translation-output-metadata "$base_metadata" \
+        --code-pul "$retro_root/Binaries/Code.pul" --mod-root "$retro_root" --mod-name "Retro Rewind" \
+        --region "$manifest_region" --out "$retro_out" --prefer-cached-inputs --emit-cpp \
+        --threads "$translator_threads" ${MKW_RETRO_WFC_PAYLOAD:+--retro-wfc-payload "$MKW_RETRO_WFC_PAYLOAD"} ${MKW_SKIP_RETRO_WFC:+--skip-retro-wfc}
+fi
 step generate-data-init "Generating local game data initialization"
 translator generate-data-init --project "$project"
 step emit-build-shards "Preparing local native build shards"
-translator emit-build-shards --project "$project" --base-metadata "$base_metadata" \
-    --base-functions-dir "$functions" --native-source-dir "$workspace/runtime/src" --out "$shards"
+shard_args=(emit-build-shards --project "$project" --base-metadata "$base_metadata"
+    --base-functions-dir "$functions" --native-source-dir "$workspace/runtime/src" --out "$shards")
+if [[ "$profile" == "retro-rewind" ]]; then
+    shard_args+=(--resolved-profile "$retro_out/resolved_dispatch_profile.json" --retro-cpp-dir "$retro_out/cpp")
+fi
+translator "${shard_args[@]}"
 
 # --- native build ------------------------------------------------------------------------------
 step configure-native "Configuring the native build ($build)"
@@ -188,12 +212,12 @@ cmake -S "$workspace/runtime" -B "$build" -G Ninja \
     -DAURORA_DAWN_PROVIDER=package -DAURORA_SDL3_PROVIDER=vendor -DAURORA_SDL3_LINKAGE=static \
     -DMKW_GUEST_REGION="$region" -DMKW_AARCH64_CPU_FLAG="$cpu_flag" -DMKW_GENERATED_DIR="$generated" \
     -DMKW_TRANSLATED_COMPILE_JOBS="$translated_jobs"
-step compile "Compiling WiiCompiled"
-cmake --build "$build" --target WiiCompiled --parallel "$global_jobs"
+step compile "Compiling $product_name"
+cmake --build "$build" --target "$product_name" --parallel "$global_jobs"
 
 # --- publish -----------------------------------------------------------------------------------
 mkdir -p "$dist"
-cp -f "$build/WiiCompiled" "$dist/$product_name"
+cp -f "$build/$product_name" "$dist/$product_name"
 for name in dsp_coef.bin initial_pipeline_cache.db; do [[ -f "$build/$name" ]] && cp -f "$build/$name" "$dist/"; done
 [[ -d "$build/wii_bootstrap" ]] && rm -rf "$dist/wii_bootstrap" && cp -R "$build/wii_bootstrap" "$dist/wii_bootstrap"
 cat > "$dist/local-build.json" <<JSON

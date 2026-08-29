@@ -482,7 +482,10 @@ void SystemBridge::SeedLowMemDefaults(const Memory::Config& config) {
     };
 
     std::vector<SeedEntry> entries;
-    constexpr uint32_t kMem1ArenaLoDefault = 0x80399180u;
+    // The executable's own initial stack top (region/guest_region.h): the SDK starts the MEM1
+    // arena there, and every boot-time heap address - including where the game's REL loader
+    // places StaticR.rel - follows from it.
+    constexpr uint32_t kMem1ArenaLoDefault = MKW_REGION_MEM1_ARENA_LO;
     uint32_t mem1ArenaHiDefault = 0x817f0520u;
     constexpr uint32_t kBusClockHz =
         static_cast<uint32_t>(TimeBaseContract::kBusClockHz);

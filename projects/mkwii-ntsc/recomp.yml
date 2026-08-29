@@ -54,4 +54,30 @@ output:
 
 profiles:
   retro-rewind:
-    enabled: false
+    enabled: true
+    requires_game_id: RMCE01
+    requires_dol_sha256: d2beec1b1645fcd134efe9e7e63774b546667764ed8d431029daccd725995694
+    code_pul: PulsarPacks/completed/RetroRewind/RetroRewind6/Binaries/Code.pul
+    mod_root: PulsarPacks/completed/RetroRewind/RetroRewind6
+    # Code.pul is a combined Kamek file with one chunk per region (P, E, J; K empty); E is the
+    # NTSC-U chunk. The module image is placed at the same MEM1-tail reservation as the PAL
+    # profile. The link base is where Pulsar's loader allocates the module on a console -
+    # arena lo + 0x160 (PAL: 0x80399180 + 0x160 = 0x803992E0); NTSC-U's arena lo is
+    # 0x80394E00 (initial stack top from __init_registers), so the same relationship gives
+    # 0x80394F60.
+    region: E
+    module_guest_base: 0x81800000
+    module_link_base: 0x80394F60
+    output: build/mods/retro_rewind_full_cpp
+    enable_retro_wfc: true
+    # The shared Retro-WFC payload keyed by game id; the server serves an RMCE variant.
+    retro_wfc_payload: http://nas.play.rwfc.net/payload?g=RMCED00
+    # PAL hook 0x800ED6E8 ported through the region table lands on the NTSC-U function entry
+    # at 0x800ED648 (stwu/mflr prologue, previous word blr).
+    retro_wfc_legacy_bootstrap_hook: 0x800ED648
+    riivolution:
+      xml: xml/RetroRewind6.xml
+      options:
+        - section: Retro Rewind
+          option: Pack
+          choice: 1

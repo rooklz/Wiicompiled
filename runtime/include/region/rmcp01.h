@@ -10,6 +10,7 @@
 #define MKW_REGION_SC_AREA 2u  // SC AREA index: JPN=0 USA=1 EUR=2
 #define MKW_REGION_SC_GAME_REGION 2u  // SC GAME index: JP=0 US=1 EU=2
 #define MKW_REGION_SC_PRODUCT_CODE "LEH"
+#define MKW_REGION_MEM1_ARENA_LO 0x80399180u  // initial stack top / arena lo
 
 #define MKW_G_800060A4 800060A4
 #define MKW_G_80006348 80006348

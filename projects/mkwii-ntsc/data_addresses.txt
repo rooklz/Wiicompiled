@@ -70,6 +70,69 @@
 8088F400 8088AFD0 REL section table: .ctors start (sec2 off 0x37F070 + base 0x8050BF60)
 8088F704 8088B2D4 REL section table: .ctors end (0x8088AFD0 + 0x304) = .dtors (sec3) start
 
+# ================================================================ Batch 2
+# ---------------------------------------------------------------- GX (DOL .bss/.sbss) - GXInit / __GXFifoInit / __GXPEInit objects
+80343740 8033F3C0 GX::Init@8016b824 [3f808034] lis r28,0x8034; @8016b830 [387cf3c0] addi r3,r28,-0xc40 (=0x8033F3C0 FifoObj -> GXInitFifoBase); @8016b838 [387cf3c0] addi r3,r28,-0xc40 (GXSetCPUFifo); @8016b840 [387cf3c0] addi r3,r28,-0xc40 (GXSetGPFifo); @8016bc9c [3863f3c0] addi r3,r3,-0xc40 (return &FifoObj)
+803437C0 8033F440 .sdata2 cell: the `gx` pointer at NTSC 0x80384348 (r2-0x68d8, see 803886C8 above) contains 0x8033F440 in the DOL image (sec14 file data) = &gxData; PAL cell 0x803886C8 holds 0x803437C0. GX::Init@8016b7d4 [83e29728] (ctx) lwz r31,-0x68d8(r2) loads that cell.
+80343DC0 8033FA40 __GX::FifoInit@8016d12c [3c608034] lis r3,0x8034; @8016d134 [3863fa40] addi r3,r3,-0x5c0 (=0x8033FA40); @8016d138 [38a00024] li r5,0x24 -> memset(&GPFifo,0,0x24)
+80343DE4 8033FA64 __GX::FifoInit@8016d114 [3c608034] lis r3,0x8034; @8016d120 [3863fa64] addi r3,r3,-0x59c (=0x8033FA64); @8016d124 [38a00024] li r5,0x24 -> memset(&CPUFifo,0,0x24); GX::SetCPUFifo@8016c8d4 [3c808034] lis r4,0x8034; @8016c8dc [3884fa64] addi r4,r4,-0x59c; @8016c8e8 [98040022] stb r0,0x22(r4)
+803867B0 80382430 __GX::FifoInit@8016d140 [9bed9bb0] stb r31,-0x6450(r13) (=0); GX::SetCPUFifo@8016c8e0 [980d9bb0] stb r0,-0x6450(r13); GX::GetCPUFifo@8016ce84 [880d9bb0] lbz r0,-0x6450(r13)
+803867B1 80382431 __GX::FifoInit@8016d144 [9bed9bb1] stb r31,-0x644f(r13) (=0)
+803867C0 80382440 __GX::FifoInit@8016d11c [93ed9bc0] stw r31,-0x6440(r13) (r31=0: thread queue head cleared)
+803867C4 80382444 __GX::FifoInit@8016d110 [906d9bc4] stw r3,-0x643c(r13) (r3 = OSGetCurrentThread()); GX::GetCurrentGXThread@8016d2fc [806d9bc4] lwz r3,-0x643c(r13)
+803867D0 80382450 __GX::PEInit@8016eda0 [386d9bd0] addi r3,r13,-0x6430 -> OSInitThreadQueue; GX::DrawDone@8016ea9c [386d9bd0] addi r3,r13,-0x6430 -> OSSleepThread; GX::FinishInterruptHandler@8016ed58 [386d9bd0] addi r3,r13,-0x6430 -> OSWakeupThread
+
+# ---------------------------------------------------------------- OS scheduler (DOL .bss/.sbss)
+803477B0 80343430 SetEffectivePriority@801a99b0 [3c608034] lis r3,0x8034; @801a99b8 [38633430] addi r3,r3,0x3430 (=0x80343430 RunQueue[32], indexed by prio*8: @801a99b4 [57e01838] slwi r0,r31,3); SelectThread@801a9bec [3c608034] lis r3,0x8034; @801a9bf4 [38633430] addi r3,r3,0x3430; OS::ResumeThread@801aa580 [3c608034] lis r3,0x8034; @801aa588 [38633430] addi r3,r3,0x3430
+80386918 80382598 OS::__ThreadInit@801a97e0 [93ad9d18] stw r29,-0x62e8(r13) (=0); OS::DisableScheduler@801a985c [83ed9d18] lwz r31,-0x62e8(r13); @801a9864 [900d9d18] stw r0,-0x62e8(r13) (count+1); SelectThread@801a9b80 [800d9d18] lwz r0,-0x62e8(r13) (early exit while >0)
+8038691C 8038259C OS::__ThreadInit@801a9718 [906d9d1c] stw r3,-0x62e4(r13)
+80386920 803825A0 OS::__ThreadInit@801a9710 [906d9d20] stw r3,-0x62e0(r13); UnsetRun@801a9908 [80ad9d20] lwz r5,-0x62e0(r13); @801a9918 [900d9d20] stw r0,-0x62e0(r13)
+
+# ---------------------------------------------------------------- SC / game system (DOL .sbss)
+803869E0 80382660 SCGetProductCode@801b2390 [388d9de0] addi r4,r13,-0x6220 (6-byte CODE output buffer: @801b2398 [38a00006] li r5,6); @801b23ac [386d9de0] addi r3,r13,-0x6220 (returned pointer)
+80386000 80381C80 SystemManager::create@8000a5a4 [800d9400] lwz r0,-0x6c00(r13) (s_instance null check); @8000a5c8 [906d9400] stw r3,-0x6c00(r13) (s_instance = new SystemManager); @8000a5d4 [806d9400] lwz r3,-0x6c00(r13); also REL GameScreen::__ct@80561520 [3c600000] lis r3 + @80561524 [80630000] lwz r3,0(r3) carry module-0 relocations to 0x80381C80
+
+# ---------------------------------------------------------------- EGG::Screen statics (DOL .sbss) - delta 0x4380 still holds here
+80386F14 80382B94 EGG::Screen::SetTVModeDefault@8023e1cc [80cda314] lwz r6,-0x5cec(r13) (active screen, cmpwi 0 -> skip); EGG::Screen::SetTVMode@8023e114 [80cda314] lwz r6,-0x5cec(r13); EGG::Screen::CreateDummy@8023cf08 [906da314] stw r3,-0x5cec(r13)
+80386F20 80382BA0 EGG_Screen_cpp_sinit_@8023e37c [c022a07c] (ctx) lfs f1,-0x5f84(r2) (=1.0f constant at 0x80384C9C); @8023e380 [388da320] addi r4,r13,-0x5ce0; @8023e38c [d02da320] stfs f1,-0x5ce0(r13) (gScreenScale.x = 1.0); EGG::Screen::GetPosSizeInEFB@8023d62c [c00da320] lfs f0,-0x5ce0(r13); EGG::Screen::LoadDirectly@8023d1c4 [c00da320] lfs f0,-0x5ce0(r13)
+80386F24 80382BA4 EGG_Screen_cpp_sinit_@8023e390 [d0240004] stfs f1,0x4(r4) with r4 = r13-0x5ce0 (=0x80382BA0) from @8023e380 [388da320] (ctx) addi r4,r13,-0x5ce0 (gScreenScale.y = 1.0; second float of the Vector2f at 0x80382BA0)
+
+# ---------------------------------------------------------------- EGG::DrawGX::SetVtxState vertex arrays (DOL .sdata2 / .rodata)
+# .sdata2 arrays keep their r2 offsets (delta 0x4380); the .rodata arrays sit at PAL-0x320 (PAL .rodata carries 0x280 more bytes before them than NTSC; .rodata starts at PAL-0xA0).
+80388B80 80384800 EGG::DrawGX::SetVtxState@8021b484 [3860000a] li r3,10(GX_VA_NRM); @8021b488 [38829be0] addi r4,r2,-0x6420; @8021b48c [38a00006] li r5,6 -> GXSetArray (states 7/8)
+80388BA0 80384820 EGG::DrawGX::SetVtxState@8021b514 [3860000a] li r3,10; @8021b518 [38829c00] addi r4,r2,-0x6400; @8021b51c [38a00006] li r5,6 -> GXSetArray (state 9)
+80388BC0 80384840 EGG::DrawGX::SetVtxState@8021b588 [38829c20] addi r4,r2,-0x63e0 (POS array, states 10/12); @8021b58c [38600009] li r3,9; @8021b590 [38a00002] li r5,2
+80388BE0 80384860 EGG::DrawGX::SetVtxState@8021b580 [38829c40] addi r4,r2,-0x63c0 (POS array, states 11/13); @8021b5a0 [3860000d] li r3,13(GX_VA_TEX0); @8021b5a4 [38829c40] addi r4,r2,-0x63c0; @8021b5a8 [38a00002] li r5,2
+802574A0 80257180 EGG::DrawGX::SetVtxState@8021b270 [3fe08025] lis r31,0x8025; @8021b274 [3bff7160] addi r31,r31,0x7160 (=0x80257160); @8021b2d8 [389f0020] addi r4,r31,0x20 (=0x80257180); @8021b2dc [38600009] li r3,9(GX_VA_POS); @8021b2e0 [38a00006] li r5,6 (state 0)
+802574E0 802571C0 EGG::DrawGX::SetVtxState@8021b2e8 [389f0060] addi r4,r31,0x60 (=0x802571C0); @8021b2ec [3860000a] li r3,10(GX_VA_NRM); @8021b2f0 [38a00006] li r5,6 (state 0)
+80257520 80257200 EGG::DrawGX::SetVtxState@8021b474 [389f00a0] addi r4,r31,0xa0 (=0x80257200); @8021b478 [38600009] li r3,9; @8021b47c [38a00004] li r5,4 (states 7/8)
+80257540 80257220 EGG::DrawGX::SetVtxState@8021b504 [389f00c0] addi r4,r31,0xc0 (=0x80257220); @8021b508 [38600009] li r3,9; @8021b50c [38a00006] li r5,6 (state 9)
+
+# ---------------------------------------------------------------- EGG::Screen canvas records + vtable (DOL .data) - these sit at PAL-0x4368 (not 0x4380)
+# NTSC record table 0x8029FB80: {608,480,1.0526,1.0} then {832,480,0.7692,1.0} (12-byte records, matching the runtime's 608/832 widths); vtable 0x8029FBA4 = {EGG::Screen::__dt, EGG::Screen::LoadDirectly, EGG::Screen::CopyToG3D, ...}
+802A3EE8 8029FB80 EGG::Screen::SetTVModeDefault@8023e1c4 [4bf73981] bl SCGetAspectRatio; @8023e1e8 [1c80000c] mulli r4,r0,12; @8023e1f0 [3ca0802a] lis r5,0x802a; @8023e1fc [38a5fb80] addi r5,r5,-0x480 (=0x8029FB80 record[0]); @8023e200 [7c85222e] lhzx r4,r5,r4 (record[aspect].width); EGG::Screen::__ct@8023cf38 [3ca0802a] lis r5,0x802a; @8023cf48 [38a5fb80] addi r5,r5,-0x480; REL GameScreen::__ct@80561558 [3c800000] lis r4 / @80561568 [38840000] addi r4,r4,0 carry module-0 relocations to 0x8029FB80
+802A3EF4 8029FB8C record[1] = 0x8029FB80 + 12 (SetTVModeDefault index*12 above; 16:9 record {832,480,...} at 0x8029FB8C in the DOL image)
+802A3F0C 8029FBA4 EGG::Screen::__ct@8023cfac [3c60802a] lis r3,0x802a; @8023cfb0 [3863fba4] addi r3,r3,-0x45c (=0x8029FBA4); @8023cfb8 [907f0038] stw r3,0x38(r31) (vtable at this+0x38); EGG::Screen::__ct(args)@8023d058 [3863fba4] addi r3,r3,-0x45c
+
+# ---------------------------------------------------------------- StaticR.rel (.data / .bss) - resolved through the NTSC-U REL relocation table
+# Method: the REL text carries pre-relocation immediates (lis/addi = 0), so each cited instruction's R_PPC_ADDR16_HA/LO entry (module 1) was
+# looked up at instruction+2 in the import table; target = section address + addend. NTSC-U section addresses: .data (sec5) = 0x808AE520,
+# .bss (sec6) = 0x809B8F20 = 0x8050BF60 + alignUp(filesize 0x4ACF94 + 0x20 heap header, 0x20), which is exactly where the translator
+# (RelFile.CalculateBssOffset) and the NTSC base manifest (build/base/mkwii_base_manifest.json: StaticR.rel:6 = 0x809b8f20..0x809c07d0) place it.
+# PAL cross-check: the runtime's PAL bss identities imply PAL bss base 0x809BD6E0 (0x809C1830 - 0x4150; THP flag 0x809BECF0 = +0x1610 is
+# referenced by NTSC THP::PlayerQuit/PlayerDrawDone at sec6+0x1610; Race::JugemManager 0x809C28B8 = +0x51D8 referenced by NTSC RaceScene::OnEnterEnd).
+# The PAL bss layout is NOT identical everywhere: the audio singleton cluster sits 0x480 higher in PAL (mkw-sp PAL RaceSoundManager 0x809C27F8 =
+# +0x5118 vs NTSC Audio::RaceMgr::CreateInstance -> +0x4C98; ItemMusicManager 0x809C27F0 = +0x5110 vs Audio::ItemAlterationMgr -> +0x4C90), so
+# REL bss identities were matched by function, never by delta.
+808B4C20 808B0570 GameScreen::__ct@805614cc [4bfedec5] bl -> EGG::Screen::__ct (module-0 REL24 reloc to 0x8023cf30; GameScreen is the only REL caller of an EGG::Screen ctor); @805614d0 [3c600000] lis r3 (ADDR16_HA -> sec5+0x2050); @805614d8 [38630000] addi r3,r3 (ADDR16_LO -> sec5+0x2050 = 0x808B0570); @805614dc [907e0038] stw r3,0x38(r30) (vtable at this+0x38, same slot as the EGG::Screen vtable). Vtable contents via ADDR32 relocs: +8 GameScreen::__dt, +0xC EGG::Screen::LoadDirectly, +0x10 EGG::Screen::CopyToG3D (same layout as the EGG::Screen vtable at 0x8029FBA4).
+809C1830 809BD070 Renderer::Register(listIdx)@80560d9c [3ca00000] lis r5 (ADDR16_HA -> sec6+0x4150); @80560da8 [38a50000] addi r5,r5 (ADDR16_LO -> sec6+0x4150 = 0x809BD070 = Render::DrawList instance); @80560da4 [1c04000c] mulli r0,r4,12; @80560dc0 [7c650214] add r3,r5,r0 (&lists[listIdx], 12-byte nw4r::ut::List); 38 sites reference sec6+0x4150 (Renderer::Register2ndList, RemoveFrom1stList/2ndList, ...)
+809C183C 809BD07C Renderer::Register2ndList(NoAppend)@80560ef0 [3ca00000] lis r5 (-> sec6+0x4150); @80560ef8 [38a50000] addi r5,r5 (-> 0x809BD070); @80560f08 [3865000c] addi r3,r5,0xc (second list = DrawList+0xC = 0x809BD07C); Renderer::RemoveFrom2ndList@80560f54 [3ca00000] lis r5; @80560f5c [38a50000] addi r5,r5 (-> 0x809BD070); @80560f60 [3865000c] addi r3,r5,0xc
+809C2898 809BDC58 Audio::Manager::CreateInstance@8070f390 [3c600000] lis r3 (ADDR16_HA -> sec6+0x4d38); @8070f3ac [80030000] lwz r0,0(r3) (ADDR16_LO -> sec6+0x4d38 = 0x809BDC58, null check); @8070f440 [3c600000] lis r3; @8070f444 [93c30000] stw r30,0(r3) (-> sec6+0x4d38: spInstance = new Audio::Manager); the object is EGG::ExpAudioMgr-derived: Audio::Manager::StartSound@8070fcc0 [806305bc] lwz r3,0x5bc(r3) (archive player pointer) and DOL EGG::ExpAudioMgr::Initialize@802114e4 [807b05bc] lwz r3,0x5bc(r27), matching the runtime's kArchivePlayerOffset 0x5BC. PAL offset 0x51B8 = NTSC 0x4D38 + 0x480, the same shift as the mkw-sp audio singletons.
+
+# ---------------------------------------------------------------- .ctors/.dtors confirmation (batch 2 request) - unchanged from above
+# DOL: PAL .ctors 80244DE0..80244EA0 -> NTSC 80244D40..80244E00 (sec9); .dtors NTSC 80244E00..80244E20 (sec10). REL: PAL .ctors 8088F400..8088F704 -> NTSC 8088AFD0..8088B2D4 (sec2); .dtors 8088B2D4..8088B2E0 (sec3).
+# The NTSC base manifest agrees: .ctors 0x80244d40-0x80244e00, .dtors 0x80244e00-0x80244e20, StaticR.rel:2 0x8088afd0-0x8088b2d4, StaticR.rel:3 0x8088b2d4-0x8088b2e0.
+
 # ---------------------------------------------------------------- Notes
 # * No PAL binary is available on this machine (both MKW images found are RMCE01), so PAL-side offsets are
 #   PAL_addr - PAL_r13/r2 by definition; each NTSC-U instruction above was matched by function identity (port table +

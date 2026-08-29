@@ -35,4 +35,17 @@ inline constexpr bool MkwStateFreeAbiEnabled(uint32_t) noexcept
 #define MKW_PPC_COLD __attribute__((cold))
 
 
+#if defined(__aarch64__)
+// Two-value state-free results travel in x0/x1 on AArch64 when the type is a plain 16-byte
+// aggregate (AAPCS64 returns it in the integer registers); the vector spelling below would
+// force the pair through a NEON register and cost two cross-domain moves on each side of
+// every state-free call. Generated code only ever brace-initialises it and indexes it.
+struct MkwStateFreeResult2
+{
+    uint64_t v[2];
+    constexpr uint64_t operator[](int lane) const noexcept { return v[lane]; }
+    constexpr uint64_t& operator[](int lane) noexcept { return v[lane]; }
+};
+#else
 using MkwStateFreeResult2 = uint64_t __attribute__((ext_vector_type(2)));
+#endif
