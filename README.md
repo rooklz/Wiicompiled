@@ -16,6 +16,14 @@ anywhere at runtime.
 
 ---
 
+## Running on a PS3
+
+There's a work-in-progress port to real PS3 hardware under [ps3/](ps3/). Same
+translated output, running natively on the Cell PPU — no emulator. It boots on
+the console; not playable yet. See [ps3/README.md](ps3/README.md).
+
+---
+
 ## What it does
 
 **Unlocked framerate with interpolation.** 
