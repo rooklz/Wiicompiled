@@ -97,12 +97,22 @@ a product with the matching overlay configuration.
 
 ## Online play
 
-* **Wiimmfi**: the `wiimmfi` profile translates the executables after Wiimm's patcher
-  (`wstrt patch --clean-dol --wiimmfi --all-ranks`, run under Rosetta) has been applied to copies,
-  exactly as the official disc patcher does: one added code section at `0x802C0000` that becomes
-  the entry point, one NOPed call, the `wiimmfi.de` host names and the "all ranks" filters. The UI
-  text overlay (`overlays/wiimmfi`) carries the patcher's message replacements. Network HLE routes
-  the plain-HTTP NAS login the same way it already does for Retro-WFC.
+* **Wiimmfi**: not runnable by a static recompilation, and the reason is structural, not a
+  missing feature. Wiimm's patch (`wstrt patch --wiimmfi`) adds one 0x468-byte section at
+  `0x802C0000` and makes it the entry point. Disassembled (`tools/region/disasm.py` on the patched
+  DOL), that stub (a) fingerprints the loader environment, (b) carves a block from the top of the
+  MEM1 arena, (c) XOR-decodes an obfuscated code blob (`0x802C0360..0x802C0460`, rotating key)
+  into it, (d) walks an embedded patch list that writes `b` branches into the game's code and
+  32-bit values into memory, (e) zeroes itself, and (f) jumps to `__start`. The translator only
+  ever sees two functions (`func_802C0000`, `func_802C003C`); the code that actually talks to the
+  server exists solely at run time in memory the runtime's executable-write guard protects, so a
+  faithful port would have to reverse-engineer and statically re-apply a deliberately protected
+  anti-tamper mechanism - which is also what Wiimmfi's own rules forbid. Upstream WiiCompiled
+  does not support Wiimmfi for the same reason; it supports Retro-WFC, whose payload is an open,
+  statically translatable format. The `wiimmfi` profile, the patched inputs and the UI text
+  overlay are kept in the tree as the record of that analysis (`projects/mkwii-ntsc-wiimmfi`,
+  `overlays/wiimmfi`), not as a supported product. Wiimmfi play stays a Dolphin/console matter
+  unless Wiimm publishes a recompilation-compatible patch.
 * **Retro Rewind / Retro-WFC**: upstream's static profile (Kamek/Pulsar code translated together
   with the game), instantiated for NTSC-U with the pack's own `E` chunk, the RMCE Retro-WFC
   payload and the ported bootstrap hook. See the status section.

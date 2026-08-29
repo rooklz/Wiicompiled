@@ -140,7 +140,28 @@ public static class KamekPatchPlanner
             var section = FindSection(baseManifest, command.Address);
             if (section is null)
             {
-                classifications.Add(Unsupported(command, "absolute command address is outside known base sections"));
+                // Not in any named section, but inside a module's loaded image (for StaticR.rel:
+                // the relocation/import tables between .data and .bss, dead memory once OSLink
+                // has run). Retro Rewind's Code.pul carries the same absolute PAL address in every
+                // region chunk, so on an NTSC-U console the write lands exactly there and changes
+                // nothing; applying it as a plain data write reproduces that, refusing the mod
+                // would not. Anything outside every image stays unsupported.
+                var image = FindImageSpan(baseManifest, command.Address);
+                if (image is null || !IsPlainDataCommand(command.Id))
+                {
+                    classifications.Add(Unsupported(command, "absolute command address is outside known base sections"));
+                    continue;
+                }
+                classifications.Add(new KamekPatchClassification(
+                    KamekPatchClassificationKind.BaseDataPatch,
+                    command.Id,
+                    command.Address,
+                    true,
+                    null,
+                    null,
+                    image + ":image",
+                    "absolute command inside the module image but outside its named sections (post-link relocation area); applied as a data write, as on a console",
+                    command.Arguments));
                 continue;
             }
 
@@ -200,6 +221,30 @@ public static class KamekPatchPlanner
             Classifications = classifications
         };
     }
+
+    /// <summary>
+    /// The source (DOL / REL name) whose loaded image span - lowest to highest guest address of
+    /// its named sections - contains <paramref name="address"/>, or null.
+    /// </summary>
+    private static string? FindImageSpan(BaseManifest baseManifest, uint address)
+    {
+        foreach (var group in baseManifest.Sections
+                     .Where(static s => s.GuestEnd > s.GuestStart)
+                     .GroupBy(static s => s.Source))
+        {
+            var start = group.Min(static s => s.GuestStart);
+            var end = group.Max(static s => s.GuestEnd);
+            if (address >= start && address < end) return group.Key;
+        }
+        return null;
+    }
+
+    // Only plain value writes are meaningful in dead image memory; branch-style commands there
+    // would mean the mod expects code that does not exist.
+    private static bool IsPlainDataCommand(KamekCommandId id) =>
+        id is KamekCommandId.Addr32 or KamekCommandId.Addr16Lo or KamekCommandId.Addr16Hi or
+              KamekCommandId.Addr16Ha or KamekCommandId.Write32 or KamekCommandId.Write16 or
+              KamekCommandId.Write8;
 
     private static KamekPatchClassification Unsupported(KamekCommand command, string reason) =>
         new(

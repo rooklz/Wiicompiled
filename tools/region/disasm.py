@@ -35,11 +35,25 @@ def main():
         img,secs=parse_rel(rel,relbase)
     b=read_words(img,secs,addr,n)
     mc=shutil.which('llvm-mc') or '/opt/homebrew/opt/llvm/bin/llvm-mc'
-    hexs=' '.join(f'0x{x:02x}' for x in b)
+    # One word per line keeps the decoder aligned even when data words sit between instructions:
+    # llvm-mc resynchronises per input line, and an undecodable word simply yields no output.
+    hexs='\n'.join(' '.join(f'0x{x:02x}' for x in b[i:i+4]) for i in range(0,len(b)-len(b)%4,4))
     out=subprocess.run([mc,'--disassemble','-triple=powerpc-unknown-linux-gnu','-mcpu=750'],input=hexs,capture_output=True,text=True)
-    lines=[l.strip() for l in out.stdout.splitlines() if l.strip() and not l.strip().startswith('.')]
+    raw=[l for l in out.stdout.splitlines()]
+    # llvm-mc prints a '\t.text' header once, then one line per decoded word; errors go to stderr
+    # with the offending line number, so rebuild the per-word list from those line numbers.
+    decoded=[l.strip() for l in raw if l.strip() and not l.strip().startswith('.')]
+    bad=set()
+    for l in out.stderr.splitlines():
+        m=__import__('re').search(r'<stdin>:(\d+):', l)
+        if m: bad.add(int(m.group(1))-1)
+    lines=[]; k=0
+    for i in range(len(b)//4):
+        if i in bad: lines.append('??')
+        else:
+            lines.append(decoded[k] if k<len(decoded) else '??'); k+=1
     pc=addr; hi={}
-    for i in range(0,len(b),4):
+    for i in range(0,len(b)-len(b)%4,4):
         w=struct.unpack('>I',b[i:i+4])[0]; ins=lines[i//4] if i//4<len(lines) else '??'
         note=''
         op=w>>26; rt=(w>>21)&31; ra=(w>>16)&31; simm=w&0xFFFF; simm=simm-0x10000 if simm&0x8000 else simm

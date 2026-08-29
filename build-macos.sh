@@ -213,12 +213,15 @@ cmake -S "$workspace/runtime" -B "$build" -G Ninja \
     -DAURORA_DAWN_PROVIDER=package -DAURORA_SDL3_PROVIDER=vendor -DAURORA_SDL3_LINKAGE=static \
     -DMKW_GUEST_REGION="$region" -DMKW_AARCH64_CPU_FLAG="$cpu_flag" -DMKW_GENERATED_DIR="$generated" \
     -DMKW_TRANSLATED_COMPILE_JOBS="$translated_jobs"
-step compile "Compiling $product_name"
-cmake --build "$build" --target "$product_name" --parallel "$global_jobs"
+# CMake target: the Wiimmfi variant is the WiiCompiled target built from its own translation;
+# only its published name differs. Retro Rewind is its own target.
+cmake_target=WiiCompiled; [[ "$profile" == "retro-rewind" ]] && cmake_target=RetroRewind
+step compile "Compiling $cmake_target"
+cmake --build "$build" --target "$cmake_target" --parallel "$global_jobs"
 
 # --- publish -----------------------------------------------------------------------------------
 mkdir -p "$dist"
-cp -f "$build/$product_name" "$dist/$product_name"
+cp -f "$build/$cmake_target" "$dist/$product_name"
 for name in dsp_coef.bin initial_pipeline_cache.db; do [[ -f "$build/$name" ]] && cp -f "$build/$name" "$dist/"; done
 [[ -d "$build/wii_bootstrap" ]] && rm -rf "$dist/wii_bootstrap" && cp -R "$build/wii_bootstrap" "$dist/wii_bootstrap"
 cat > "$dist/local-build.json" <<JSON
