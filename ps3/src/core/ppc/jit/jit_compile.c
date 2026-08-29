@@ -1537,13 +1537,13 @@ static int emit_ea_x(JitContext *c, u32 op, int scratch)
  * families that matter separated out by the caller. */
 u64 g_jit_fallback_op[64];
 u64 g_jit_fallback_total;
-int g_no_psq_store;      /* wiicompiled-nopsqst.txt: decline compiled psq_st */
+int g_no_psq_store;      /* dolphin-nopsqst.txt: decline compiled psq_st */
 /* Self-loops with interior branch exits keep their registers live across the
  * back edge. This was refused until measured: the refusal was a compile-time
  * guess tuned on decodeSZS, whose back edge is cold, while the in-race hot
  * block 801b5e3c is the opposite shape (89.9M iterations of one body). In-race
  * the allow-case wins 7.033 -> 7.698 fps, 24.592 -> 23.577 cycles/guest inst.
- * wiicompiled-nowarmcold.txt restores the old refusal. */
+ * dolphin-nowarmcold.txt restores the old refusal. */
 int g_warm_no_cold;
 u32 g_warm_captured;    /* blocks given warm continuity              */
 u32 g_warm_had_cold;    /* ...of which had an interior branch exit   */

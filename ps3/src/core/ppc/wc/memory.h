@@ -27,7 +27,7 @@ extern "C" {
  * real work is a 4x4 multiply.
  *
  * r14 is callee-saved in the PowerPC ELF ABI, so anything the port calls --
- * libc, the system software, the emulator's own C -- is already obliged to preserve it.
+ * libc, the SDK, the emulator's own C -- is already obliged to preserve it.
  * Pinning it costs one register and removes a load from every access. This is
  * the same trick the JIT uses (H_MEMBASE), for the same reason.
  *

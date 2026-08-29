@@ -57,7 +57,7 @@ static FPSrc ras_source(unsigned channel)
 /* Until now TEV_CC_KONST resolved to TEV_REG_C2 -- the third ordinary register, */
 /* which is neither the right bank nor the right selection. That is a colour     */
 /* that is plausible rather than absent, so nothing about the picture says       */
-/* "konst": over the 396 course and kart materials the game defines, 173     */
+/* "konst": over the 396 course and kart materials read out of the disc, 173     */
 /* alpha operands and 51 colour operands select a konst, and all 224 of them     */
 /* were reading whatever the last stage happened to leave in C2.                 */
 /* ------------------------------------------------------------------ */

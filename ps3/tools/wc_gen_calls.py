@@ -12,7 +12,7 @@ The translator emits `InvokeDirectCpu<0xADDR>(ctx)` for a direct guest `bl` and
 
 Native HLE overrides are applied by name: any address listed in the override
 map dispatches to the native implementation instead of the translated body,
-which is how the game's hardware-touching functions get replaced.
+which is how the SDK's hardware-touching functions get replaced.
 
     wc_gen_calls.py <functions_dir> <out_dir> [overrides.txt]
 """
@@ -44,6 +44,18 @@ if os.path.exists(_tgt):
 addrs = sorted(int(m.group(1), 16)
                for f in os.listdir(fdir)
                for m in [re.fullmatch(r'func_([0-9A-Fa-f]{8})\.cpp', f)] if m)
+
+# Optional subset (wc_subset.py output): generate for exactly the linked set.
+# The direct-call specializations all live in this one file, so a partial
+# archive without a matching partial generation is an undefined-symbol wall.
+_sub = os.environ.get("WC_SUBSET")
+if _sub:
+    keep = set()
+    for _ln in open(_sub):
+        _ln = _ln.strip()
+        if _ln: keep.add(int(_ln, 16))
+    addrs = [a for a in addrs if a in keep]
+    sys.stderr.write("wc_gen_calls: subset %d of %d functions\n" % (len(addrs), len(keep)))
 os.makedirs(outdir, exist_ok=True)
 
 with open(os.path.join(outdir, "wc_calls.h"), "w") as h:
@@ -93,5 +105,14 @@ with open(os.path.join(outdir, "wc_calls.cpp"), "w") as c:
             '            { WC_DISPATCH(target, ctx); kTable[mid].fn(ctx); return; }\n'
             '        if (kTable[mid].addr < target) lo = mid + 1; else hi = mid;\n'
             '    }\n'
-            '    WcUnresolvedCall(target, ctx);\n}\n')
+            '    WcUnresolvedCall(target, ctx);\n}\n'
+            '\n/* Hybrid bridge: let the JIT-side dispatcher reach the linked set. */\n'
+            'extern "C" void (*wc_table_lookup(uint32_t target))(CpuContext*)\n{\n'
+            '    unsigned lo = 0, hi = kCount;\n'
+            '    while (lo < hi) {\n'
+            '        unsigned mid = (lo + hi) / 2;\n'
+            '        if (kTable[mid].addr == target) return kTable[mid].fn;\n'
+            '        if (kTable[mid].addr < target) lo = mid + 1; else hi = mid;\n'
+            '    }\n'
+            '    return 0;\n}\n')
 print("wrote wc_calls.h / wc_calls.cpp for %d functions (%d native overrides)" % (len(addrs), len(overrides)))

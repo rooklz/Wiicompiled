@@ -26,7 +26,7 @@
 /* written `unsigned long long` typedefs are a *different type* of the same     */
 /* width and every translation unit that sees both headers fails to compile.    */
 /* Matching stdint exactly makes the two declarations identical, which C        */
-/* permits, and keeps us interoperable with the platform toolchain.                   */
+/* permits, and keeps us interoperable with the platform SDK.                   */
 /* ------------------------------------------------------------------ */
 
 typedef uint8_t   u8;

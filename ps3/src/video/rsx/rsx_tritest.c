@@ -3,7 +3,7 @@
  * The narrowest possible test of the claim the whole graphics port rests on:
  * that fp_emitter.h and vp_emitter.h emit microcode a real RSX will execute.
  * They are verified against `cgcomp` word for word, which proves the encoding
- * matches cgcomp -- but "matches the reference assembler" and "runs on
+ * matches Sony's compiler -- but "matches the reference assembler" and "runs on
  * the GPU" are different claims, and only hardware can settle the second.
  *
  * Deliberately minimal: a fixed triangle in clip space, no matrices, no

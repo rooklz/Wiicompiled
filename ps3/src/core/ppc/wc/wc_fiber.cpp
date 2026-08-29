@@ -12,7 +12,7 @@
  * hardware's rfi would; MSR comes from the context's SRR1. After that, a
  * resumed fiber simply unwinds its frozen host frames; a first-run fiber
  * invokes the entry from SRR0 and, if the entry returns, hands the return
- * value to the translated OSExitThread -- the system software itself retires the thread.
+ * value to the translated OSExitThread -- the SDK itself retires the thread.
  */
 #include "fiber.h"
 extern "C" {
@@ -27,6 +27,19 @@ extern "C" {
 #include <cstdio>
 
 extern "C" void func_801A1EB8(CpuContext *);   /* OSLoadContext (translated) */
+extern "C" void wc_irq_state_stash(void *);
+static int s_last_saved = -1;
+static uint64_t fc_checksum(const FiberCtx *fc)
+{
+    const uint64_t *w = (const uint64_t *)fc;
+    size_t n = offsetof(FiberCtx, chk) / 8u;
+    uint64_t c = 0x9E3779B97F4A7C15ull;
+    for (size_t i = 0; i < n; i++) c = (c ^ w[i]) * 0x100000001B3ull;
+    return c ? c : 1u;
+}
+extern "C" void wc_irq_state_unstash(const void *);
+extern "C" void wc_irq_state_reset(void);
+extern "C" { volatile unsigned g_wcf_poison_load, g_wcf_poison_save; }
 extern "C" void func_801AA050(CpuContext *);   /* OSExitThread  (translated) */
 extern "C" void wc_note_guest_thread(void);
 extern "C" int t_in_irq_probe(void);
@@ -49,8 +62,17 @@ struct GuestFiber {
     int       used;
     int       started;    /* first run already happened              */
     int       pumping;    /* this fiber is inside an interrupt delivery */
+    unsigned char irqst[1024];  /* parked delivery state (wc_irq_state_*) */
+    CpuContext cpu_save;  /* the mirror as of this fiber's switch-out.
+                             Restored verbatim at resume -- the reference
+                             runtime's semantics (fiber_manager.cpp), and
+                             the fix for nonvolatile rot: the guest
+                             OSContext image only holds boundary-spilled
+                             slots, so refilling the mirror from it fed
+                             indirect-call reloads stale r31. */
 };
 
+extern "C" void wc_irq_state_slot_restore(const void *buf);
 GuestFiber  s_fibers[kMaxFibers];
 int         s_cur = -1;              /* index of the running fiber      */
 CpuContext *s_ctx;                   /* the one shared register mirror  */
@@ -82,6 +104,24 @@ void load_own_context(void)
     uint32_t osctx = s_fibers[s_cur].osthread;
     s_ctx->gpr[3] = osctx;
     func_801A1EB8(s_ctx);
+    {   /* poison bracket, load side: a refilled mirror whose stack or r31
+         * is not a RAM pointer means the OSContext image was corrupt. */
+        uint32_t r1v = (uint32_t)s_ctx->gpr[1], r31v = (uint32_t)s_ctx->gpr[31];
+        int r1bad  = !((r1v >= 0x80003000u && r1v < 0x81800000u) ||
+                       (r1v >= 0x90000000u && r1v < 0x94000000u));
+        int r31bad = 0;
+        {   static unsigned no;
+            if (no < 16u) { no++;
+                LOG_WARN(LOG_CORE, "OWNLOAD[%u] -> r1=%08x lr=%08x r31=%08x srr0=%08x",
+                         no, r1v, (unsigned)s_ctx->lr, r31v, (unsigned)s_ctx->pc); } }
+        if (r1bad || r31bad) {
+            g_wcf_poison_load++;
+            static unsigned n;
+            if (n < 8u) { n++;
+                LOG_WARN(LOG_CORE, "POISONLOAD[%u] r1=%08x r31=%08x srr0=%08x lr=%08x",
+                         n, r1v, r31v, (unsigned)s_ctx->pc, (unsigned)s_ctx->lr); }
+        }
+    }
     {   uint32_t s1 = MemoryInline::Load<uint32_t>(osctx + kOsSrr1);
         if (s1) s_ctx->msr = s1;
     }
@@ -101,11 +141,22 @@ void load_own_context(void)
 }
 
 /* First run of a created fiber: land, restore context, run the entry from
- * SRR0, and retire through the game's own OSExitThread if it ever returns. */
+ * SRR0, and retire through the SDK's own OSExitThread if it ever returns. */
 void fiber_main(void *arg)
 {
+    wc_irq_state_reset();
     int me = (int)(intptr_t)arg;
     s_cur = me;
+    /* The switching-away fiber's host save block was just written by our
+     * entry fiber_swap; on the normal resume path wcf_switch refreshes its
+     * checksum, but a FIRST RUN lands here instead -- leaving a stale chk
+     * that reads as FIBERSTOMP on the next switch to it (measured: "stomp"
+     * values that were simply the live save: host SP 0xD01xxxxx, guest
+     * addresses in g14/g31). Do what the resume path does. */
+    if (s_last_saved >= 0) {
+        s_fibers[s_last_saved].fc.chk = fc_checksum(&s_fibers[s_last_saved].fc);
+        s_last_saved = -1;
+    }
     s_fibers[me].started = 1;
     {   uint32_t osctx = s_fibers[me].osthread;
         uint32_t entry = MemoryInline::Load<uint32_t>(osctx + kOsSrr0);
@@ -190,6 +241,19 @@ extern "C" void wcf_purge(uint32_t osthread)
     s_fibers[i].used = 0;
 }
 
+/* The OSContext of the thread this fiber actually runs (context sits at
+ * offset 0 of OSThread). The delivery layer compares this against the
+ * guest's kCurrentContext pointer: during a thread switch the pointer is
+ * updated by OSSetCurrentContext BEFORE OSLoadContext swaps fibers, and a
+ * delivery inside that window archives one thread's registers into another
+ * thread's context (measured: root ctx holding the display thread's r1,
+ * parked mid-__OSDispatchInterrupt). Hardware runs that window with EE
+ * off, so deferring the delivery until the pointers agree is exact. */
+extern "C" uint32_t wcf_cur_osctx(void)
+{
+    return (s_cur >= 0 && s_fibers[s_cur].used) ? s_fibers[s_cur].osthread : 0u;
+}
+
 extern "C" CpuContext *wcf_ctx(void) { return s_ctx; }
 extern "C" void *wcf_ctx_raw(void) { return (void *)s_ctx; }
 extern "C" unsigned wcf_ctx_gpr(int i) { return s_ctx ? (unsigned)s_ctx->gpr[i] : 0u; }
@@ -263,9 +327,30 @@ extern "C" int wcf_switch(uint32_t osctx, CpuContext *ctx)
     }
     int from = s_cur;
     s_cur = to;
+    wc_irq_state_stash(s_fibers[from].irqst);
+    /* Integrity canary: the target's saved register block is about to be
+     * consumed -- verify it was not stomped while parked. */
+    if (s_fibers[to].fc.chk) {
+        uint64_t c = fc_checksum(&s_fibers[to].fc);
+        if (c != s_fibers[to].fc.chk) {
+            static unsigned n;
+            if (n < 8u) { n++;
+                const uint64_t *w = (const uint64_t *)&s_fibers[to].fc;
+                LOG_WARN(LOG_CORE, "FIBERSTOMP f%d sp=%016llx lr=%016llx "
+                         "g14=%016llx g31=%016llx",
+                         to, (unsigned long long)w[0],
+                         (unsigned long long)w[2],
+                         (unsigned long long)w[4],
+                         (unsigned long long)w[21]); }
+        }
+    }
+    s_last_saved = from;
     fiber_swap(&s_fibers[from].fc, &s_fibers[to].fc);
-    /* Resumed: someone loaded OUR context. s_cur was set back to `from` by
-     * the switch that resumed us (below), or by fiber_main for first runs. */
+    if (s_last_saved >= 0) {
+        s_fibers[s_last_saved].fc.chk = fc_checksum(&s_fibers[s_last_saved].fc);
+        s_last_saved = -1;
+    }
+    wc_irq_state_unstash(s_fibers[from].irqst);
     s_cur = from;
     load_own_context();
     return 0;
@@ -299,6 +384,15 @@ extern "C" int wcf_report(char *out, int cap)
     used += snprintf(out + used, (size_t)(cap - used),
                      "mmio-pump: calls=%u line0=%u thread=%u ee0=%u hit=%u\n",
                      g_mp_calls, g_mp_line0, g_mp_thread, g_mp_ee0, g_mp_hit);
+    {   extern volatile unsigned g_wc_backedge_hits, g_wc_backedge_pumps;
+        used += snprintf(out + used, (size_t)(cap - used),
+                         "backedge: hits=%u pumps=%u\n",
+                         g_wc_backedge_hits, g_wc_backedge_pumps); }
+    {   extern volatile unsigned WcBackedgePoll_site, WcBackedgePoll_n;
+        used += snprintf(out + used, (size_t)(cap - used),
+                         "spin: site=%08x n=%u\n",
+                         WcBackedgePoll_site, WcBackedgePoll_n); }
+
     used += snprintf(out + used, (size_t)(cap - used),
                      "sched: early0=%u save1=%u idle=%u self=%u sw=%u skipsave=%u\n",
                      g_wcs_early0, g_wcs_save1, g_wcs_idle,

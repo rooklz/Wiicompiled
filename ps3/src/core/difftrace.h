@@ -1,5 +1,5 @@
 /* difftrace.h -- see difftrace.c. Sampling is off unless DIFFTRACE is set in
- * the environment (qemu) or /dev_hdd0/tmp/wiicompiled-difftrace.txt exists on the
+ * the environment (qemu) or /dev_hdd0/tmp/dolphin-difftrace.txt exists on the
  * console; the value is the sampling interval in slices. */
 #ifndef DOLPHIN_CORE_DIFFTRACE_H
 #define DOLPHIN_CORE_DIFFTRACE_H

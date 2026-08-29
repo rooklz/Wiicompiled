@@ -41,8 +41,7 @@
 #include "../../core/hw/audio_out.h"
 #include "../../core/hw/dsp_ax.h"
 
-/* Boot data comes from the user's own dump, linked in through a local
- * mkwii_blobs.S (see README). That file is gitignored and never distributed. */
+/* Real Mario Kart Wii boot data, embedded via mkwii_blobs.S (.incbin). */
 #include "../../core/ios/wii_nand_defaults.h"
 extern const unsigned char mkwii_dol_blob[],     mkwii_dol_blob_end[];
 extern void aot_register_all(void);
@@ -98,9 +97,9 @@ SYS_PROCESS_PARAM(1001, 0x100000)
  * but is not guaranteed writable on every firmware, whereas the application's
  * own directory certainly is. */
 static const char *const k_report_paths[] = {
-    "/dev_hdd0/tmp/wiicompiled-ps3-selftest.txt",
-    "/dev_hdd0/game/WCPS3001/USRDIR/selftest.txt",
-    "/dev_usb000/wiicompiled-ps3-selftest.txt",
+    "/dev_hdd0/tmp/dolphin-ps3-selftest.txt",
+    "/dev_hdd0/game/DOLPHIN01/USRDIR/selftest.txt",
+    "/dev_usb000/dolphin-ps3-selftest.txt",
 };
 
 /* Reporting goes through lv2's file syscalls rather than stdio.
@@ -151,13 +150,13 @@ static unsigned s_xfb_frames;      /* video-interface frames presented */
  * Leaving it disabled meant the title's videos never appeared at all, which is
  * a visible fault in its own right, and one nobody would hit the flag file to
  * discover. The conservative trigger is the protection; the flag was belt and
- * braces that cost the feature entirely. `wiicompiled-noxfb.txt` restores the old
+ * braces that cost the feature entirely. `dolphin-noxfb.txt` restores the old
  * behaviour if this ever misfires. */
 static int xfb_present_enabled(void)
 {
     static int on = -1;
     if (on < 0) {
-        FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-noxfb.txt", "r");
+        FILE *f = fopen("/dev_hdd0/tmp/dolphin-noxfb.txt", "r");
         on = 1;
         if (f) { fclose(f); on = 0; }
         LOG_INFO(LOG_VIDEO, "XFB video presentation %s",
@@ -168,12 +167,12 @@ static int xfb_present_enabled(void)
 
 /* Arm the PI early-exit escape hatch. Read once at boot, beside the other
  * flag files, so a single build can be measured both ways on hardware. */
-/* Read the slice ceiling from wiicompiled-slicecap.txt (a decimal count of guest
+/* Read the slice ceiling from dolphin-slicecap.txt (a decimal count of guest
  * instructions). Absent or 0 keeps the original unbounded-by-cap behaviour. */
 static void slice_cap_flag_init(void)
 {
     extern s32 g_timing_slice_cap;
-    FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-slicecap.txt", "r");
+    FILE *f = fopen("/dev_hdd0/tmp/dolphin-slicecap.txt", "r");
     if (f) {
         long v = 0;
         if (fscanf(f, "%ld", &v) == 1 && v > 0 && v < 1000000L)
@@ -194,11 +193,11 @@ static void slice_cap_flag_init(void)
  * pays to read the indices costs the PPE nothing; it is spent out of the 95%
  * of the time an SPU was idle anyway. Verified in-race: geometry unchanged.
  *
- * wiicompiled-nospuscan.txt puts the scan back on the PPU. */
+ * dolphin-nospuscan.txt puts the scan back on the PPU. */
 static void spu_scan_flag_init(void)
 {
     extern int g_spu_scan_on;
-    FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-nospuscan.txt", "r");
+    FILE *f = fopen("/dev_hdd0/tmp/dolphin-nospuscan.txt", "r");
     g_spu_scan_on = 1;
     if (f) { fclose(f); g_spu_scan_on = 0; }
     LOG_INFO(LOG_CORE, "SPU-side index scan %s",
@@ -207,14 +206,14 @@ static void spu_scan_flag_init(void)
 
 /* Snapshot plumbing; see the run loop for why this cannot be read directly. */
 int      g_snap_req, g_snap_ready;
-/* Armed by wiicompiled-noni.txt: stop mirroring guest FPSCR[NI] to the host. */
+/* Armed by dolphin-noni.txt: stop mirroring guest FPSCR[NI] to the host. */
 static int g_ni_sync_off;
 PPCState g_snap_state;
 
 static void pi_irq_exit_flag_init(void)
 {
     extern int g_pi_no_irq_exit;
-    FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-noirqexit.txt", "r");
+    FILE *f = fopen("/dev_hdd0/tmp/dolphin-noirqexit.txt", "r");
     if (f) { fclose(f); g_pi_no_irq_exit = 1; }
     LOG_INFO(LOG_CORE, "IPC/interrupt early slice exit %s",
              g_pi_no_irq_exit ? "DISABLED by flag" : "enabled");
@@ -229,7 +228,7 @@ static unsigned xfb_width(void)
     static int forced = -1;
     unsigned w;
     if (forced < 0) {
-        FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-xfbw.txt", "r");
+        FILE *f = fopen("/dev_hdd0/tmp/dolphin-xfbw.txt", "r");
         forced = 0;
         if (f) { if (fscanf(f, "%d", &forced) != 1) forced = 0; fclose(f); }
         if (forced && (forced < 320 || forced > 1024)) forced = 0;
@@ -363,8 +362,8 @@ static sys_ppu_thread_t g_emu_tid;
 static void rescue_spawn(void)
 {
     static const char *k_targets[2] = {
-        "/dev_hdd0/game/WCPS3001/USRDIR/RELOAD.SELF",
-        "/dev_hdd0/game/WCPS3001/USRDIR/EBOOT.BIN"
+        "/dev_hdd0/game/DOLPHIN01/USRDIR/RELOAD.SELF",
+        "/dev_hdd0/game/DOLPHIN01/USRDIR/EBOOT.BIN"
     };
     const char *self = k_targets[1];
     const char *argv[2];
@@ -1582,8 +1581,8 @@ static int execution_allowed(void)
      * so a sentinel placed there is gone before the process can read it. It is
      * still the right home for the *report*, which is written afterwards. */
     static const char *const k_flags[] = {
-        "/dev_hdd0/wiicompiled-ps3-nojit",
-        "/dev_hdd0/game/WCPS3001/USRDIR/nojit",
+        "/dev_hdd0/dolphin-ps3-nojit",
+        "/dev_hdd0/game/DOLPHIN01/USRDIR/nojit",
     };
     unsigned i;
     for (i = 0; i < sizeof k_flags / sizeof k_flags[0]; i++) {
@@ -2145,7 +2144,7 @@ static void prof_report_interval(void)
 /* frame on every run, whatever the host does; only wall time varies,     */
 /* which is precisely the quantity under test.                            */
 /*                                                                       */
-/* Script: /dev_hdd0/tmp/wiicompiled-bench.txt, one directive per line.       */
+/* Script: /dev_hdd0/tmp/dolphin-bench.txt, one directive per line.       */
 /*     <frame> <buttons-hex> [hold]   press buttons at that guest frame   */
 /*     measure <frame> <count>        time `count` frames from `frame`    */
 /* Lines starting with # are ignored.                                     */
@@ -2165,7 +2164,7 @@ static u64       s_bench_t0, s_bench_i0, s_bench_idle0, s_bench_d0;
 
 static void bench_load(void)
 {
-    FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-bench.txt", "r");
+    FILE *f = fopen("/dev_hdd0/tmp/dolphin-bench.txt", "r");
     char line[128];
     if (!f) return;
     while (fgets(line, sizeof line, f)) {
@@ -2780,7 +2779,7 @@ static void recomp_benchmark_stage(void)
 PPCState *g_live_cpu;   /* devlink `pc` reads the running guest state */
 
 /* ---- GX worker: the whole GX pipeline on the PPE's second hardware thread.
- * Armed by /dev_hdd0/tmp/wiicompiled-gxthread.txt so the change can be A/B'd
+ * Armed by /dev_hdd0/tmp/dolphin-gxthread.txt so the change can be A/B'd
  * against the synchronous path with a file touch. ---- */
 #include <sys/thread.h>
 #include <sys/sem.h>
@@ -2866,7 +2865,7 @@ static void gx_worker_resume(void)
 }
 static void gx_worker_start(void)
 {
-    FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-gxthread.txt", "rb");
+    FILE *f = fopen("/dev_hdd0/tmp/dolphin-gxthread.txt", "rb");
     sys_ppu_thread_t t;
     sys_sem_attr_t attr;
     if (!f) return;
@@ -2927,18 +2926,18 @@ static void mkwii_boot_stage(void)
     pi_irq_exit_flag_init();
     slice_cap_flag_init();
     {   extern int g_warm_no_cold;
-        FILE *wf = fopen("/dev_hdd0/tmp/wiicompiled-nowarmcold.txt", "r");
+        FILE *wf = fopen("/dev_hdd0/tmp/dolphin-nowarmcold.txt", "r");
         if (wf) { fclose(wf); g_warm_no_cold = 1; }
         LOG_INFO(LOG_CORE, "warm self-loop w/ interior exits %s",
                  g_warm_no_cold ? "REFUSED by flag" : "allowed (default)");
     }
     {   extern int g_no_psq_store;
-        FILE *qf = fopen("/dev_hdd0/tmp/wiicompiled-nopsqst.txt", "r");
+        FILE *qf = fopen("/dev_hdd0/tmp/dolphin-nopsqst.txt", "r");
         if (qf) { fclose(qf); g_no_psq_store = 1; }
         LOG_INFO(LOG_CORE, "compiled psq_st %s",
                  g_no_psq_store ? "DISABLED by flag" : "enabled");
     }
-    {   FILE *nf = fopen("/dev_hdd0/tmp/wiicompiled-noni.txt", "r");
+    {   FILE *nf = fopen("/dev_hdd0/tmp/dolphin-noni.txt", "r");
         if (nf) { fclose(nf); g_ni_sync_off = 1; }
         LOG_INFO(LOG_CORE, "guest FPSCR[NI] -> host mirror %s",
                  g_ni_sync_off ? "DISABLED by flag" : "enabled");
@@ -2985,12 +2984,12 @@ static void mkwii_boot_stage(void)
      * the fallback so the app still boots to the strap screen without the
      * upload; the boot ran off that slice's edge the first time the game
      * opened an archive the boot had not touched (ARCInitHandle fatal). */
-    if (disc_slice_open("/dev_hdd0/game/WCPS3001/USRDIR/mkwii_full.slice")
+    if (disc_slice_open("/dev_hdd0/game/DOLPHIN01/USRDIR/mkwii_full.slice")
             == 0)
         emit_line(NULL, "   full disc mounted from HDD (2.5 GiB, streamed)");
     else
         emit_line(NULL, "   FATAL: no disc slice on HDD "
-                  "(/dev_hdd0/game/WCPS3001/USRDIR/mkwii_full.slice)");
+                  "(/dev_hdd0/game/DOLPHIN01/USRDIR/mkwii_full.slice)");
     /* The 17.8 MiB embedded fallback slice is gone: it cost more as resident
      * RAM (starving the NAND file allocator that rksys.dat needs) than it was
      * worth as a convenience. */
@@ -3010,7 +3009,7 @@ static void mkwii_boot_stage(void)
     ios_es_set_title(0x0001000000000000ull |
                      ((u64)('R'<<24 | 'M'<<16 | 'C'<<8 | 'E')));
     ios_fs_provision_wc24();
-#define NAND_DIR "/dev_hdd0/game/WCPS3001/USRDIR/nand"
+#define NAND_DIR "/dev_hdd0/game/DOLPHIN01/USRDIR/nand"
     /* The authentic WiiConnect24 NAND defaults. Every one of these was
      * previously answered ENOENT, and MKWii's save/WC24 path reads them. */
 #define WC24_EXTERN(np, ap, sym) \
@@ -3059,14 +3058,14 @@ static void mkwii_boot_stage(void)
     {   /* WiiCompiled-translated functions (src/core/ppc/wc): opt-in per
          * boot so an A/B holds every other AOT body constant. */
         extern void wc_register_all(void);
-        FILE *wf = fopen("/dev_hdd0/tmp/wiicompiled-wc.txt", "r");
+        FILE *wf = fopen("/dev_hdd0/tmp/dolphin-wc.txt", "r");
         if (wf) { fclose(wf); wc_register_all();
                   LOG_INFO(LOG_JIT, "WC: translated functions registered"); }
     }
     {   /* Boot-time AOT switch. Toggling AOT over devlink mid-run cannot undo
          * a divergence that already happened -- the guest's memory is already
          * wrong by then -- so an honest A/B has to start with it off. */
-        FILE *af = fopen("/dev_hdd0/tmp/wiicompiled-aot.txt", "r");
+        FILE *af = fopen("/dev_hdd0/tmp/dolphin-aot.txt", "r");
         int want = 1;
         if (af) { if (fscanf(af, "%d", &want) != 1) want = 1; fclose(af); }
         if (want) jit_aot_enable_all();
@@ -3077,7 +3076,7 @@ static void mkwii_boot_stage(void)
     mem_write32(0x80003110u, fst_addr);
 
 #ifdef WC_GAME_LINKED
-    /* THE PORT. With /dev_hdd0/tmp/wiicompiled-wcboot.txt present, the game runs as
+    /* THE PORT. With /dev_hdd0/tmp/dolphin-wcboot.txt present, the game runs as
      * the statically recompiled native code linked into this image instead of
      * being emulated: no JIT, no dispatcher, no interpreter. Everything set up
      * above still applies -- guest RAM, the disc, IOS, the RSX backend and the
@@ -3086,7 +3085,7 @@ static void mkwii_boot_stage(void)
      *
      * Behind a flag because the two cannot run at once and the emulator has to
      * stay available: it is the reference the port is validated against. */
-    {   FILE *wf = fopen("/dev_hdd0/tmp/wiicompiled-wcboot.txt", "r");
+    {   FILE *wf = fopen("/dev_hdd0/tmp/dolphin-wcboot.txt", "r");
         if (wf) {
             extern int wc_boot(void);
             fclose(wf);
@@ -3100,7 +3099,7 @@ static void mkwii_boot_stage(void)
              * no way to ask for a safe boot instead. The console had to be
              * power-cycled, and would have wedged again on the next launch.
              * Ask for port mode again by writing the flag again. */
-            remove("/dev_hdd0/tmp/wiicompiled-wcboot.txt");
+            remove("/dev_hdd0/tmp/dolphin-wcboot.txt");
             LOG_INFO(LOG_CORE, "WC: native port mode -- the JIT will not run");
             /* Low-mem canary: arm NOW, before the first guest instruction --
              * the device-slice arming raced the ctor-pass stomp and could
@@ -3253,7 +3252,7 @@ static void mkwii_boot_stage(void)
          *
          * A differential fuzzer cannot find this class: both sides ignore the
          * bit identically and agree with each other while both differ from the
-         * machine. wiicompiled-noni.txt disables it. */
+         * machine. dolphin-noni.txt disables it. */
         if (!g_ni_sync_off) {
             static u32 last_ni = 0xFFFFFFFFu;
             u32 ni = cpu.fpscr & FPSCR_NI;
@@ -3312,7 +3311,7 @@ static void mkwii_boot_stage(void)
              * comes from the JIT executing natively rather than under qemu. */
             static int use_jit = -1;
             if (use_jit < 0) {
-                FILE *jf = fopen("/dev_hdd0/tmp/wiicompiled-nojit.txt", "r");
+                FILE *jf = fopen("/dev_hdd0/tmp/dolphin-nojit.txt", "r");
                 use_jit = 1;
                 if (jf) { fclose(jf); use_jit = 0;
                     LOG_INFO(LOG_JIT, "JIT DISABLED at boot by request"); }
@@ -3373,6 +3372,35 @@ static void mkwii_boot_stage(void)
             if ((pi_intsr_raw() & pi_intmr_raw() & 0x100u) &&
                 now_calls == last_calls) {
                 if (++still > 200) {   /* ~ms of call-free with VI pending */
+        {   /* Arm the back-edge delivery points whenever a delivery could
+             * actually land; the poll itself stays a single flag test. */
+            extern volatile unsigned g_wc_backedge_arm;
+            extern u32 pi_intsr_raw(void), pi_intmr_raw(void);
+            extern int wc_dec_due(void);
+            if ((pi_intsr_raw() & pi_intmr_raw()) || wc_dec_due())
+                g_wc_backedge_arm = 1;
+        }
+        {   /* MEMWATCH: strap structures under suspicion of a RAM stomp.
+             * req=0x80426760: +232 TaskThread ptr, +80 result; queue count
+             * at taskthread+80. Log every transition with the dispatch clock. */
+            extern volatile unsigned g_wc_calls;
+            static u32 mw_prev[4]; static int mw_init; static unsigned mw_n;
+            static const u32 mw_addr[4] = { 0x80426848u, 0x804267B0u,
+                                            0x80426760u, 0x804278C0u };
+            u32 mw_now[4]; int mi;
+            for (mi = 0; mi < 4; mi++) mw_now[mi] = mem_read32(mw_addr[mi]);
+            if (!mw_init) { mw_init = 1;
+                for (mi = 0; mi < 4; mi++) mw_prev[mi] = mw_now[mi]; }
+            for (mi = 0; mi < 4; mi++)
+                if (mw_now[mi] != mw_prev[mi]) {
+                    if (mw_n < 40u) { mw_n++;
+                        LOG_WARN(LOG_CORE, "MEMWATCH %08x %08x->%08x calls=%u",
+                                 mw_addr[mi], mw_prev[mi], mw_now[mi],
+                                 g_wc_calls); }
+                    mw_prev[mi] = mw_now[mi];
+                }
+        }
+
                     u64 nb = timing_timebase();
                     if (nb - last_nudge > 800000u) {
                         mem_write32(0x80382864u, mem_read32(0x80382864u) + 1u);
@@ -3561,7 +3589,7 @@ static void mkwii_boot_stage(void)
              * started, four more sessions ran and leaked a 48 MiB vertex arena
              * each, and by the fifth there was no heap left. The game was
              * healthy the whole time; the only evidence it ever ran was two
-             * startup banners in the log.
+             * SDK banners in the log.
              *
              * Liveness for the port is guest progress, which wc_watchdog
              * already watches and reports on. */
@@ -3606,7 +3634,7 @@ static void mkwii_boot_stage(void)
 
     {
         unsigned opens = ios_progress_opens();
-        unsigned ap    = ios_progress_discauth();
+        unsigned ap    = ios_progress_antipiracy();
         int passed = (ap >= 2);
         char l1[96], l2[96], l3[96];
 
@@ -3616,7 +3644,7 @@ static void mkwii_boot_stage(void)
         emitf("   first_pc=%08x after_first_slice=%08x insts=%llu",
               (unsigned)first_pc, (unsigned)after_first,
               (unsigned long long)total_insts);
-        emitf("   IOS opens %u, disc check answered %u, disc reads %u",
+        emitf("   IOS opens %u, anti-piracy answered %u, disc reads %u",
               opens, ap, ios_progress_disc_reads());
         emitf("   FRAMES PRESENTED: %llu", (unsigned long long)s_mkw_frames);
         {   /* The audio frame clock, and whether the console kept up with it.
@@ -3707,8 +3735,8 @@ static void mkwii_boot_stage(void)
                 rsx_draw_text_scaled(fb, p, 60, 285, 0xFF90FF90u, 3, l2);
                 rsx_draw_text_scaled(fb, p, 60, 345,
                                      passed ? 0xFF40FF40u : 0xFFFF6060u, 5,
-                                     passed ? "DISC CHECK PASSED"
-                                            : "DISC CHECK NOT PASSED");
+                                     passed ? "ANTI-PIRACY PASSED"
+                                            : "ANTI-PIRACY NOT PASSED");
             }
             pr0 = rsx_present_cpu(0);
             pr1 = rsx_present_cpu(1);
@@ -3731,7 +3759,7 @@ static void mkwii_boot_stage(void)
  * purpose: the point is that the line survives whatever happens next. */
 static void boot_note(const char *what)
 {
-    static const char *k_path = "/dev_hdd0/tmp/wiicompiled-boot.txt";
+    static const char *k_path = "/dev_hdd0/tmp/dolphin-boot.txt";
     char line[160];
     int fd, n;
     fd = open(k_path, O_WRONLY | O_CREAT | O_APPEND, 0666);
@@ -3743,12 +3771,12 @@ static void boot_note(const char *what)
 
 static void boot_breadcrumb(void)
 {
-    static const char *k_path = "/dev_hdd0/tmp/wiicompiled-boot.txt";
+    static const char *k_path = "/dev_hdd0/tmp/dolphin-boot.txt";
     struct stat st;
     char line[128];
     int fd, n;
     long long sz = -1;
-    if (stat("/dev_hdd0/game/WCPS3001/USRDIR/EBOOT.BIN", &st) == 0)
+    if (stat("/dev_hdd0/game/DOLPHIN01/USRDIR/EBOOT.BIN", &st) == 0)
         sz = (long long)st.st_size;
     fd = open(k_path, O_WRONLY | O_CREAT | O_APPEND, 0666);
     if (fd < 0) return;
@@ -3781,15 +3809,15 @@ int main(void)
          * because the first attempt went into the video SELF-TEST stage, which
          * this build does not reach, so the override silently never ran. */
         extern int g_tex_force_clamp;
-        FILE *cf = fopen("/dev_hdd0/tmp/wiicompiled-clamp.txt", "r");
+        FILE *cf = fopen("/dev_hdd0/tmp/dolphin-clamp.txt", "r");
         FILE *mf;
         if (cf) { g_tex_force_clamp = 1; fclose(cf); }
         {
             extern int g_tex_force_trilinear;
-            FILE *tf2 = fopen("/dev_hdd0/tmp/wiicompiled-trilinear.txt", "r");
+            FILE *tf2 = fopen("/dev_hdd0/tmp/dolphin-trilinear.txt", "r");
             if (tf2) { g_tex_force_trilinear = 1; fclose(tf2); }
         }
-        mf = fopen("/dev_hdd0/tmp/wiicompiled-mask.txt", "r");
+        mf = fopen("/dev_hdd0/tmp/dolphin-mask.txt", "r");
         if (mf) {
             unsigned m = 0;
             if (fscanf(mf, "%x", &m) == 1 && m) g_gx_state_mask = m;
@@ -3799,7 +3827,7 @@ int main(void)
     {   /* A/B handle for the PPE data-prefetch engine over FIFO windows.
          * Unconditional code cannot be measured, and this needs measuring. */
         extern int g_ppe_prefetch_off;
-        FILE *nf = fopen("/dev_hdd0/tmp/wiicompiled-nodpfe.txt", "rb");
+        FILE *nf = fopen("/dev_hdd0/tmp/dolphin-nodpfe.txt", "rb");
         if (nf) { fclose(nf); g_ppe_prefetch_off = 1; }
     }
     bench_load();
@@ -3814,7 +3842,7 @@ int main(void)
      * itself. The port never ran and the log blamed a missing disc slice.
      *
      * The flag is only READ here; it is deleted (one-shot) and acted on later. */
-    {   FILE *pf = fopen("/dev_hdd0/tmp/wiicompiled-wcboot.txt", "r");
+    {   FILE *pf = fopen("/dev_hdd0/tmp/dolphin-wcboot.txt", "r");
         if (pf) { fclose(pf); g_wc_running = 1;
                   boot_note("port mode: sizing allocations for the native game");
                   { sys_ppu_thread_t ct;
@@ -3852,7 +3880,7 @@ int main(void)
         boot_note(which < 0 ? "report FAILED (continuing)" : "report open");
     }
 
-    emit_line(NULL, "==== WiiCompiled PS3 recompiler self-test ====");
+    emit_line(NULL, "==== Dolphin-PS3 recompiler self-test ====");
     /* Stamp the build into the report. Without it there is no way to tell a
      * deploy that landed from one that silently booted the previous image,
      * and that failure mode is invisible: every other line looks normal and
@@ -3931,12 +3959,35 @@ int main(void)
         size_t ci;
         int ok = 0;
         if (g_wc_running) {
-            /* The port never executes through the JIT, and jit_init's AOT
-             * stub patching WRITES INTO .TEXT -- fine on the console (SELFs
-             * load RWX), an instant access violation under RPCS3's RX text
-             * mapping. Skipping it also buys the cache memory back. */
-            stage("jit_init skipped (port mode)");
+            /* A/B bisect handle: with the flag present the port boots exactly
+             * as the proven pre-hybrid build (no jit_init, bridge disarmed,
+             * misses skip) -- one relaunch separates a corpus regression from
+             * a runtime one. */
+            FILE *nh = fopen("/dev_hdd0/tmp/dolphin-nohybrid.txt", "rb");
+            if (nh) { fclose(nh);
+                stage("jit_init skipped (nohybrid flag)");
+                ok = 1;
+                goto jit_done;
+            }
+            /* Hybrid: StaticR.rel executes under the JIT (the full-native
+             * link is 154 MB against an ~85 MB image budget), so port mode
+             * now NEEDS the JIT. Small cache: the REL working set compiles
+             * incrementally and the hot functions get promoted to natives. */
+            static const unsigned k_cache_hybrid[] = { 8, 6, 4 };
+            for (ci = 0; ci < 3; ci++) {
+                char sb[64];
+                snprintf(sb, sizeof sb, "jit_init hybrid (%u MiB cache)",
+                         k_cache_hybrid[ci]);
+                stage(sb);
+                if (jit_init((size_t)k_cache_hybrid[ci] << 20) == 0) { ok = 1; break; }
+            }
+            if (ok) {
+                extern void wc_bridge_init(void);
+                wc_bridge_init();
+            } else
+                stage("jit_init FAILED -- REL calls will be skipped");
             ok = 1;
+jit_done: ;
         } else for (ci = 0; ci < k_cache_n; ci++) {
             char sb[64];
             snprintf(sb, sizeof sb, "jit_init (%u MiB code cache)",
@@ -4015,9 +4066,9 @@ int main(void)
      * exceptions at GUEST_SENTINEL) and cost ~30s per boot. Bring-up
      * diagnostics; run only when the flag file asks. */
     {
-        FILE *sf2 = fopen("/dev_hdd0/tmp/wiicompiled-selftest.txt", "rb");
+        FILE *sf2 = fopen("/dev_hdd0/tmp/dolphin-selftest.txt", "rb");
         if (!sf2) {
-            emit_line(NULL, "   CPU suites skipped (wiicompiled-selftest.txt absent)");
+            emit_line(NULL, "   CPU suites skipped (dolphin-selftest.txt absent)");
             goto done;
         }
         fclose(sf2);
@@ -4212,7 +4263,7 @@ done:
         {
             /* The benchmark hijacked the boot path for a few sessions; the
              * game is the product. Bench only when the flag file exists. */
-            FILE *bf = fopen("/dev_hdd0/tmp/wiicompiled-bench.flag", "rb");
+            FILE *bf = fopen("/dev_hdd0/tmp/dolphin-bench.flag", "rb");
             if (bf) {
                 fclose(bf);
                 emit_line(NULL, "   bench flag: recomp benchmark, then exit");
@@ -4677,7 +4728,7 @@ done:
         }
 
         /* The headline: boot the real Mario Kart Wii executable on the PPE and
-         * put its status -- including the disc-check result -- on the TV. Only
+         * put its status -- including the anti-piracy result -- on the TV. Only
          * where generated code can execute (real PS3, not RPCS3's W^X). */
         if (execution_allowed()) {
             mkwii_boot_stage();
@@ -4729,8 +4780,8 @@ finished:
          * nothing, proven by a boot breadcrumb that stays at one line across
          * the attempt. A plain SELF takes a different validation path. */
         static const char *k_targets[2] = {
-            "/dev_hdd0/game/WCPS3001/USRDIR/RELOAD.SELF",
-            "/dev_hdd0/game/WCPS3001/USRDIR/EBOOT.BIN"
+            "/dev_hdd0/game/DOLPHIN01/USRDIR/RELOAD.SELF",
+            "/dev_hdd0/game/DOLPHIN01/USRDIR/EBOOT.BIN"
         };
         const char *k_self = k_targets[0];
         const char *argv[2];

@@ -41,7 +41,7 @@ static void difftrace_config(void)
         int got = 0;
         if ((e = getenv("DIFFTRACE")) && *e) {
             got = sscanf(e, "%lu:%lu:%lu", &a, &b, &c2);
-        } else if ((f = fopen("/dev_hdd0/tmp/wiicompiled-difftrace.txt", "r")) != NULL) {
+        } else if ((f = fopen("/dev_hdd0/tmp/dolphin-difftrace.txt", "r")) != NULL) {
             got = fscanf(f, "%lu:%lu:%lu", &a, &b, &c2);
             fclose(f);
         }

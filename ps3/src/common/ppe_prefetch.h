@@ -35,7 +35,7 @@
 /* Touch up to PPE_DPFE_ENTRIES lines covering [p, p+bytes), oldest first.
  * Asking for more than the engine can hold just evicts our own requests, so
  * the loop is capped rather than covering the whole span. */
-extern int g_ppe_prefetch_off;   /* armed by /dev_hdd0/tmp/wiicompiled-nodpfe.txt */
+extern int g_ppe_prefetch_off;   /* armed by /dev_hdd0/tmp/dolphin-nodpfe.txt */
 
 static inline void ppe_prefetch_span(const void *p, size_t bytes)
 {

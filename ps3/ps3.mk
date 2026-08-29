@@ -168,6 +168,7 @@ PPU_CXXSRCS := src/core/ppc/wc/wc_adapter.cpp \
 # which is ~29 MB for the whole game -- affordable on a 256 MB console.
 WC_LIB     := build/libwcgame.a
 WC_EXTRA   := src/core/ppc/wc/wc_boot.cpp \
+              src/core/ppc/wc/wc_bridge.cpp \
               src/core/ppc/wc/wc_helpers.cpp \
               src/core/ppc/wc/wc_os.cpp \
             src/core/ppc/wc/wc_fiber.cpp src/core/ppc/wc/wc_sched.cpp \
@@ -206,13 +207,18 @@ endif
 
 all: self
 
-TARGET  := wiicompiled-ps3
+TARGET  := dolphin-ps3
 ELF     := build/$(TARGET).elf
 SELF    := build/$(TARGET).self
 
 # PSL1GHT link: sprxlinker fixes up the PRX import stubs the lv2 libraries use,
 # and fself produces an unsigned SELF, which is what custom firmware runs.
-$(ELF): $(PPU_OBJS)
+# $(WC_PRESENT) (the wildcard-resolved path to libwcgame.a) is listed as an
+# ORDER-and-MTIME prerequisite: a rebuilt archive -- e.g. tools/wc_build.sh
+# refreshing translated objects -- must force a relink, or the SELF ships old
+# game code against new runtime. (The archive is a link input, not an object,
+# so make does not track it otherwise.)
+$(ELF): $(PPU_OBJS) $(WC_PRESENT)
 	@printf "  LD(ppu)  %s\n" "$@"
 	@$(PPU_LD) $(PPU_ARCH) -Wl,--gc-sections -o $@ $(PPU_OBJS) $(PPU_LIBS_EXTRA) $(LIBS)
 	@$(TOOL_BIN)/sprxlinker $@
@@ -235,8 +241,8 @@ self: $(SELF)
 # back to the dashboard with no diagnostic whatsoever. `fself -n` is the
 # fake-signed equivalent that custom firmware accepts, and is what homebrew
 # actually ships. package_finalize then adjusts the package for CFW install.
-APPID     := WCPS3001
-TITLE     := WiiCompiled PS3
+APPID     := DOLPHIN01
+TITLE     := Dolphin-PS3 Selftest
 CONTENTID := UP0001-$(APPID)_00-0000000000000000
 PKGDIR    := build/pkg
 PKGFILE   := build/$(TARGET).pkg

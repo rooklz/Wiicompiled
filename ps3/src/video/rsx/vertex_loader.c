@@ -426,7 +426,7 @@ static int spu_cfmt(GXColorFormat f)
  * The scan mutates the attributes it is given (array_ea becomes a host
  * pointer, base_idx and window_len get filled in), so the template is copied
  * into the caller's job first and the mutation lands on the copy. */
-/* Armed by wiicompiled-spuscan.txt. Off by default until measured. */
+/* Armed by dolphin-spuscan.txt. Off by default until measured. */
 int g_spu_scan_on;
 
 static struct {

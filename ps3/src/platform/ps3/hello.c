@@ -14,7 +14,7 @@ SYS_PROCESS_PARAM(1001, 0x100000)
 
 int main(void)
 {
-    int fd = open("/dev_hdd0/tmp/wiicompiled-hello.txt",
+    int fd = open("/dev_hdd0/tmp/dolphin-hello.txt",
                   O_CREAT | O_TRUNC | O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);
     if (fd >= 0) {
         static const char msg[] = "launched\n";

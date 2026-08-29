@@ -7,7 +7,7 @@
  * the guest's registers are C locals), or the host can do the job far better
  * (diagnostics, cache maintenance).
  *
- * Everything else stays translated. The system software talks to hardware through loads
+ * Everything else stays translated. The SDK talks to hardware through loads
  * and stores, and the device model answers -- so most of it needs no help.
  */
 extern "C" {
@@ -360,6 +360,23 @@ void wc_hle_RipFromDisc1(CpuContext *ctx)
             }
             LOG_WARN(LOG_CORE, "RIP1 crumbs span=%u last:%s", span, buf);
         } }
+    {   /* SCAFFOLD (remove with the delivery race): the task's result write
+         * to [req+80] is verified good on every boot; the RETURN register is
+         * what the race poisons. When they disagree and r3 is not a plausible
+         * buffer pointer, take the memory truth so the strap pipeline keeps
+         * moving while the race is hunted. */
+        uint32_t memres = MemoryInline::Load<uint32_t>(req0 + 80u);
+        uint32_t r3v = ctx->gpr[3];
+        int plaus = (r3v >= 0x80000000u && r3v < 0x81800000u) ||
+                    (r3v >= 0x90000000u && r3v < 0x94000000u);
+        if (memres && r3v != memres && !plaus) {
+            static unsigned nf;
+            if (nf < 6u) { nf++;
+                LOG_WARN(LOG_CORE, "RIPFIX[%u] r3=%08x -> [req+80]=%08x", nf,
+                         r3v, memres); }
+            ctx->gpr[3] = memres;
+        }
+    }
     if (n < 4u) { n++;
         LOG_WARN(LOG_CORE, "RIP1[%u] exit r3=%08x polls=%u inflight=%d req180=%02x lr=%08x",
                  n, (unsigned)ctx->gpr[3], g_taskq_polls - polls0,
@@ -386,26 +403,24 @@ void wc_hle_TaskThreadPost(CpuContext *ctx)
  * (queue-empty is true while the work is mid-flight) -- the scene then
  * exits with a stale NULL and decodes zeros. Hold the query at 0 while the
  * task body is actually executing. */
+/* Host reimplementation of the translated query (func_80241DDC):
+ *   n = [obj+80]; base = [obj+76]; busy if any of n 24-byte slots has
+ *   word0 != 0. Reimplemented because the translated walk trusts n: the
+ * strap scene calls this from its per-frame calc BEFORE the member is
+ * initialized, n reads as garbage, and the "bounded" walk becomes a
+ * multi-billion-read call-free freeze (measured: crumb at entry, wrapper
+ * exit never reached, world parked). A real queue is a few dozen slots;
+ * anything past the cap is the uninitialized case and means idle. */
 void wc_hle_TaskThreadIdleQuery(CpuContext *ctx)
 {
-    uint32_t call_lr = ctx->lr;
-    g_taskq_polls++;
+    /* Run the translated query verbatim -- the host reimplementation was a
+     * stale-image phantom fix and regressed early boot (TaskThread spun
+     * pre-IOS). Keep only the verified in-flight busy-hold: while the strap
+     * rip is between dequeue and completion, the queue reads empty for a
+     * window and the wait must not exit early. */
     func_80241DDC(ctx);
-    {   static unsigned np;
-        if (np < 8u) { np++;
-            LOG_WARN(LOG_CORE, "TASKQPOLL[%u] lr=%08x r3=%08x inflight=%d",
-                     np, (unsigned)call_lr, (unsigned)ctx->gpr[3],
-                     (int)g_rip_inflight); } }
-    /* Nonzero = tasks outstanding (loop continues); zero = done (the wait
-     * exits and reads the result). The race window is the query hitting 0
-     * between the task thread dequeuing the request and ProcessRipRequest
-     * writing the result -- so while the rip is in flight, stay "busy". */
-    if (ctx->gpr[3] == 0 && g_rip_inflight > 0) {
-        static unsigned n;
-        if (n < 6u) { n++;
-            LOG_WARN(LOG_CORE, "TASKQ[%u] held busy: rip in flight", n); }
+    if (ctx->gpr[3] == 0 && g_rip_inflight > 0)
         ctx->gpr[3] = 1;
-    }
 }
 
 extern "C" void func_80218B04(CpuContext *);   /* EGG::Decomp::decode */
@@ -475,7 +490,7 @@ void wc_hle_DVDGetDriveStatus(CpuContext *ctx)
 {
     func_80162AB0(ctx);
     {   static unsigned n;
-        if (n < 28u) {
+        if (n < 60u) {
             uint32_t obj = MemoryInline::Load<uint32_t>(0x80381C40u);
             n++;
             LOG_WARN(LOG_CORE, "DVDST[%u] ret=%d fatal=%08x st8=%08x cmd=%08x "
@@ -562,14 +577,14 @@ void wc_hle_iosIpc2(CpuContext *ctx)
                 return;
             }
             /* async: queue the completion, then RUN THE HANDLER before
-             * returning. Every system software wait for an async completion is
+             * returning. Every SDK wait for an async completion is
              * potentially a call-free RAM spin (measured twice: __ios_Ipc2's
              * ack wait, then DVDLowInit spinning on its callback flag with
              * the reply queued and nobody to deliver it). Delivering at this
              * boundary -- inside a dispatched call, the exact context
              * handlers run in -- lands the callback before the caller can
              * begin waiting for it. IOS completing before the submit call
-             * returns is hardware-legal; the system software arms its callback state
+             * returns is hardware-legal; the SDK arms its callback state
              * before issuing. */
             /* ALL async completions go through the DRAIN. Direct invocation
              * at issue-time ran each device's completion callback INSIDE the
@@ -596,18 +611,50 @@ void wc_hle_iosIpc2(CpuContext *ctx)
                 if (cb >= 0x80160000u && cb < 0x80168000u) {
                     /* DI: the caller spins call-free the instant this call
                      * returns -- no drain can ever reach it. Real latency,
-                     * then the callback under the full-save discipline. */
-                    usleep(150);
-                    g_wc_cb_req = req;
-                    wc_invoke_ios_cb(ctx, cb, res, usr);
-                    g_wc_cb_req = 0;
-                    ctx->gpr[3] = 0;
-                    return;
+                     * then the callback under the full-save discipline.
+                     *
+                     * TOP-LEVEL ONLY. When the DVDLow callback itself submits
+                     * the next command (the EGG ripper reads a file as a
+                     * chain: each chunk's completion starts the next), an
+                     * inline invocation RECURSES the DVD state machine --
+                     * chunk N's callback never unwinds, EGG frees no context,
+                     * and the 4-slot DvdContext pool dies at recursion depth
+                     * 4 ("freeDvdContext.inUse (#3)", then the game's own
+                     * fatal spin). Hardware can never nest these: an async
+                     * reply always arrives via a later interrupt. So nested
+                     * DI completions take the interrupt path below, and the
+                     * chain unwinds between chunks exactly as on hardware.
+                     * The call-free-spin insurance only matters for the
+                     * OUTERMOST submit (DVDLowInit's flag spin), which stays
+                     * inline. */
+                    static int s_di_cb_depth;
+                    /* READS ALWAYS QUEUE. A delivered read-completion's guest
+                     * callback submits the next read from guest context, where
+                     * this depth counter cannot see the frame -- the inline
+                     * path re-entered once per delivered chunk and the pool
+                     * still exhausted. The chain-formers are exactly the DI
+                     * read commands (ioctl 0x71); the call-free-spin insurance
+                     * is only needed by the init-time non-read ioctls. */
+                    if (s_di_cb_depth == 0 &&
+                        MemoryInline::Load<uint32_t>(req + 12u) != 0x71u) {
+                        usleep(150);
+                        s_di_cb_depth++;
+                        g_wc_cb_req = req;
+                        wc_invoke_ios_cb(ctx, cb, res, usr);
+                        g_wc_cb_req = 0;
+                        s_di_cb_depth--;
+                        ctx->gpr[3] = 0;
+                        return;
+                    }
+                    {   static unsigned n_nest;
+                        if (n_nest < 8u) { n_nest++;
+                            LOG_WARN(LOG_CORE, "IPC2DI[nested %u] cb=%08x -> queued",
+                                     n_nest, cb); } }
                 }
             }
             /* CLASSIC async completion: into the IPC reply protocol; the
              * guest handler (pumped at boundaries/idle) consumes with full
-             * system software fidelity. Merely re-enabling this path sent 0x1009/0x1003
+             * SDK fidelity. Merely re-enabling this path sent 0x1009/0x1003
              * and cleared the BT wall. */
             {   extern void ipc_queue_reply(u32 req_phys);
                 dev_lock();
@@ -649,9 +696,27 @@ void wc_hle_iosIpc2(CpuContext *ctx)
                 if (n < 8u) { n++;
                     LOG_WARN(LOG_CORE, "IPC2WAIT[%u] req=%08x parked-sync begins", n, req); } }
             {   extern volatile int g_host_site; g_host_site = 3; }
-            for (i = 0; i < 20000; i++) {             /* <= 2 s */
-                if (ios_take_reply_for(req)) break;
-                usleep(100);
+            {   /* Hardware truth: a sync IPC spins with interrupts LIVE --
+                 * the IPC handler completes the request mid-spin. Without a
+                 * pump here, any reply that needs a delivery (the classic
+                 * path runs the guest handler) cannot complete and every
+                 * parked-sync burned its full cap host-blocked, which is
+                 * what the 2-second world-crawl was. Same shape as the
+                 * site-4 callback wait. */
+                uint32_t saved_msr3 = ctx->msr;
+                ctx->msr |= 0x8000u;
+                for (i = 0; i < 20000; i++) {         /* <= 2 s */
+                    if (ios_take_reply_for(req)) break;
+                    {   extern unsigned int pi_intsr_raw(void);
+                        extern unsigned int pi_intmr_raw(void);
+                        extern int wc_dec_due(void);
+                        if ((pi_intsr_raw() & pi_intmr_raw()) || wc_dec_due())
+                            wc_irq_pump(ctx);
+                    }
+                    if (MemoryInline::Load<uint32_t>(req + 0u) == 8u) break;
+                    usleep(100);
+                }
+                ctx->msr = saved_msr3;
             }
             {   extern volatile int g_host_site; g_host_site = 0; }
             {   static unsigned n2;
@@ -671,7 +736,7 @@ void wc_hle_iosIpc2(CpuContext *ctx)
  * completion site. */
 extern "C" void func_80194F84(CpuContext *);   /* IPCiProfReply */
 
-/* The system software's completion bookkeeping: IPCiProfReply(req, [req+8]) dequeues the
+/* The SDK's completion bookkeeping: IPCiProfReply(req, [req+8]) dequeues the
  * request from the outstanding table and decrements the outstanding count.
  * EVERY completion path must run it -- the guest handler always did. Without
  * it the pool exhausted after ~7 async exchanges (IOS_IoctlvAsync refused
@@ -1022,7 +1087,7 @@ void wc_hle_DCInvalidateRange(CpuContext *) { }
 
 void wc_hle_DCZeroRange(CpuContext *ctx)
 {
-    /* r3 = address, r4 = length. The system software requires both to be 32-byte aligned
+    /* r3 = address, r4 = length. The SDK requires both to be 32-byte aligned
      * and the hardware zeroes whole cache lines, so round the way it does
      * rather than the way the arguments read. */
     uint32_t a = ctx->gpr[3] & ~31u;
@@ -1122,7 +1187,7 @@ void wc_hle_OSGetConsoleType(CpuContext *ctx) { ctx->gpr[3] = 0x00000002u; } /* 
 /* So the mask lives here instead, and the device model consults it      */
 /* before delivering.                                                    */
 /*                                                                      */
-/* These return the PREVIOUS state, which is what the game's callers      */
+/* These return the PREVIOUS state, which is what the SDK's callers      */
 /* store and hand back to OSRestoreInterrupts. Getting that backwards    */
 /* would leave interrupts off after the first critical section and the   */
 /* game would stop at its first wait, looking like a hang.               */

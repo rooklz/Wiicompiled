@@ -1,12 +1,18 @@
-/* wii_nand_defaults.h -- the standard files a Wii NAND carries under
- * /shared2, which a title reads and VALIDATES (nwc24msg.cfg carries an
- * additive checksum over its first 0x3FC bytes; the mailbox control blocks
- * carry 'WcTf'/'WcFl'/'WcDl' headers). Approximating them is the "plausible
- * lie" failure mode this project has been bitten by, so the rule is: answer
- * with the real bytes, from your own system's files, or answer ENOENT --
- * never invent structure. The Mii database (RFL_DB.dat) is validated the same
- * way, by its own CRC. You supply all of these from your own dump; none ship
- * here.
+/* wii_nand_defaults.h -- the files every real Wii NAND carries.
+ *
+ * These are not fabrications: they are the authentic default files Dolphin
+ * copies into a fresh Wii root (Data/Sys/Wii/shared2/wc24/), byte for byte.
+ * A title reads and VALIDATES them -- nwc24msg.cfg carries an additive
+ * checksum over its first 0x3FC bytes, the mailbox control blocks carry
+ * their own headers ('WcTf'/'WcFl'/'WcDl') -- so approximating them is the
+ * "plausible lie" failure mode this project has been bitten by three times.
+ * Answer with the real bytes or answer ENOENT; never invent structure.
+ *
+ * The Mii database is not a Dolphin copy -- Dolphin ships no RFL_DB.dat -- but
+ * it is not a fabrication either: tools/mk_rfl_db.py generates it from the
+ * format read out of the retail DOL's own RFL library (RFLiInitDB defines the
+ * layout, RFLiCalculateCRC + the load-time CRC pass define validity), and the
+ * generator re-runs those acceptance tests on its own output.  See that file.
  *
  * X(nand_path, asset_relative_path, symbol_stem)
  *

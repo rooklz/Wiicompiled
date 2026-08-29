@@ -2632,7 +2632,7 @@ decode_done:
         extern int rsx_ring_low(void);
         if (g_spu_fence_per_draw) {
             extern void spu_vtx_join(void);
-            /* Opt-in only (wiicompiled-fenceperdraw.txt). The per-draw join is
+            /* Opt-in only (dolphin-fenceperdraw.txt). The per-draw join is
              * redundant, and it was expensive: measured in-race it ran once
              * per draw -- 7,059 joins a frame, 93% of them actually blocking,
              * ~600 spin iterations each, 10.3% of the frame asleep -- while

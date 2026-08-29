@@ -164,7 +164,7 @@ static unsigned bt_num_stored_keys(void)
 {
     static int n = -1;
     if (n < 0) {
-        FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-keys.txt", "r");
+        FILE *f = fopen("/dev_hdd0/tmp/dolphin-keys.txt", "r");
         const char *e;
         n = 5;
         if (f) { if (fscanf(f, "%d", &n) != 1) n = 5; fclose(f); }
@@ -242,7 +242,7 @@ static u64 bt_offer_delay_tb(void)
 {
     static s64 secs = -1;
     if (secs < 0) {
-        FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-btdelay.txt", "r");
+        FILE *f = fopen("/dev_hdd0/tmp/dolphin-btdelay.txt", "r");
         const char *e;
         int v = 1;
         if (f) { if (fscanf(f, "%d", &v) != 1) v = 1; fclose(f); }
@@ -1020,7 +1020,7 @@ static void bt_execute_command(u16 opcode, const u8 *payload, u8 payload_len)
             if (!want || !*want) {
                 /* The console build has no environment, so the same switch is
                  * a file that can be dropped in over FTP. */
-                FILE *tf = fopen("/dev_hdd0/tmp/wiicompiled-scan.txt", "r");
+                FILE *tf = fopen("/dev_hdd0/tmp/dolphin-scan.txt", "r");
                 if (tf) { fclose(tf); want = "1"; }
             }
             if (!scanned && want && *want) {

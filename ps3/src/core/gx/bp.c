@@ -184,7 +184,7 @@ static void decode_tevind(BPState *bp, unsigned stage, u32 v)
  *
  * Each register also carries two bits of the matrix's shared scale exponent,
  * in ascending significance across the three registers. Dolphin's notes record
- * that hardware ignores the sixth bit even though the system software writes it, which is
+ * that hardware ignores the sixth bit even though the SDK writes it, which is
  * why only five are kept here -- an exponent read two bits too wide scales
  * every offset by a factor of a million and produces a texture lookup
  * somewhere else entirely. */

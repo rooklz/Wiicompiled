@@ -32,6 +32,7 @@ extern "C" void func_801A9DE4(CpuContext *);   /* OSCreateThread             */
 extern "C" void func_801A957C(CpuContext *);   /* __OSThreadInit             */
 
 extern "C" int  wcf_switch(uint32_t osctx, CpuContext *ctx);
+extern "C" { extern volatile unsigned g_wcf_poison_save; }
 extern "C" int  wcf_create(uint32_t osthread);
 extern "C" int  wcf_register_root(uint32_t osthread, CpuContext *ctx);
 extern "C" void wcf_purge(uint32_t osthread);
@@ -139,14 +140,14 @@ void wcf_hle_OSLoadContext(CpuContext *ctx)
 void wcf_hle_OSCreateThread(CpuContext *ctx)
 {
     uint32_t thread = ctx->gpr[3];             /* r3 AT ENTRY: the OSThread */
-    func_801A9DE4(ctx);                        /* the game's own creation   */
+    func_801A9DE4(ctx);                        /* the SDK's own creation    */
     if (thread && ctx->gpr[3])                 /* r3 after: BOOL success    */
         wcf_create(thread);
 }
 
 void wcf_hle_OSThreadInit(CpuContext *ctx)
 {
-    func_801A957C(ctx);                        /* the game's own init       */
+    func_801A957C(ctx);                        /* the SDK's own init        */
     uint32_t cur = rd32(kRunCtxAddr);
     if (!cur) {
         LOG_ERROR(LOG_CORE, "WCF: __OSThreadInit left no current thread");
@@ -198,6 +199,15 @@ void wc_hle_SelectThread(CpuContext *ctx)
             ctx->gpr[3] = runctx;
             func_801A1E38(ctx);
             if (ctx->gpr[3] != 0) { g_wcs_save1++; ctx->gpr[3] = 0; return; }
+            {   /* poison bracket, save side: the mirror we just archived */
+                uint32_t r1v = (uint32_t)ctx->gpr[1], r31v = (uint32_t)ctx->gpr[31];
+                if (r1v < 0x80000000u || r1v >= 0x81800000u) {
+                    g_wcf_poison_save++;
+                    static unsigned n;
+                    if (n < 8u) { n++;
+                        LOG_WARN(LOG_CORE, "POISONSAVE[%u] run=%08x r1=%08x r31=%08x lr=%08x",
+                                 n, (unsigned)runctx, r1v, r31v, (unsigned)ctx->lr); } }
+            }
         } else {
             g_wcs_skipsave++;
             {   static unsigned n;
@@ -298,7 +308,7 @@ void wc_hle_SelectThread(CpuContext *ctx)
             LOG_WARN(LOG_CORE, "PICK[%u] os=%08x prio=%u hint=%08x",
                      s_npick, (unsigned)ctx->gpr[3],
                      (unsigned)MemoryInline::Load<uint32_t>(ctx->gpr[3] + 0x2D0u),
-                     (unsigned)MemoryInline::Load<uint32_t>(0x80381588u)); } }
+                     0u); } }
 
         wcf_hle_OSLoadContext(ctx);            /* the switch (or self-load) */
 

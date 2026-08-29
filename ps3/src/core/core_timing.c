@@ -151,7 +151,7 @@ void timing_schedule(int event_type, s64 cycles_from_now, u64 userdata)
         if (on < 0) {
             FILE *f;
             on = getenv("EVTRACE") != NULL;
-            if (!on && (f = fopen("/dev_hdd0/tmp/wiicompiled-evtrace.txt", "r")))
+            if (!on && (f = fopen("/dev_hdd0/tmp/dolphin-evtrace.txt", "r")))
                 { fclose(f); on = 1; }
         }
         if (on && n < 4000) { n++;

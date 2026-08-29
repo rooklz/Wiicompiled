@@ -51,6 +51,8 @@ struct FiberCtx {
     uint64_t vrsave;
     uint64_t pad;
     uint8_t  vr[12][16];
+    uint64_t chk;         /* integrity canary over the block above; 0 = unset.
+                             Appended past 0x210: the .S offsets stay valid. */
 } __attribute__((aligned(16)));
 
 /* Swap execution: save the current context into `from`, restore `to`, and

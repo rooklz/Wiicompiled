@@ -34,11 +34,11 @@ static u32   s_done_cache;
 static u32   s_nspu = 1;          /* consumers actually started */
 
 /* How many SPUs to run as vertex consumers. The console has six; this used
- * one. wiicompiled-spucount.txt overrides, which is how a bad count is backed out
+ * one. dolphin-spucount.txt overrides, which is how a bad count is backed out
  * without a rebuild. */
 static u32 spu_count_wanted(void)
 {
-    FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-spucount.txt", "r");
+    FILE *f = fopen("/dev_hdd0/tmp/dolphin-spucount.txt", "r");
     long v = 5;                   /* leave one SPU for the system */
     if (f) { if (fscanf(f, "%ld", &v) != 1) v = 5; fclose(f); }
     if (v < 1) v = 1;
@@ -77,17 +77,17 @@ void spu_vtx_arena_reset(void) { s_arena_used = 0; }
 
 void spu_vtx_init(void)
 {
-    FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-spu.txt", "rb");
+    FILE *f = fopen("/dev_hdd0/tmp/dolphin-spu.txt", "rb");
     if (!f) { LOG_INFO(LOG_CORE, "spu_vtx: flag absent, SPU path off"); return; }
     fclose(f);
     LOG_INFO(LOG_CORE, "spu_vtx: initialising");
 
     s_ring = (u8 *)memalign(128, RING_BYTES);
-    if (!s_ring) return;
+    if (!s_ring) { LOG_WARN(LOG_CORE, "spu_vtx: ring alloc failed (%u B) -- path off", (unsigned)RING_BYTES); return; }
     memset(s_ring, 0, RING_BYTES);
 
     s_arena = (u8 *)memalign(1024 * 1024, SPU_ARENA_BYTES);
-    if (!s_arena) return;
+    if (!s_arena) { LOG_WARN(LOG_CORE, "spu_vtx: arena alloc failed (%u B) -- path off", (unsigned)SPU_ARENA_BYTES); return; }
     if (gcmMapMainMemory(s_arena, SPU_ARENA_BYTES, &s_arena_off) != 0) {
         LOG_WARN(LOG_CORE, "spu_vtx: gcmMapMainMemory failed");
         return;
@@ -96,7 +96,7 @@ void spu_vtx_init(void)
     sysSpuInitialize(6, 0);
     {
         static u8 elf[96 * 1024];
-        FILE *ef = fopen("/dev_hdd0/game/WCPS3001/USRDIR/vtx_spu.elf", "rb");
+        FILE *ef = fopen("/dev_hdd0/game/DOLPHIN01/USRDIR/vtx_spu.elf", "rb");
         size_t n;
         u32 thr;
         sysSpuThreadArgument arg;

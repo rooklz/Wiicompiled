@@ -1,7 +1,7 @@
 /* rsx_shader.h — hand our generated microcode to the RSX.
  *
  * fp_emitter.h and vp_emitter.h produce raw NV40 microcode, verified word for
- * word against cgcomp (PSL1GHT's shader compiler) by tools/fp_verify.sh and
+ * word against Sony's own compiler (`cgcomp`) by tools/fp_verify.sh and
  * tools/vp_verify.sh. What they do not produce is the small *container* the
  * driver expects: cgcomp normally emits a header describing the program's
  * register and attribute usage, and PSL1GHT's upload functions take that

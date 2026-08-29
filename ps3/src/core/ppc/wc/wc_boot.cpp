@@ -23,7 +23,7 @@
  *   2. the DOL's data sections are placed (wc_data_init)
  *   3. r2/r13 get the small-data bases the boot code would have installed --
  *      before any translated code runs, because every global access uses them
- *   4. the stack pointer is placed in MEM1 where the game's own boot leaves it
+ *   4. the stack pointer is placed in MEM1 where the SDK's own boot leaves it
  *   5. HID2 enables paired singles and quantised load/store, which the guest
  *      assumes from its first vector op
  */
@@ -54,7 +54,7 @@ extern "C" void func_800060A4(CpuContext *ctx);
 static const uint32_t kSda1Base = 0x80388880u;   /* r13 */
 static const uint32_t kSda2Base = 0x8038AC20u;   /* r2  */
 
-/* Where the game's boot code leaves the stack: the top of MEM1, below the
+/* Where the SDK's boot code leaves the stack: the top of MEM1, below the
  * arena high mark the loader publishes at 0x80000034. */
 static const uint32_t kInitialStack = 0x817F8000u;
 
@@ -108,6 +108,7 @@ extern "C" { extern volatile int g_wc_canary_state; }
 
 extern "C" int wc_boot(void)
 {
+    LOG_WARN(LOG_CORE, "WCBUILD %s %s", __DATE__, __TIME__);
     CpuContext *c = &g_wc_ctx;
 
     {   /* Baseline, before the port allocates anything of its own: how much

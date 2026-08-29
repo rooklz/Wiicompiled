@@ -34,7 +34,7 @@
  * it between them on every job.
  *
  * The count is written into the header by the PPU before the group starts, so
- * it is a runtime choice (wiicompiled-spucount.txt) rather than a rebuild, and the
+ * it is a runtime choice (dolphin-spucount.txt) rather than a rebuild, and the
  * SPU image adapts to whatever it is told. */
 #define SPU_VTX_MAX_SPU     6
 

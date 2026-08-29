@@ -129,7 +129,7 @@ u32  ios_fs_file_len(const char *path);
 unsigned ios_fs_file_count(const char *path);
 
 /* Boot-progress signals for a status display: how many IOS_Open calls have
- * succeeded, and how many disc-auth drive-error queries have been answered
+ * succeeded, and how many anti-piracy drive-error queries have been answered
  * (2 = the full Error #001 sequence passed). */
 /* The Bluetooth adapter (ios_bt.c). ios_bt_ioctlv returns >=0 to reply with
  * that result now, or -1 when the request has been parked for later. */
@@ -149,7 +149,7 @@ void ios_report_outstanding(void);
 unsigned ios_bt_queued(void);
 
 unsigned ios_progress_opens(void);
-unsigned ios_progress_discauth(void);
+unsigned ios_progress_antipiracy(void);
 unsigned ios_progress_disc_reads(void);
 /* Record every partition read to `f` as "offset length" lines. */
 void ios_di_log_reads(FILE *f);

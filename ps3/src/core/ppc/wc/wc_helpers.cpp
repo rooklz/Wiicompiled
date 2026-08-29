@@ -65,7 +65,7 @@ uint32_t PPC_ReadSpr(uint32_t spr)
     default:   return 0u;
     }
 }
-/* SPR 22 is the decrementer, and it matters: the translator INLINES the game's
+/* SPR 22 is the decrementer, and it matters: the translator INLINES the SDK's
  * PPCMtdec into its callers, so the address-level HLE on PPCMtdec never runs
  * and every write lands here instead. Ignoring it silenced every OSAlarm --
  * measured on console as the Bluetooth stack polling BTA_DmIsDeviceUp seven

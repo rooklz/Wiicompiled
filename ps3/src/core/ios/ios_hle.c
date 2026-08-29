@@ -328,7 +328,7 @@ void ios_di_set_read_hook(void (*fn)(unsigned long long, unsigned))
 { s_read_hook = fn; }
 static u32 s_di_error;              /* drive error: (state<<24)|code       */
 static unsigned s_ios_opens;        /* how many IOS_Open calls succeeded    */
-static unsigned s_di_probe_hits;    /* disc-auth drive-error queries answered */
+static unsigned s_di_probe_hits;    /* anti-piracy drive-error queries answered */
 
 static u64 s_es_title_id;
 static int s_es_title_active;
@@ -395,7 +395,7 @@ static s32 alloc_fd(dev_kind kind)
 /* The directory namespace. A path "exists" as a directory if the system
  * provisions it, a title created it, or any held file lives beneath it.
  * Before this list existed, ReadDir succeeded for ANY path -- including
- * ".../banner.bin" -- and the game's NANDGetType concluded every nonexistent
+ * ".../banner.bin" -- and the SDK's NANDGetType concluded every nonexistent
  * file was an existing directory. MKWii's save flow then chose "open the
  * banner" over "create the banner", forever. */
 #define MAX_NAND_DIRS 64
@@ -425,7 +425,7 @@ static int nand_dir_exists(const char *path)
 }
 
 /* ISFS_GETUSAGE (ioctlv 0x0C): in = path, out = u32 used blocks (0x4000 each)
- * and u32 used inodes under it. The system software's NANDCheck subtracts this from the
+ * and u32 used inodes under it. The SDK's NANDCheck subtracts this from the
  * filesystem totals to decide whether a save will fit; answering "success"
  * with the caller's buffers untouched fed it stack garbage, and its verdict
  * was the game's "could not write to Wii system memory" screen. */
@@ -534,7 +534,7 @@ static s32 fs_readdir(u32 nin, u32 nio, u32 vec)
 #define IOCTL_NW24_SET_RTC_COUNTER    0x17
 #define IOCTL_NW24_GET_TIME_DIFF      0x18
 
-/* Wii epoch: seconds from 1970 to 2000, in the units the system software uses. */
+/* Wii epoch: seconds from 1970 to 2000, in the units the SDK uses. */
 static u64 s_kd_utc = 0x0000000100000000ull;
 static u32 s_kd_rtc;
 
@@ -684,7 +684,7 @@ static s32 di_ioctl(u32 num, u32 in, u32 in_len, u32 out, u32 out_len)
                 return DI_DRIVE_ERROR;
             return DI_SUCCESS;
         }
-        /* The error-001 disc-auth ranges: offsets just past the end of a
+        /* The error-001 anti-piracy ranges: offsets just past the end of a
          * genuine disc but inside a bootleg DVD-R. Mario Kart Wii reads them
          * and demands the drive REJECT the read with BlockOOB (0x52100). A real
          * disc fails here; a bootleg succeeds -- and success is what the game
@@ -722,7 +722,7 @@ static s32 di_ioctl(u32 num, u32 in, u32 in_len, u32 out, u32 out_len)
 
     case DVDLowReportKey:
         /* A DVD-Video CSS command. A genuine Wii drive rejects it, and the
-         * disc-auth check's third stage confirms the disc by reading back
+         * anti-piracy check's third stage confirms the disc by reading back
          * that rejection (InvalidCommand, 0x52000). */
         s_di_error = 0x00052000u;
         return DI_DRIVE_ERROR;
@@ -733,7 +733,7 @@ static s32 di_ioctl(u32 num, u32 in, u32 in_len, u32 out, u32 out_len)
         /* Report the packed drive error (state<<24 | code), then clear it --
          * exactly what Dolphin's RequestError does (DVDInterface.cpp:982-994).
          * After an error-001 OOB read this is 0x00052100, which is what the
-         * disc-auth check compares against to confirm a genuine disc. */
+         * anti-piracy check compares against to confirm a genuine disc. */
         if (out_len < 4) return DI_SECURITY;
         mem_write32(out, s_di_error);
         s_di_error = 0;
@@ -1546,11 +1546,11 @@ void ios_write_reply(u32 req, s32 result)
 }
 
 unsigned ios_progress_opens(void) { return s_ios_opens; }
-unsigned ios_progress_discauth(void) { return s_di_probe_hits; }
+unsigned ios_progress_antipiracy(void) { return s_di_probe_hits; }
 unsigned ios_progress_disc_reads(void) { return s_di_reads; }
 
 /* For the __ios_Ipc2 HLE: DI replies must NOT be delivered at-issue. The
- * disc-auth probe's intentional DriveError, arriving before the DVD state
+ * anti-piracy probe's intentional DriveError, arriving before the DVD state
  * machine marked the command outstanding, was processed as a spontaneous
  * drive failure -- the disc-error screen latched on a genuine-disc verdict.
  * DI completions take the device-loop release path (real latency, delivered

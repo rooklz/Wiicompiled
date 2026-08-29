@@ -119,7 +119,7 @@ inline unsigned TypeSize(uint32_t type) { return (type == 4u || type == 6u) ? 1u
  * line function, compiled to 4,191 instructions because of it.
  *
  * The float encoding (type 0, and the three reserved codes hardware treats the
- * same) is what the system software leaves in GQR0 and what almost every access uses. That
+ * same) is what the SDK leaves in GQR0 and what almost every access uses. That
  * one stays inline and is two loads; everything else goes through here. */
 MKW_PPC_NO_INLINE inline double LoadQuantised(uint32_t gqr, uint32_t addr, uint32_t w)
 {

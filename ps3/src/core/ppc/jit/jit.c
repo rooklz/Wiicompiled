@@ -675,7 +675,7 @@ static void jit_profile_init(void)
          * to see WHICH guest code eats a CPU-bound phase on hardware -- the
          * attract movie runs 24M guest instructions a frame and the phase
          * table cannot say where. */
-        FILE *jf = fopen("/dev_hdd0/tmp/wiicompiled-jitprof.txt", "r");
+        FILE *jf = fopen("/dev_hdd0/tmp/dolphin-jitprof.txt", "r");
         if (!jf) return;
         fclose(jf);
         p = "1";
@@ -992,7 +992,7 @@ int jit_init(size_t code_bytes)
 #else
     {   /* On console the flag files are how experiments are armed, because
          * there is no environment to read. */
-        FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-coldsplit.txt", "rb");
+        FILE *f = fopen("/dev_hdd0/tmp/dolphin-coldsplit.txt", "rb");
         if (f) { g_jit_cold_split = 1; fclose(f); }
     }
 #endif
@@ -1026,9 +1026,9 @@ int jit_init(size_t code_bytes)
      * that feature off on the hardware and measure the frame. Guessing has
      * been wrong twice. */
     {   extern int g_jit_prefetch, g_jit_prefetch_dist;
-        FILE *pf = fopen("/dev_hdd0/tmp/wiicompiled-prefetch.txt", "rb");
-        FILE *pa = fopen("/dev_hdd0/tmp/wiicompiled-prefetch-all.txt", "rb");
-        {   FILE *p3 = fopen("/dev_hdd0/tmp/wiicompiled-prefetch-probe.txt", "rb");
+        FILE *pf = fopen("/dev_hdd0/tmp/dolphin-prefetch.txt", "rb");
+        FILE *pa = fopen("/dev_hdd0/tmp/dolphin-prefetch-all.txt", "rb");
+        {   FILE *p3 = fopen("/dev_hdd0/tmp/dolphin-prefetch-probe.txt", "rb");
             if (p3) { fclose(p3); g_jit_prefetch = 3; }
         }
         if (pa) { fclose(pa); if (!pf && g_jit_prefetch != 3) g_jit_prefetch = 2; }
@@ -1042,10 +1042,10 @@ int jit_init(size_t code_bytes)
                      g_jit_prefetch_dist);
         }
     }
-    {   FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-nosched.txt", "rb");
+    {   FILE *f = fopen("/dev_hdd0/tmp/dolphin-nosched.txt", "rb");
         if (f) { fclose(f); g_jit_sched_enable = 0;
                  LOG_INFO(LOG_JIT, "PPE instruction scheduling DISABLED (flag)"); }
-        f = fopen("/dev_hdd0/tmp/wiicompiled-nosched-regions.txt", "rb");
+        f = fopen("/dev_hdd0/tmp/dolphin-nosched-regions.txt", "rb");
         if (f) { fclose(f); g_jit_sched_regions = 0;
                  LOG_INFO(LOG_JIT, "region scheduling DISABLED (flag)"); }
     }
@@ -1459,7 +1459,7 @@ int jit_block_compiled(const PPCState *s, u32 pc)
 }
 
 /* PC ranges the JIT must refuse, forcing those blocks through the
- * interpreter. File-armed ("wiicompiled-jitskip.txt": "start end" hex pairs, one
+ * interpreter. File-armed ("dolphin-jitskip.txt": "start end" hex pairs, one
  * per line): the bisection tool that finds WHICH block the JIT miscompiles on
  * hardware, by narrowing the skipped range until the symptom moves. */
 static struct { u32 lo, hi; } s_jit_skip[8];
@@ -1469,7 +1469,7 @@ static int jit_skip_pc(u32 pc)
 {
     int i;
     if (s_jit_skip_n < 0) {
-        FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-jitskip.txt", "r");
+        FILE *f = fopen("/dev_hdd0/tmp/dolphin-jitskip.txt", "r");
         s_jit_skip_n = 0;
         if (f) {
             unsigned a2, b2;
@@ -1920,6 +1920,14 @@ void *jit_dispatch_c(PPCState *s)
             }
         }
 aot_declined:
+
+        /* Hybrid bridge stint: linked native functions (and through them the
+         * HLE overrides) take precedence over compiling guest DOL bytes. */
+        {   extern int g_wc_bridge_depth;
+            extern int wc_native_dispatch(PPCState *);
+            if (UNLIKELY(g_wc_bridge_depth > 0) && wc_native_dispatch(s))
+                continue;
+        }
 
         b = jit_get_block(s, s->pc);
         if (b && UNLIKELY(s_prof_enabled)) {

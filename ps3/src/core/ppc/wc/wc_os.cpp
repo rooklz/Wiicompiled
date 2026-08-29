@@ -88,7 +88,7 @@ struct GuestThread {
 #endif
 };
 
-/* __OSCurrentContext, and the context the system software parks in when it idles. The
+/* __OSCurrentContext, and the context the SDK parks in when it idles. The
  * idle context's address is fixed in the image; SelectThread loads it as a
  * literal (0x80340000 + 13616) on the no-runnable-thread path. */
 const uint32_t kCurrentContext = 0x800000D4u;
@@ -188,6 +188,120 @@ static __thread uint32_t t_irq_ctx;      /* the context the vector passed in */
 static __thread uint32_t t_irq_switch_to; /* preemption target, carried out at exit */
 static __thread int      t_irq_slept;     /* handler slept; its rfi is deferred */
 static __thread int      t_irq_on_guest;  /* delivered on the game thread itself */
+
+/* All of the above is delivery state of ONE guest thread. On the fiber build
+ * every guest thread shares this host thread, so a fiber parked mid-delivery
+ * must not leave its armed rfi (or its jmp_buf) visible to the fiber being
+ * resumed: fiber X would satisfy fiber Y's rfi check, run Y's context load,
+ * and longjmp into Y's parked pump frame with no stack switch -- host
+ * callee-saved state scrambles, and the corpse is a translated local (B2D0's
+ * r31) reading garbage. Stash on switch-out, unstash on resume, reset on a
+ * fiber's first run. */
+struct WcIrqState {
+    int      in_irq;
+    jmp_buf  jb;
+    int      armed;
+    uint32_t ictx;
+    uint32_t sw_to;
+    int      slept;
+    int      on_guest;
+    /* The exception prologue saved the interrupted thread's file into its
+     * OSContext -- the closing rfi's OSLoadContext restores from there. A
+     * mid-handler park lets the scheduler's own OSSaveContext ARCHIVE the
+     * mid-handler world into that same slot (needed for the resume), which
+     * leaves the rfi restoring mid-handler NON-VOLATILES into the thread
+     * (measured: r31=801B8844 -- the VI handler -- live in the strap
+     * builder, and the strap-2 read DMA'd 290 KB over r13's small data).
+     * Snapshot the slot at park; put it back after the resume's
+     * load_own_context has consumed the scheduler's archive. */
+    uint32_t slot_ctx;                 /* 0 = no snapshot                 */
+    uint32_t slot_gpr[40];             /* +0x00..0x9F: r0-r31,cr,lr,ctr,xer.. */
+    uint32_t slot_srr[2];              /* +0x198/0x19C: srr0, srr1        */
+};
+extern "C" void wc_irq_state_stash(void *buf)
+{
+    static_assert(sizeof(struct WcIrqState) <= 1024, "irq stash too big");
+    struct WcIrqState *w = (struct WcIrqState *)buf;
+    w->in_irq = t_in_irq;
+    memcpy(&w->jb, &t_irq_jmp, sizeof(jmp_buf));
+    w->armed = t_irq_jmp_armed; w->ictx = t_irq_ctx;
+    w->sw_to = t_irq_switch_to; w->slept = t_irq_slept;
+    w->on_guest = t_irq_on_guest;
+    /* A parked mid-delivery fiber keeps its OWN armed rfi in the stash --
+     * clearing it made the handler's closing OSLoadContext fall through
+     * into the translated tail that hardware's rfi never reaches (measured:
+     * lr = a heap pointer one boot after trying exactly that). What must
+     * NOT stay held across the park is the GLOBAL delivery gate: with it
+     * held, every other fiber's delivery CAS-failed forever (delivered
+     * frozen, live line, world asleep). Release it here; wc_irq_state_unstash
+     * re-acquires it when this fiber resumes to finish its delivery. */
+    w->slot_ctx = 0;   /* slot write-back retired: the delivery epilogue
+                        * restores non-volatiles host-side instead. */
+    if (t_in_irq) {
+        static unsigned n;
+        if (n < 8u) { n++;
+            LOG_WARN(LOG_CORE, "WCF: park releases irq gate (ictx=%08x armed=%d)",
+                     (unsigned)t_irq_ctx, (int)t_irq_jmp_armed); }
+        g_wc_irq_owner = -2;
+        g_wc_in_irq    = 0;
+    }
+}
+
+/* Rewrite the prologue-save slot after a mid-delivery resume: called AFTER
+ * load_own_context has consumed the scheduler's archive of the mid-handler
+ * world, so the closing rfi restores the interrupted file exactly as the
+ * hardware path -- where nothing can touch the slot -- would. */
+extern "C" void wc_irq_state_slot_restore(const void *buf)
+{
+    const struct WcIrqState *w = (const struct WcIrqState *)buf;
+    unsigned i_sl;
+    if (!w->slot_ctx) return;
+    for (i_sl = 0; i_sl < 40u; i_sl++)
+        MemoryInline::Store<uint32_t>(w->slot_ctx + i_sl * 4u, w->slot_gpr[i_sl]);
+    MemoryInline::Store<uint32_t>(w->slot_ctx + 0x198u, w->slot_srr[0]);
+    MemoryInline::Store<uint32_t>(w->slot_ctx + 0x19Cu, w->slot_srr[1]);
+    {   static unsigned n;
+        if (n < 8u) { n++;
+            LOG_WARN(LOG_CORE, "WCF: rfi slot restored (ctx=%08x r31=%08x)",
+                     (unsigned)w->slot_ctx, (unsigned)w->slot_gpr[31]); } }
+}
+extern "C" void wc_irq_state_unstash(const void *buf)
+{
+    const struct WcIrqState *w = (const struct WcIrqState *)buf;
+    t_in_irq = w->in_irq;
+    memcpy(&t_irq_jmp, &w->jb, sizeof(jmp_buf));
+    t_irq_jmp_armed = w->armed; t_irq_ctx = w->ictx;
+    t_irq_switch_to = w->sw_to; t_irq_slept = w->slept;
+    t_irq_on_guest = w->on_guest;
+    if (t_in_irq) {
+        /* resuming mid-delivery: take the gate back for the finish */
+        if (g_wc_in_irq) {
+            static unsigned nc;
+            if (nc < 8u) { nc++;
+                LOG_WARN(LOG_CORE, "WCF: resume collides with live delivery"); } }
+        g_wc_in_irq = 1;
+    }
+}
+extern "C" { volatile unsigned g_wc_backedge_arm; volatile unsigned g_wc_backedge_hits, g_wc_backedge_pumps; }
+extern "C" { volatile unsigned WcBackedgePoll_site, WcBackedgePoll_n; }
+
+extern "C" void wc_backedge_service(CpuContext *ctx)
+{
+    g_wc_backedge_arm = 0;
+    g_wc_backedge_hits++;
+    if (t_in_irq) return;                    /* already delivering */
+    if (!(ctx->msr & 0x8000u)) return;       /* EE off: not a delivery point */
+    if ((pi_intsr_raw() & pi_intmr_raw()) || wc_dec_due()) {
+        g_wc_backedge_pumps++;
+        wc_irq_pump(ctx);
+    }
+}
+
+extern "C" void wc_irq_state_reset(void)
+{
+    t_in_irq = 0; t_irq_jmp_armed = 0; t_irq_ctx = 0;
+    t_irq_switch_to = 0; t_irq_slept = 0; t_irq_on_guest = 0;
+}
 
 
 extern "C" {
@@ -638,7 +752,7 @@ void wc_os_thread_exited(void)
 /* the register file being a real register file.                        */
 /* ------------------------------------------------------------------ */
 
-/* Offsets into the game's OSThread. Its OSContext is at offset 0, so an
+/* Offsets into the SDK's OSThread. Its OSContext is at offset 0, so an
  * OSContext* handed to OSLoadContext IS the OSThread* for a thread context,
  * which is what lets the hand-off find its slot from the argument alone. */
 #define OSCTX_GPR(n)   ((n) * 4u)     /* gpr[n]            */
@@ -678,6 +792,11 @@ void wc_hle_OSLoadContext(CpuContext *ctx)
             uint32_t s1 = MemoryInline::Load<uint32_t>(osctx_rfi + OSCTX_SRR1);
             func_801A1EB8(ctx);
             if (s1) ctx->msr = s1;
+            {   static unsigned n;
+                if (n < 24u) { n++;
+                    LOG_WARN(LOG_CORE, "RFILOAD[%u] os=%08x -> r1=%08x lr=%08x r31=%08x",
+                             n, (unsigned)osctx_rfi, (unsigned)ctx->gpr[1],
+                             (unsigned)ctx->lr, (unsigned)ctx->gpr[31]); } }
             t_irq_switch_to = 0;
             t_irq_jmp_armed = 0;
             longjmp(t_irq_jmp, 1);
@@ -722,6 +841,11 @@ void wc_hle_OSLoadContext(CpuContext *ctx)
             uint32_t s1 = MemoryInline::Load<uint32_t>(osctx + OSCTX_SRR1);
             func_801A1EB8(ctx);
             if (s1) ctx->msr = s1;
+            {   static unsigned n2;
+                if (n2 < 24u) { n2++;
+                    LOG_WARN(LOG_CORE, "RFILOAD2[%u] os=%08x -> r1=%08x lr=%08x",
+                             n2, (unsigned)osctx, (unsigned)ctx->gpr[1],
+                             (unsigned)ctx->lr); } }
             t_irq_switch_to = 0;
             t_irq_jmp_armed = 0;
             longjmp(t_irq_jmp, 1);
@@ -882,23 +1006,23 @@ void wc_hle_OSLoadContext(CpuContext *ctx)
 #endif
 }
 
-/* OSCreateThread -- register the pairing, then let the system software do its own work.
+/* OSCreateThread -- register the pairing, then let the SDK do its own work.
  *
  * The translated body is called first and stays in charge of everything the
  * game can observe: the OSThread fields, the ready queue, the priority, the
  * stack guard words. Only after it has run is the thread registered here, and
- * the entry point and stack pointer are read back out of the OSContext the system software
+ * the entry point and stack pointer are read back out of the OSContext the SDK
  * itself just filled in rather than reinterpreted from the argument list --
  * so a wrong guess about the calling convention cannot silently produce a
  * thread that starts at the wrong address. */
 void wc_hle_OSCreateThread(CpuContext *ctx)
 {
-    /* r3 AT ENTRY is the OSThread the caller allocated. The system software's return
+    /* r3 AT ENTRY is the OSThread the caller allocated. The SDK's return
      * value is a BOOL -- reading r3 after the call registered "thread 1"
      * twice and left every real thread unregistered, so the scheduler's
      * switches to them were refused as unknown. */
     uint32_t thread = ctx->gpr[3];
-    func_801A9DE4(ctx);                       /* the game's own OSCreateThread */
+    func_801A9DE4(ctx);                       /* the SDK's own OSCreateThread */
     if (!thread || !ctx->gpr[3]) return;      /* creation failed */
 #ifdef WC_FIBER_SCHED
     {   extern int wcf_create(uint32_t);
@@ -934,14 +1058,14 @@ void wc_hle_OSExitThread(CpuContext *ctx)
         sysMutexUnlock(g_lock);
     }
 #endif
-    func_801AA050(ctx);                       /* the game's own OSExitThread */
+    func_801AA050(ctx);                       /* the SDK's own OSExitThread */
 }
 
 } /* extern "C" */
 
-/* __OSThreadInit -- adopt the thread the system software is already running on.
+/* __OSThreadInit -- adopt the thread the SDK is already running on.
  *
- * The initial thread is not created by OSCreateThread; the system software builds it in
+ * The initial thread is not created by OSCreateThread; the SDK builds it in
  * place during OSInit and starts running on it. It therefore never passes
  * through the registration above, and the first time the game schedules away
  * from it and back the hand-off would find no slot for it.
@@ -972,8 +1096,25 @@ extern "C" { volatile unsigned g_wc_dvd_open_n, g_wc_dvd_ra_n,
 extern "C" { volatile unsigned g_wc_gx_peinit_n, g_wc_gx_sync_n, g_wc_gx_cb_n; }
 extern "C" { volatile unsigned g_wc_gki_send_n, g_wc_gki_read_n; }
 
+extern "C" uint32_t wcf_cur_osctx(void);
+extern "C" void wc_dump_crumbs_now(void);
 extern "C" void wc_dispatch_guard(uint32_t a)
 {
+    /* G31TRAP: 0x801B8844 (the VI handler's ADDRESS) keeps arriving in the
+     * interrupted code's r31. Name the first dispatch that sees it in the
+     * mirror OUTSIDE a delivery -- that is the escape site. */
+    {   static int fired31;
+        extern CpuContext *wcf_ctx(void);
+        CpuContext *gc = wcf_ctx();
+        if (!fired31 && gc && (uint32_t)gc->gpr[31] == 0x801B8844u
+            && !t_in_irq) {
+            fired31 = 1;
+            LOG_WARN(LOG_CORE, "G31TRAP a=%08x r1=%08x lr=%08x r3=%08x -- crumbs:",
+                     a, (unsigned)gc->gpr[1], (unsigned)gc->lr,
+                     (unsigned)gc->gpr[3]);
+            wc_dump_crumbs_now();
+        }
+    }
 #ifdef __PS3__
     /* The VI wake chain question, answered by counting: does the guest's
      * retrace handler ever dispatch, and how often does something enter
@@ -1018,7 +1159,7 @@ extern "C" void wc_dispatch_guard(uint32_t a)
 extern "C" void wc_hle_OSThreadInit(CpuContext *ctx)
 {
     uint32_t cur;
-    func_801A957C(ctx);                       /* the game's own __OSThreadInit */
+    func_801A957C(ctx);                       /* the SDK's own __OSThreadInit */
     /* The adopted boot thread's OSContext has srr1 == 0 (nothing ever wrote
      * it), so every OSLoadContext resume handed it MSR = 0 -- FP and EE both
      * off -- until the guest's own OSRestoreInterrupts. Threads made by
@@ -1079,7 +1220,7 @@ extern "C" void wc_hle_OSThreadInit(CpuContext *ctx)
 /* word and writes MSR, touching nothing the handler touches. It is     */
 /* also exactly where the hardware would have taken the interrupt. So   */
 /* delivery is gated on the guest actually running its idle context,    */
-/* which the system software records in __OSCurrentContext when it gives up.        */
+/* which the SDK records in __OSCurrentContext when it gives up.        */
 /*                                                                      */
 /* The handler brackets itself in OSDisableScheduler/OSEnableScheduler, */
 /* so the OSWakeupThread inside it sets the run-queue hint but does not */
@@ -1099,7 +1240,7 @@ extern "C" uint32_t pi_raise_seq(void);
 namespace {
 
 
-/* OS_EXCEPTION_EXTERNAL_INTERRUPT, as the system software numbers its exceptions. */
+/* OS_EXCEPTION_EXTERNAL_INTERRUPT, as the SDK numbers its exceptions. */
 const uint32_t kExcExternal = 4u;
 
 } /* namespace */
@@ -1180,6 +1321,8 @@ void wc_irq_deliver_exc(CpuContext *ctx, int on_guest_thread,
     uint32_t saved_gpr[13];          /* r0, r3..r12: the volatile GPR set */
     uint32_t saved_lr, saved_ctr, saved_cr, saved_xer;
     PPC_FPR  saved_fpr[14];          /* f0..f13 + fpscr: handlers run FP-on */
+    uint32_t saved_nv[18];           /* r14..r31: see the epilogue's restore */
+    PPC_FPR  saved_nvf[18];          /* f14..f31 */
     uint32_t saved_fpscr;
     int k_sv;
     if (!__sync_bool_compare_and_swap(&g_wc_in_irq, 0, 1)) {
@@ -1224,6 +1367,32 @@ void wc_irq_deliver_exc(CpuContext *ctx, int on_guest_thread,
      * interrupted code continues with exactly the registers it had. */
     t_irq_ctx = MemoryInline::Load<uint32_t>(kCurrentContext);
     if (!t_irq_ctx) t_irq_ctx = kIdleContext;
+#ifdef WC_FIBER_SCHED
+    /* CONTEXT-SWITCH SKEW GUARD. Between OSSetCurrentContext(next) and the
+     * fiber swap inside OSLoadContext, kCurrentContext names the NEXT thread
+     * while the mirror still runs the OLD one. A delivery in that window has
+     * the guest prologue save the old thread's registers into the next
+     * thread's OSContext, and a mid-handler reschedule archives the handler
+     * world there too -- the poisoned thread later "resumes" inside
+     * __OSDispatchInterrupt on another thread's stack (measured: f0 at
+     * 801a6c14 with f4's r1). Hardware makes this window unreachable by
+     * running it EE-off. Defer: leave the line pending, undo the gate, and
+     * the next dispatch boundary -- pointers agreed by then -- delivers. */
+    if (on_guest_thread) {
+        uint32_t fctx = wcf_cur_osctx();
+        if (fctx && t_irq_ctx != fctx && t_irq_ctx != kIdleContext) {
+            static unsigned n_skew;
+            if (n_skew < 8u) { n_skew++;
+                LOG_WARN(LOG_CORE, "WC: delivery deferred (ctx skew cur=%08x fiber=%08x)",
+                         (unsigned)t_irq_ctx, (unsigned)fctx); }
+            g_wc_irq_pending = 1;
+            g_wc_irq_owner = -2;
+            t_in_irq = 0;
+            g_wc_in_irq = 0;
+            return;
+        }
+    }
+#endif
     /* v3 aimed t_irq_ctx at the idle context to stop the prologue-save
      * contamination -- wrong layer: the prologue is GUEST code that reads
      * kCurrentContext itself, so the redirect only broke the closing-rfi
@@ -1244,10 +1413,31 @@ void wc_irq_deliver_exc(CpuContext *ctx, int on_guest_thread,
     saved_msr = ctx->msr;
     saved_gpr[0] = ctx->gpr[0];
     for (k_sv = 0; k_sv < 10; k_sv++) saved_gpr[1 + k_sv] = ctx->gpr[3 + k_sv];
+    /* r1/r2 as well: hardware's rfi restores them from the context, and the
+     * longjmp path gets that via the translated load -- but a SLEPT handler
+     * that finishes by RETURNING leaves ITS OWN stack pointer in the mirror,
+     * and the interrupted function then reads its saved lr/r31 from handler
+     * stack bytes (measured: lr = the VI handler's address). Net-zero on the
+     * rfi path (entry r1 == rfi-restored r1). */
+    saved_gpr[11] = ctx->gpr[1];
+    saved_gpr[12] = ctx->gpr[2];
     saved_lr  = ctx->lr;  saved_ctr = ctx->ctr;
     saved_cr  = ctx->cr;  saved_xer = ctx->xer;
     for (k_sv = 0; k_sv < 14; k_sv++) saved_fpr[k_sv] = ctx->fpr[k_sv];
     saved_fpscr = ctx->fpscr;
+    /* NON-VOLATILES TOO. The closing rfi runs the full OSLoadContext body,
+     * which restores r14-r31/f14-f31 from the OSContext save slot. When the
+     * handler parked mid-delivery, the scheduler's own OSSaveContext had
+     * already archived the MID-HANDLER world into that same slot (it must:
+     * that archive is what the resume reloads), so the rfi hands the
+     * interrupted code handler-poisoned non-volatiles. Measured: the strap
+     * builder running with r31 = the VI handler's address, then computing
+     * its read destination as r13 and DMA-ing 290 KB of English.szs over
+     * the small-data segment. The guest ABI guarantees the handler preserves
+     * these, so the entry values are, on every path, exactly what the
+     * interrupted code must see again. */
+    for (k_sv = 0; k_sv < 18; k_sv++) saved_nv[k_sv]  = ctx->gpr[14 + k_sv];
+    for (k_sv = 0; k_sv < 18; k_sv++) saved_nvf[k_sv] = ctx->fpr[14 + k_sv];
     ctx->gpr[3] = excnum;
     ctx->gpr[4] = t_irq_ctx;
     ctx->msr    = MSR_FP;
@@ -1307,10 +1497,14 @@ void wc_irq_deliver_exc(CpuContext *ctx, int on_guest_thread,
          * stub would have preserved. */
         ctx->gpr[0] = saved_gpr[0];
         for (k_sv = 0; k_sv < 10; k_sv++) ctx->gpr[3 + k_sv] = saved_gpr[1 + k_sv];
+        ctx->gpr[1] = saved_gpr[11];
+        ctx->gpr[2] = saved_gpr[12];
         ctx->lr  = saved_lr;  ctx->ctr = saved_ctr;
         ctx->cr  = saved_cr;  ctx->xer = saved_xer;
         for (k_sv = 0; k_sv < 14; k_sv++) ctx->fpr[k_sv] = saved_fpr[k_sv];
         ctx->fpscr = saved_fpscr;
+        for (k_sv = 0; k_sv < 18; k_sv++) ctx->gpr[14 + k_sv] = saved_nv[k_sv];
+        for (k_sv = 0; k_sv < 18; k_sv++) ctx->fpr[14 + k_sv] = saved_nvf[k_sv];
         ctx->msr    = saved_msr;
         after = g_wc_calls;
         /* Rewind the crumb ring past the handler's own calls. The counter is
@@ -1324,13 +1518,14 @@ void wc_irq_deliver_exc(CpuContext *ctx, int on_guest_thread,
                     t_irq_ctx + (uint32_t)i_sn * 4u, s_osnap[i_sn]);
         if (had_prev)
             std::memcpy(&t_irq_jmp, &prev_jmp, sizeof prev_jmp);
-        if (g_wc_irq_delivered <= 10u) {
+        if (g_wc_irq_delivered <= 48u) {
             n = after - before;
             LOG_WARN(LOG_CORE, "WC: irq #%u exc=%u dispatched %u call(s), "
                                "intsr now %08x switch_to=%08x hint=%08x",
                      g_wc_irq_delivered, excnum, n,
                      (unsigned)pi_intsr_raw(), (unsigned)t_irq_switch_to,
                      (unsigned)MemoryInline::Load<uint32_t>(kRunQueueHint));
+            if (g_wc_irq_delivered > 10u) n = 0;
             if (n > WC_CRUMB_N) n = WC_CRUMB_N;
             {   char line[160]; int used = 0;
                 for (k = 0; k < n; k++) {
@@ -1356,7 +1551,7 @@ void wc_irq_deliver_exc(CpuContext *ctx, int on_guest_thread,
      * of those fixed one symptom and broke another. The cause was not the
      * delivery policy: the port was entering the handler one level too deep,
      * at __OSDispatchInterrupt rather than at ExternalInterruptHandler, so the
-     * exception-context bookkeeping the system software does on the way in never ran. */
+     * exception-context bookkeeping the SDK does on the way in never ran. */
     g_wc_irq_pending = pi_interrupt_pending() ? 1 : 0;
     g_wc_irq_owner = -2;
     t_in_irq = 0;
@@ -1901,7 +2096,7 @@ extern "C" u64 wc_dec_expiry_pub(void) { return g_wc_dec_expiry; }
 extern "C" void wc_dec_write(uint32_t value)
 {
 #ifdef __PS3__
-    /* 0x7FFFFFFF is the system software parking the decrementer. ZERO IS NOT: the
+    /* 0x7FFFFFFF is the SDK parking the decrementer. ZERO IS NOT: the
      * hardware DEC underflows one tick after mtdec(0) and interrupts --
      * it is InsertAlarm's "this alarm is already due, fire NOW" path.
      * Treating zero as a park silently dropped exactly that case, and the
@@ -1921,7 +2116,7 @@ extern "C" void wc_dec_write(uint32_t value)
  * as the 0x900 vector stub would -- handler = table[8], r3 = exception number,
  * r4 = the interrupted context -- under the same serialisation, seeding and
  * rfi machinery as the external interrupt. */
-/* Remaining decrementer ticks, for mfdec: the game's GetTimer reads it back
+/* Remaining decrementer ticks, for mfdec: the SDK's GetTimer reads it back
  * to decide whether an alarm is still pending. */
 extern "C" uint32_t wc_dec_remaining(void)
 {

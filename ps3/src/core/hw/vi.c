@@ -91,9 +91,10 @@ static void vi_raise_if_due(void)
         s_vi.di[i] |= VI_DI_STATUS;
         any = 1;
     }
-    if (any)
+    if (any) {
         pi_set_interrupt(PI_INT_VI, 1);
         g_vi_irqs++;
+    }
 }
 
 /* One event per scanline. That is more granular than most titles need, but it

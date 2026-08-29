@@ -33,7 +33,7 @@ extern "C" {
  * The interrupt thread is the one host thread that runs guest code without
  * owning the runner, and it deliberately does NOT write this pointer: it only
  * ever runs while the guest sits in its idle loop, which executes no quantised
- * access at all, and the GQRs it would read are the ones the system software programmed at
+ * access at all, and the GQRs it would read are the ones the SDK programmed at
  * init and never changes per thread. Leaving the pointer alone therefore keeps
  * the handler correct and keeps the game thread's pointer valid underneath it.
  *
@@ -129,15 +129,19 @@ extern "C" void wc_report_unresolved(void)
         LOG_WARN(LOG_JIT, "WC:   %08x", s_unresolved[i]);
 }
 
+extern "C" void wc_jit_bridge(uint32_t, CpuContext *);
+
 void WcUnresolvedCall(uint32_t target, CpuContext *ctx)
 {
     unsigned i;
-    (void)ctx;
     for (i = 0; i < s_unresolved_n; i++)
         if (s_unresolved[i] == target) return;
     if (s_unresolved_n < WC_MAX_UNRESOLVED)
         s_unresolved[s_unresolved_n++] = target;
     LOG_WARN(LOG_JIT, "WC: indirect target %08x is not translated", target);
+    /* Hybrid: run it under the JIT from guest RAM; returns when the
+     * guest does. Pre-init (or a null ctx) keeps the old skip. */
+    wc_jit_bridge(target, ctx);
 }
 
 

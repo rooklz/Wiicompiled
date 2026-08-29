@@ -274,7 +274,7 @@ static u32 dsp_read(u32 addr, unsigned size, void *ctx)
 
 /* One audio-DMA block is 32 bytes: 8 stereo 16-bit frames, drained at the AI's
  * DAC rate. Dolphin derives exactly this period from the AID rate divisor
- * (SystemTimers.cpp GetAudioDMACallbackPeriod); at the 32 kHz the system software
+ * (SystemTimers.cpp GetAudioDMACallbackPeriod); at the 32 kHz the SDK
  * programs it is 4 kHz, so a 12-block buffer is 3 ms -- exactly the AX frame
  * period, which is the check that this rate is right rather than plausible. */
 static s64 dsp_block_cycles(void)

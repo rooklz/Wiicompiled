@@ -39,7 +39,7 @@ typedef struct {
 static PIState    s_pi;
 static PPCState  *s_cpu;
 
-/* Escape hatch for the early-exit above, armed by wiicompiled-noirqexit.txt so a
+/* Escape hatch for the early-exit above, armed by dolphin-noirqexit.txt so a
  * single build can be A/B'd on hardware without a rebuild. */
 int g_pi_no_irq_exit;
 

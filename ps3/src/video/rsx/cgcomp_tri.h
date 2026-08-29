@@ -1,4 +1,4 @@
-/* cgcomp_tri.h — the same triangle shaders, compiled by cgcomp (PSL1GHT's shader compiler).
+/* cgcomp_tri.h — the same triangle shaders, compiled by Sony's cgcomp.
  *
  * Generated offline from:
  *     !!VP2.0  MOV o[HPOS], v[OPOS];  MOV o[COL0], v[COL0];  END

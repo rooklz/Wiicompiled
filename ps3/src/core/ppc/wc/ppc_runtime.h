@@ -43,7 +43,7 @@ extern CpuContext *wc_current_ctx;
  *
  * The port runs native code, so when the game stops there is no guest pc to
  * read and no interpreter loop to ask -- the first hang produced exactly two
- * system software banners and nothing else, with no way to tell which of 13,675 functions
+ * SDK banners and nothing else, with no way to tell which of 13,675 functions
  * it was sitting in.
  *
  * Every guest call passes through one of the dispatch specializations, and all
@@ -55,6 +55,36 @@ extern CpuContext *wc_current_ctx;
  * g_wc_calls existed but nothing ever incremented it, which is why every hang
  * so far reported "calls=0" whether the game was working or not. */
 #define WC_CRUMB_N 64u
+
+/* Back-edge delivery points. Call-free guest loops (a goto with no call
+ * between label and jump) are unpreemptible here even though hardware's
+ * decrementer preempts them; the device loop arms this flag when a line is
+ * live or the decrementer is due, and the injected poll at each such back
+ * edge becomes the delivery point. Locals live in host registers across it
+ * (no spill/reload is emitted at a non-call site), so a delivery -- or a
+ * fiber switch inside one -- preserves the interrupted loop exactly. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern volatile unsigned g_wc_backedge_arm;
+void wc_backedge_service(CpuContext *ctx);
+#ifdef __cplusplus
+}
+#endif
+static inline void WcBackedgePoll(CpuContext *ctx)
+{
+    if (__builtin_expect(g_wc_backedge_arm != 0, 0))
+        wc_backedge_service(ctx);
+}
+/* Probe payload: names the call-free loop the guest is spinning in.
+ * Two volatile stores; no delivery, no mirror interaction. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern volatile unsigned WcBackedgePoll_site, WcBackedgePoll_n;
+#ifdef __cplusplus
+}
+#endif
 extern uint32_t          g_wc_crumb[WC_CRUMB_N];
 extern volatile unsigned g_wc_calls;
 #define WC_CRUMB(a) \

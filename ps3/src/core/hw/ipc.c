@@ -174,7 +174,7 @@ static void ipc_deliver_next(void)
     g_ipc_backlog = s_reply_count;
     s_Y1 = 1;
     {   static unsigned n;
-        if (n < 14u) {
+        if (n < 64u) {
             n++;
             LOG_WARN(LOG_CORE, "IPCREL[%u] req=%08x IY1=%d masks=%08x",
                      n, (unsigned)s_armmsg, s_IY1, (unsigned)s_irq_masks);

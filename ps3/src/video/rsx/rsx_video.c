@@ -46,7 +46,8 @@ int rsx_xmb_menu_open(void);
  * Source: libgcm Overview ch.5 "Flips" (5.1 Flip Methods, 5.2 Flip Completion
  * Checks) and the libgcm Reference entries for cellGcmSetPrepareFlip,
  * cellGcmSetFlipImmediate, cellGcmSetFlipHandler and cellGcmSetVBlankHandler.
- * The structure below follows the standard RSX immediate-flip setup.
+ * The structure below is the one in the SDK's own reference implementation,
+ * samples/sdk/graphics/gcm/flip_immediate/main.cpp.
  *
  * WHAT THE OLD PATH DID WRONG.  cellGcmGetFlipStatus is a single global flag
  * ("Gets the flip status", libgcm Reference) -- it can say *a* flip retired,
@@ -64,7 +65,7 @@ int rsx_xmb_menu_open(void);
  * RSX local memory (RSX_SOL 1.2.14 / RSX_Tips 2.1.3: Cell reads of local
  * memory run at ~15.6 MB/s and block the accesses the RSX driver itself
  * needs).  The one local-memory load that remains is a single word inside the
- * VBlank interrupt, 60 times a second, which is the standard approach.
+ * VBlank interrupt, 60 times a second, which is what the SDK sample does too.
  *
  * THE FLOW, per frame:
  *   rsx_frame_end   PPU: gcmSetPrepareFlip(cur) -> queue id.  Then
@@ -548,7 +549,7 @@ int rsx_video_init(void)
      * about when the 1 MiB command ring first wraps, and it does so with the
      * SPU path disabled entirely. That is the shape of a bad call, not of a
      * missing fence. Off by default until the alternative below is measured. */
-    {   FILE *hf = fopen("/dev_hdd0/tmp/wiicompiled-ringhook.txt", "rb");
+    {   FILE *hf = fopen("/dev_hdd0/tmp/dolphin-ringhook.txt", "rb");
         if (hf) fclose(hf);
         else {
             LOG_INFO(LOG_RSX, "rsx: ring-wrap hook disabled (default); "
@@ -579,10 +580,10 @@ int rsx_video_init(void)
          * so the SPUs are always caught up BEFORE the wrap the callback
          * existed to guard. Fencing again on every draw only re-proves it.
          *
-         * wiicompiled-fenceperdraw.txt restores the old behaviour for A/B. */
+         * dolphin-fenceperdraw.txt restores the old behaviour for A/B. */
         LOG_WARN(LOG_RSX, "rsx: no ring-wrap callback to chain; "
                           "relying on the ring-headroom fence instead");
-        {   FILE *ff = fopen("/dev_hdd0/tmp/wiicompiled-fenceperdraw.txt", "r");
+        {   FILE *ff = fopen("/dev_hdd0/tmp/dolphin-fenceperdraw.txt", "r");
             if (ff) { fclose(ff); g_spu_fence_per_draw = 1; }
         }
         LOG_INFO(LOG_CORE, "rsx: SPU fence mode = %s",
@@ -621,7 +622,7 @@ ring_hook_done:;
      * current mode. A file can force a different choice for comparison. */
     {
         u32 want = VIDEO_RESOLUTION_480;
-        FILE *rf = fopen("/dev_hdd0/tmp/wiicompiled-res.txt", "r");
+        FILE *rf = fopen("/dev_hdd0/tmp/dolphin-res.txt", "r");
         if (rf) {
             unsigned v = 0;
             if (fscanf(rf, "%u", &v) == 1 && v) want = v;
@@ -741,7 +742,7 @@ ring_hook_done:;
 
     /* The dedicated EFB surface: same geometry, pitch and format as a display
      * buffer, so nothing about the EFB->screen coordinate mapping changes --
-     * only WHERE draws and copy-clears land. Armed by wiicompiled-efbsurf.txt; a
+     * only WHERE draws and copy-clears land. Armed by dolphin-efbsurf.txt; a
      * failed allocation is not fatal, it just leaves the old behaviour. */
     if (rsx_efb_surface_wanted()) {
         g_rsx.efb = (u32 *)rsxMemalign(
@@ -782,7 +783,7 @@ ring_hook_done:;
                       "binding anyway");
 
         /* Zcull first, then the tiles, then (below) the display buffers, which
-         * is the standard zcull setup order.
+         * is the order the SDK's own zcull sample uses.
          *
          * Constraints, all satisfied by construction above: the depth offset
          * is 64 KiB aligned and therefore also the required 4 KiB aligned; the
@@ -1112,7 +1113,7 @@ int rsx_efb_surface_wanted(void)
 {
     static int on = -1;
     if (on < 0) {
-        FILE *f = fopen("/dev_hdd0/tmp/wiicompiled-efbsurf.txt", "r");
+        FILE *f = fopen("/dev_hdd0/tmp/dolphin-efbsurf.txt", "r");
         on = 0;
         if (f) { fclose(f); on = 1; }
         LOG_INFO(LOG_CORE, "rsx: dedicated EFB surface %s",
