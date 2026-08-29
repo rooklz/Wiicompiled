@@ -120,6 +120,21 @@ a product with the matching overlay configuration.
   channel with its own anti-tamper; there is nothing to translate and it is not portable this way.
   The 2011-2014 open-source CT-CODE engine could be built as a profile like Retro Rewind.
 
-## Status
+## Status (2026-08-29, MacBook Pro M5, macOS 26.2)
 
-_(filled in at the end of the port session; see the commit log for the latest state)_
+| Product | State |
+| --- | --- |
+| `dist/rmce01/WiiCompiled` (clean NTSC-U) | Boots and runs: OS/IPC/NAND/DVD init, all 192 REL constructors, the game's own REL load at `0x8050BF60`, GX/VI/AX/KPAD up, the title attract sequence rendering at a steady 59-60 FPS on Metal with the pipeline cache seeded; 150 s unattended runs end with zero guest faults (`efb=0 xguard=0 mmio=0`). Audio through SDL3/CoreAudio with the AX mix worker. |
+| `dist/rmce01-retro-rewind/RetroRewind` (Retro Rewind 6.12.4, NTSC-U chunk) | Boots with the pack mounted through its Riivolution XML (156 mappings, 4,877 overlay files), Pulsar initialising its NAND settings, the Retro-WFC payload reporting `Payload version 0.1.1`; 4,055 mod functions translated, 9,987 module patches, 0 translation failures. Online play has not been exercised in this session. |
+| `dist/rmce01-wiimmfi` | Not a product - see the Wiimmfi analysis above. |
+
+Not yet done / known limits:
+
+* Play-testing beyond the attract loop needs a controller: upstream maps gamepads through SDL
+  (F10 overlay for assignment); keyboard play is not wired in upstream and was not added here.
+* Retro-WFC login, Retro Rewind menus and races: translated and booting, not yet driven through.
+* Media ducking (Windows-only WinRT) is off; the WUP-028 direct driver is Windows-only (SDL's
+  hidapi path covers the adapter when libusb is installed).
+* The `MkwStateFreeResult2`/x0-x1 return and `-mcpu=native` are correctness-neutral; no PGO yet.
+* `network_ssl` has no TLS backend outside Windows; the NAS/Retro-WFC/Wiimmfi logins are plain
+  HTTP by design, so nothing in the tested paths needs it.
