@@ -91,7 +91,7 @@ extern "C" uint32_t BTM_IsDeviceUp_HLE_8013a300(CpuContext* ctx)
 {
     // Force Bluetooth stack to "up" to avoid endless polling loops while we lack
     // real hardware bring-up.
-    constexpr uint32_t kBtmCbBase = 0x80336278u;
+    constexpr uint32_t kBtmCbBase = MKW_GADDR(80336278);
     constexpr uint32_t kDevStateOffset = 0x64Eu;
     try {
         ::Memory::Write8(kBtmCbBase + kDevStateOffset, 5u);

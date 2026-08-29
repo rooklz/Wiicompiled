@@ -152,7 +152,11 @@ fi
 entry_point=$(awk '/^translation:/{t=1} t && /^[[:space:]]*-[[:space:]]*0[xX][0-9a-fA-F]+/{gsub(/^[[:space:]]*-[[:space:]]*/,""); print; exit}' "$project")
 dol_in=$assets/main.dol; rel_in=$assets/StaticR.rel
 [[ "$profile" == "wiimmfi" ]] && { dol_in=$assets/wiimmfi/main.dol; rel_in=$assets/wiimmfi/StaticR.rel; }
-fingerprint=$(cat "$dol_in" "$rel_in" "$project" "$workspace/runtime/include/region/$region.h" | shasum -a 256 | cut -d' ' -f1)
+# Everything the base translation depends on: the inputs, the project, the region table, the
+# translator build itself, and the runtime sources (their native registrations decide which
+# functions are excluded from translation and which call sites bind natively).
+runtime_sources_hash=$(find "$workspace/runtime/src" "$workspace/runtime/include" -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.inc' \) -not -path '*/third_party/*' | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -d' ' -f1)
+fingerprint=$(cat "$dol_in" "$rel_in" "$project" "$workspace/runtime/include/region/$region.h" "$translator_dll" <(echo "$runtime_sources_hash") | shasum -a 256 | cut -d' ' -f1)
 reuse=0
 if [[ -f "$provenance" ]] && grep -q "\"$fingerprint\"" "$provenance" && [[ -f "$base_metadata" && -f "$base_manifest" ]]; then reuse=1; fi
 if (( reuse )); then

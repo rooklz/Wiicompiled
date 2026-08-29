@@ -58,7 +58,8 @@ public sealed partial class GuestAddressTable
     public string Rewrite(string source)
     {
         source = MacroTokenPattern().Replace(source, m => m.Groups["head"].Value + Resolve(m.Groups["pal"].Value));
-        source = GaddrPattern().Replace(source, m => "0x" + Resolve(m.Groups["pal"].Value) + "u");
+        // No `u` suffix: the registration regexes expect the comma right after the eight digits.
+        source = GaddrPattern().Replace(source, m => "0x" + Resolve(m.Groups["pal"].Value));
         source = GuestFuncPattern().Replace(source, m => "func_" + Resolve(m.Groups["pal"].Value));
         return source;
     }

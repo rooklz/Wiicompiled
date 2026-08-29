@@ -65,7 +65,7 @@ void ShowRuntimeFatalPopup(std::string_view category, std::string_view details) 
 // Mario Kart Wii's translated entry point. The products always boot here, so
 // this is applied as the default while parsing the command line; there is no
 // flag to override it.
-inline constexpr uint32_t kDefaultEntryAddress = 0x800060A4u;
+inline constexpr uint32_t kDefaultEntryAddress = MKW_GADDR(800060A4);
 
 class SystemBridge {
 public:

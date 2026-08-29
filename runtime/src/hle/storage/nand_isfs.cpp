@@ -868,13 +868,13 @@ int32_t ISFS_OpenLib_Initialize(CpuContext* ctx) {
 
             ctx->gpr[3] = heapBase;
             ctx->gpr[4] = heapSize;
-            ctx->lr = 0x80169BCCu;
-            InvokeDirectCpu<0x801949B8u>(ctx);
+            ctx->lr = MKW_GADDR(80169BCC);
+            InvokeDirectCpu<MKW_GADDR(801949B8)>(ctx);
             const uint32_t heapHandle = ctx->gpr[3];
 
             ctx->gpr[3] = heapBase + heapSize;
-            ctx->lr = 0x80169BCCu;
-            InvokeDirectCpu<0x80193040u>(ctx);
+            ctx->lr = MKW_GADDR(80169BCC);
+            InvokeDirectCpu<MKW_GADDR(80193040)>(ctx);
 
             ctx->gpr[3] = savedR3;
             ctx->gpr[4] = savedR4;

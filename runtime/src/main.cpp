@@ -37,6 +37,7 @@
 #include <mmsystem.h>
 #include <dbghelp.h>
 #else
+#include <execinfo.h>
 #include <signal.h>
 #include <unistd.h>
 #if defined(__APPLE__)
@@ -719,8 +720,17 @@ void DumpHostStackTrace() {
     std::fflush(stderr);
     s_inProgress.clear();
 #else
-    RT_LOGF(RT_TAG_RUNTIME, "Host stack trace unavailable on this platform\n");
+    static std::atomic_flag s_inProgress = ATOMIC_FLAG_INIT;
+    if (s_inProgress.test_and_set()) {
+        return;
+    }
+    void* frames[64];
+    const int count = backtrace(frames, 64);
+    RT_LOGF(RT_TAG_RUNTIME, "Host stack trace (%d frames):\n", count);
     std::fflush(stderr);
+    backtrace_symbols_fd(frames, count, STDERR_FILENO);
+    std::fflush(stderr);
+    s_inProgress.clear();
 #endif
 }
 

@@ -212,6 +212,8 @@ else()
         # libraries stay; libpng and FreeType are what Homebrew would otherwise supply.
         set(CMAKE_DISABLE_FIND_PACKAGE_PNG ON)
         set(CMAKE_DISABLE_FIND_PACKAGE_Freetype ON)
+        set(PNG_SHARED OFF CACHE BOOL "" FORCE)
+        set(PNG_STATIC ON CACHE BOOL "" FORCE)
         set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
         set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
         set(FT_DISABLE_PNG ON CACHE BOOL "" FORCE)

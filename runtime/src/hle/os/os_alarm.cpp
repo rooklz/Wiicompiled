@@ -457,7 +457,7 @@ extern "C" uint32_t RFLiIsWorking_HLE_800bd860()
     ProcessAlarmQueue(cpu, 32);
 
     // Now return the actual "working" status
-    constexpr uint32_t kRflManagerPtrAddr = 0x80386298u;
+    constexpr uint32_t kRflManagerPtrAddr = MKW_GADDR(80386298);
     constexpr uint32_t kWorkingFlagOffset = 0x1b34u;
 
     try {
