@@ -10,32 +10,42 @@ include_guard(GLOBAL)
 
 # When using a non-vendored Dawn, we don't get DAWN_ENABLE_* from its build.
 # Infer from the target platform instead.
+# Per-backend default that a parent project can pre-empt. These used to be unconditional
+# `CACHE INTERNAL` writes, which in CMake always overwrite, so a consumer could never choose its
+# own backend set - it had whatever the platform default was. Defaults are unchanged; the only
+# difference is that a value the parent already set now survives.
+macro(_aurora_dawn_default_backend name value)
+  if (NOT DEFINED ${name})
+    set(${name} ${value} CACHE INTERNAL "")
+  endif ()
+endmacro()
+
 function(_aurora_dawn_set_platform_backends)
   if (WIN32)
-    set(DAWN_ENABLE_D3D12 ON CACHE INTERNAL "")
+    _aurora_dawn_default_backend(DAWN_ENABLE_D3D12 ON)
     # Disable D3D11 because this Aurora fork does not support it.
-    set(DAWN_ENABLE_D3D11 OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_VULKAN ON CACHE INTERNAL "")
-    set(DAWN_ENABLE_METAL OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_DESKTOP_GL OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_OPENGLES OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_NULL ON CACHE INTERNAL "")
+    _aurora_dawn_default_backend(DAWN_ENABLE_D3D11 OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_VULKAN ON)
+    _aurora_dawn_default_backend(DAWN_ENABLE_METAL OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_DESKTOP_GL OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_OPENGLES OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_NULL ON)
   elseif (APPLE)
-    set(DAWN_ENABLE_D3D12 OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_D3D11 OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_VULKAN OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_METAL ON CACHE INTERNAL "")
-    set(DAWN_ENABLE_DESKTOP_GL OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_OPENGLES OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_NULL ON CACHE INTERNAL "")
+    _aurora_dawn_default_backend(DAWN_ENABLE_D3D12 OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_D3D11 OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_VULKAN OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_METAL ON)
+    _aurora_dawn_default_backend(DAWN_ENABLE_DESKTOP_GL OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_OPENGLES OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_NULL ON)
   else () # Linux / other
-    set(DAWN_ENABLE_D3D12 OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_D3D11 OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_VULKAN ON CACHE INTERNAL "")
-    set(DAWN_ENABLE_METAL OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_DESKTOP_GL OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_OPENGLES OFF CACHE INTERNAL "")
-    set(DAWN_ENABLE_NULL ON CACHE INTERNAL "")
+    _aurora_dawn_default_backend(DAWN_ENABLE_D3D12 OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_D3D11 OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_VULKAN ON)
+    _aurora_dawn_default_backend(DAWN_ENABLE_METAL OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_DESKTOP_GL OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_OPENGLES OFF)
+    _aurora_dawn_default_backend(DAWN_ENABLE_NULL ON)
   endif ()
 endfunction()
 
@@ -83,8 +93,17 @@ if (_aurora_dawn_provider STREQUAL "vendor")
     set(DAWN_BUILD_SAMPLES OFF CACHE INTERNAL "Disable Dawn sample applications")
     set(DAWN_BUILD_BENCHMARKS OFF CACHE INTERNAL "Disable Dawn benchmarks")
     set(DAWN_SUPPORTS_GLFW_FOR_WINDOWING OFF CACHE INTERNAL "Disable Dawn GLFW windowing")
-    set(DAWN_ENABLE_DESKTOP_GL OFF CACHE INTERNAL "Enable compilation of the OpenGL backend")
-    set(DAWN_ENABLE_OPENGLES OFF CACHE INTERNAL "Enable compilation of the OpenGL ES backend")
+    # These were unconditional `CACHE INTERNAL` writes, which in CMake always overwrite - so a
+    # parent project (or the user) could never turn Dawn's GL backends on, no matter what it set
+    # first. Dawn already implements WebGPU over GL 4.4 / GLES 3.1, and those are the only APIs
+    # available on a large class of targets (older GPUs, Raspberry Pi, Android, anything
+    # pre-Vulkan), so the choice belongs to the consumer. Default stays OFF.
+    if (NOT DEFINED DAWN_ENABLE_DESKTOP_GL)
+      set(DAWN_ENABLE_DESKTOP_GL OFF CACHE INTERNAL "Enable compilation of the OpenGL backend")
+    endif ()
+    if (NOT DEFINED DAWN_ENABLE_OPENGLES)
+      set(DAWN_ENABLE_OPENGLES OFF CACHE INTERNAL "Enable compilation of the OpenGL ES backend")
+    endif ()
     set(DAWN_FETCH_DEPENDENCIES ON CACHE INTERNAL
       "Use fetch_dawn_dependencies.py as an alternative to using depot_tools")
     if (CMAKE_SYSTEM_NAME STREQUAL Linux)

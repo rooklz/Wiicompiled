@@ -13,6 +13,7 @@
 #include "hle/net/network.h"
 #include "RuntimeConfig.h"
 #include "os_internal.h"
+#include "guest_flat_memory.h"
 
 extern "C" void MKW_GUEST_FUNC(801AADE0)(CpuContext* ctx);
 extern "C" void MKW_GUEST_FUNC(801A0620)(CpuContext* ctx);
@@ -99,7 +100,7 @@ void SanitizeAlarmQueue(CpuContext* cpu)
         return;
     }
 
-    const uint32_t queueBase = cpu->gpr[13] - kAlarmQueueOffsetFromR13;
+    constexpr uint32_t queueBase = kAlarmQueueAddr;
     try {
         const uint32_t head = ::Memory::Read32(queueBase);
         const uint32_t tail = ::Memory::Read32(queueBase + 4u);
@@ -168,7 +169,7 @@ bool ProcessAlarmQueue(CpuContext* cpu, int maxToProcess)
     {
         AlarmProcessScope alarmProcessScope;
         SanitizeAlarmQueue(cpu);
-        const uint32_t queueBase = cpu->gpr[13] - kAlarmQueueOffsetFromR13;
+        constexpr uint32_t queueBase = kAlarmQueueAddr;
 
         try {
             for (int i = 0; i < maxToProcess; ++i) {
@@ -305,7 +306,7 @@ extern "C" void OSSetAlarm_HLE_801a0870(CpuContext* ctx)
         return;
     }
 
-    const uint32_t queueBase = cpu->gpr[13] - kAlarmQueueOffsetFromR13;
+    constexpr uint32_t queueBase = kAlarmQueueAddr;
     try {
         const uint32_t head = ::Memory::Read32(queueBase);
         if (head == 0) {

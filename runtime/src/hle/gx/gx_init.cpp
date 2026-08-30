@@ -77,7 +77,6 @@ extern "C" uint32_t GX__Init_8016b850(uint32_t fifoBase, uint32_t fifoSize)
     } catch (...) {}
 
     __GX__SetTmemConfig_80171458(2);
-
     RT_LOGF(RT_TAG_GX, "GX initialized, FIFO at 0x%08X (base=0x%08X size=0x%08X)\n",
             kFifoObjAddr, fifoBase, fifoSize);
 

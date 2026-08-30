@@ -86,9 +86,16 @@ extern "C" void EGG__LightTexture__SetupTevFinish_HLE_8022e2bc(CpuContext* ctx) 
                 ++remainder;
             }
 
+            // The three fog constants live in .sdata2 and are named by identity rather than by
+            // an r2 offset: NTSC-U puts them 8 bytes further from r2 than PAL/NTSC-J/NTSC-K do,
+            // so the hardcoded PAL offset used to read 176.0 there instead of 0.0 / 0.99.
+            constexpr uint32_t kFogOriginDefault = MKW_GADDR(80388DD0);
+            constexpr uint32_t kFogOriginMode2 = MKW_GADDR(80388DF4);
+            constexpr uint32_t kFogSpan = MKW_GADDR(80388DE0);
             const uint32_t mode = Memory::Read32(self + 0x44);
-            const float origin = Memory::ReadFloat32(ctx->gpr[2] + ((mode == 2) ? -25004 : -25040));
-            const float span = Memory::ReadFloat32(ctx->gpr[2] + -25024);
+            const float origin =
+                Memory::ReadFloat32((mode == 2) ? kFogOriginMode2 : kFogOriginDefault);
+            const float span = Memory::ReadFloat32(kFogSpan);
             const float end = static_cast<float>(origin + span);
             const float lower = static_cast<float>(origin - span);
 

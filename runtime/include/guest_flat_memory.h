@@ -7,13 +7,32 @@
 // alias native runtime code (image loading, DVD reads, HLE, GX) writes through unchecked.
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 namespace GuestFlat {
 
-// Fixed base so the emitted access is `[reg + imm64-in-register]` with no load
-// of a global.
+// Address-space policy. A 64-bit host reserves the whole 4 GiB guest range at a fixed base, so a
+// guest access is `base + addr` with the base folded into the instruction as an immediate and no
+// masking at all. A 32-bit host cannot reserve 4 GiB out of a ~2-3 GiB user space, so it reserves
+// a 512 MiB window instead and folds the guest address into it with a mask.
+//
+// 512 MiB with a 0x1FFFFFFF mask is the smallest window that keeps every range the game uses
+// distinct: MEM1 (0x80000000) lands at offset 0, MEM2 (0x90000000) at 0x10000000, and the MMIO
+// block (0xCC000000) at 0x0C000000. The physical mirror at 0x00000000 aliases MEM1, which is what
+// the hardware does anyway. Only touched pages are committed, so resident memory still tracks the
+// ~88 MiB the game actually uses, not the reservation.
+//
+// The mask is 0xFFFFFFFF on 64-bit and the operand is already uint32_t, so the AND folds away and
+// the 64-bit access path is byte-for-byte what it was.
+#if UINTPTR_MAX > 0xFFFFFFFFull
 inline constexpr uint64_t kGuestSpaceSize = 0x1'0000'0000ull;
+inline constexpr uint32_t kGuestAddressMask = 0xFFFF'FFFFu;
+#else
+inline constexpr uint64_t kGuestSpaceSize = 0x2000'0000ull;
+inline constexpr uint32_t kGuestAddressMask = 0x1FFF'FFFFu;
+#endif
+
 #if defined(__x86_64__) || defined(__APPLE__)
 // 16 TiB: clear of the Windows ASan shadow (32 TiB) and of the usual image/heap
 // placement. macOS on Apple silicon exposes a 47-bit user address space, so the
@@ -31,11 +50,27 @@ inline constexpr uintptr_t kFixedFlatGuestBase = 0x0000'1000'0000'0000ull;
 // probing to sit far below where the PIE image, heap, shared libraries and
 // stack actually land (all clustered above ~340 GiB on a 39-bit/512 GiB system).
 inline constexpr uintptr_t kFixedFlatGuestBase = 0x0000'0010'0000'0000ull;
+#elif UINTPTR_MAX <= 0xFFFFFFFFull
+// 32-bit hosts take whatever the OS gives them: no single address is reliably free across
+// Win32/Linux-x86/ARM32 process layouts, so the base is established at reservation time and read
+// from a global. That load is the cost of the 32-bit path.
+inline constexpr uintptr_t kFixedFlatGuestBase = 0;
 #else
 #error "guest_flat_memory.h has no fixed flat guest base chosen for this architecture"
 #endif
 
+#if UINTPTR_MAX > 0xFFFFFFFFull
 #define MKW_FLAT_GUEST_BASE (reinterpret_cast<uint8_t*>(GuestFlat::kFixedFlatGuestBase))
+#else
+namespace GuestFlat {
+// Set once by EnsureReservation() before any translated code runs.
+extern uint8_t* g_flatGuestBase;
+}
+#define MKW_FLAT_GUEST_BASE (GuestFlat::g_flatGuestBase)
+#endif
+
+// Guest address -> offset within the reservation. Identity on 64-bit.
+#define MKW_GUEST_OFFSET(addr) (static_cast<uint32_t>(addr) & GuestFlat::kGuestAddressMask)
 
 enum class Backing {
     Owned,

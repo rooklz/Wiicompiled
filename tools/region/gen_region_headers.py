@@ -21,24 +21,47 @@ OUT_DIR = os.path.join(RUNTIME, "include", "region")
 
 PAL_TEXT = [(0x80004000, 0x80006460), (0x800072C0, 0x80244DE0), (0x805103B4, 0x8088F400)]
 
-REGIONS = {
-    "rmcp01": {
-        "game_id": "RMCP01", "game_code": 0x524D4350, "region_letter": "P",
-        "vi_tv_format": 1, "sc_area": 2, "sc_game_region": 2, "sc_product_code": "LEH",
-        # The executable's initial stack top (__init_registers: lis/ori r1), which is where the
-        # SDK's OSInit starts the MEM1 arena; the boot heap and therefore StaticR.rel's load
-        # address derive from it.
-        "mem1_arena_lo": 0x80399180,
-        "display": "Mario Kart Wii PAL (RMCP01)",
-    },
-    "rmce01": {
-        "game_id": "RMCE01", "game_code": 0x524D4345, "region_letter": "E",
-        "vi_tv_format": 0, "sc_area": 1, "sc_game_region": 1, "sc_product_code": "LU",
-        # Verified: RMCE01 __init_registers @80006284 lis r1,0x8039 / @80006288 ori r1,r1,0x4e00.
-        "mem1_arena_lo": 0x80394E00,
-        "display": "Mario Kart Wii NTSC-U (RMCE01)",
-    },
-}
+# Console setting values, named rather than spelled as the integers they happen to be. The
+# indices are the RVL SDK's own SCGetProductArea/SCGetProductGameRegion enums.
+SC_AREA = {"JPN": 0, "USA": 1, "EUR": 2, "AUS": 3, "BRA": 4, "TWN": 5, "ROC": 6,
+           "KOR": 7, "HKG": 8, "ASI": 9, "LTN": 10, "SAF": 11, "CHN": 12}
+SC_GAME = {"JP": 0, "US": 1, "EU": 2, "KR": 3}
+VI_TV_FORMAT = {"NTSC": 0, "PAL": 1}
+
+
+class Region:
+    """One region's constant facts plus where its ported evidence lives.
+
+    `project` is the directory holding that region's MAP.txt (function map, ported and validated
+    by tools/region/port_map.py) and data_addresses.txt (data globals, ported and confirmed by
+    tools/region/port_data_addresses.py). PAL has neither: it is the identity region the runtime
+    is written against, so its table maps every address to itself.
+    """
+
+    def __init__(self, header, game_id, letter, tv, area, game, product_code, arena_lo,
+                 display, project=None):
+        self.header, self.game_id, self.letter = header, game_id, letter
+        self.tv, self.area, self.game = tv, area, game
+        self.product_code, self.arena_lo = product_code, arena_lo
+        self.display, self.project = display, project
+
+    @property
+    def game_code(self):
+        return int.from_bytes(self.game_id[:4].encode("ascii"), "big")
+
+
+REGIONS = [
+    Region("rmcp01", "RMCP01", "P", "PAL", "EUR", "EU", "LEH", 0x80399180,
+           "Mario Kart Wii PAL (RMCP01)"),
+    Region("rmce01", "RMCE01", "E", "NTSC", "USA", "US", "LU", 0x80394E00,
+           "Mario Kart Wii NTSC-U (RMCE01)", project="mkwii-ntsc"),
+    Region("rmcj01", "RMCJ01", "J", "NTSC", "JPN", "JP", "LJ", 0x80398B00,
+           "Mario Kart Wii NTSC-J (RMCJ01)", project="mkwii-ntsc-j"),
+    Region("rmck01", "RMCK01", "K", "NTSC", "KOR", "KR", "LKM", 0x803871A0,
+           "Mario Kart Wii NTSC-K (RMCK01)", project="mkwii-ntsc-k"),
+]
+REGIONS_BY_HEADER = {r.header: r for r in REGIONS}
+
 
 TOKEN_PATTERNS = [
     re.compile(r"(?:PPC_NATIVE_OVERRIDE(?:_VOID)?|GX_FATAL_STUB)\s*\(\s*([0-9A-Fa-f]{8})\b"),
@@ -67,8 +90,8 @@ def is_text(addr):
     return any(a <= addr < b for a, b in PAL_TEXT)
 
 
-def load_chunks():
-    path = os.path.join(ROOT, "projects", "mkwii-ntsc", "region_port.json")
+def load_chunks(project):
+    path = os.path.join(ROOT, "projects", project, "region_port.json")
     if os.path.exists(path):
         def num(v):
             return int(v, 16) if isinstance(v, str) else int(v)
@@ -83,8 +106,8 @@ def port_code(chunks, addr):
     return None
 
 
-def load_data_table(region):
-    path = os.path.join(ROOT, "projects", "mkwii-ntsc", "data_addresses.txt")
+def load_data_table(project):
+    path = os.path.join(ROOT, "projects", project, "data_addresses.txt")
     table = {}
     if not os.path.exists(path):
         return table, path
@@ -110,8 +133,8 @@ def load_map(path):
     return entries
 
 
-def load_validated_map():
-    path = os.path.join(ROOT, "projects", "mkwii-ntsc", "MAP.txt")
+def load_validated_map(project):
+    path = os.path.join(ROOT, "projects", project, "MAP.txt")
     if not os.path.exists(path):
         return None
     return load_map(path)
@@ -134,31 +157,40 @@ def containing_function(pal_entries, addr):
     return start, name, addr - start
 
 
-def write_header(region, facts, mapping, spellings, provenance):
-    path = os.path.join(OUT_DIR, f"{region}.h")
+def write_header(region, mapping, spellings, names, provenance):
+    """Emit the region's header: the facts, then one MKW_G_/MKW_F_ pair per identity.
+
+    Both forms are written out fully rather than assembled by token pasting at use time. The
+    consumer macros are then a single paste each (region/guest_region.h), what a define expands
+    to is visible in this file, and the PAL build keeps each identity's original spelling in the
+    symbol name it generates (func_80044b30 stays lower case) without any special casing.
+    """
+    path = os.path.join(OUT_DIR, f"{region.header}.h")
     lines = [
         "// AUTO-GENERATED by tools/region/gen_region_headers.py - DO NOT EDIT.",
-        f"// Guest address table for {facts['display']}: PAL identity -> {region} address.",
+        f"// Guest address table for {region.display}: PAL identity -> {region.header} address.",
         f"// {provenance}",
         "#pragma once",
         "",
-        f"#define MKW_REGION_GAME_ID \"{facts['game_id']}\"",
-        f"#define MKW_REGION_LETTER '{facts['region_letter']}'",
-        f"#define MKW_REGION_GAME_CODE 0x{facts['game_code']:08X}u  // \"{facts['game_id'][:4]}\"",
-        f"#define MKW_REGION_VI_TV_FORMAT {facts['vi_tv_format']}u  // 0 = VI_NTSC, 1 = VI_PAL",
-        f"#define MKW_REGION_SC_AREA {facts['sc_area']}u  // SC AREA index: JPN=0 USA=1 EUR=2",
-        f"#define MKW_REGION_SC_GAME_REGION {facts['sc_game_region']}u  // SC GAME index: JP=0 US=1 EU=2",
-        f"#define MKW_REGION_SC_PRODUCT_CODE \"{facts['sc_product_code']}\"",
-        f"#define MKW_REGION_MEM1_ARENA_LO 0x{facts['mem1_arena_lo']:08X}u  // initial stack top / arena lo",
+        f'#define MKW_REGION_GAME_ID "{region.game_id}"',
+        f"#define MKW_REGION_LETTER '{region.letter}'",
+        f'#define MKW_REGION_GAME_CODE 0x{region.game_code:08X}u  // "{region.game_id[:4]}"',
+        f"#define MKW_REGION_VI_TV_FORMAT {VI_TV_FORMAT[region.tv]}u  // VI_{region.tv}",
+        f"#define MKW_REGION_SC_AREA {SC_AREA[region.area]}u  // SC area {region.area}",
+        f"#define MKW_REGION_SC_GAME_REGION {SC_GAME[region.game]}u  // SC game region {region.game}",
+        f'#define MKW_REGION_SC_PRODUCT_CODE "{region.product_code}"',
+        f"#define MKW_REGION_MEM1_ARENA_LO 0x{region.arena_lo:08X}u  // initial stack top / arena lo",
         "",
+        "// PAL identity -> this region. MKW_G_ is the address, MKW_F_ the translated function's",
+        "// C symbol; the trailing comment is the PAL map's name for it, for reading only.",
     ]
     for pal in sorted(mapping):
         target = mapping[pal]
         for spelling in sorted(spellings[pal]):
-            # An identity table keeps each token's own spelling so the PAL build's generated
-            # symbol names (func_<token>, gx_stub_<token>) stay byte-identical to upstream.
             token = spelling if target == pal else f"{target:08X}"
-            lines.append(f"#define MKW_G_{spelling} {token}")
+            comment = f"  // {names[pal]}" if names.get(pal) else ""
+            lines.append(f"#define MKW_G_{spelling} 0x{token}u{comment}")
+            lines.append(f"#define MKW_F_{spelling} func_{token}")
     lines.append("")
     os.makedirs(OUT_DIR, exist_ok=True)
     open(path, "w").write("\n".join(lines))
@@ -168,25 +200,57 @@ def write_header(region, facts, mapping, spellings, provenance):
 def main():
     spellings = scan_tokens()
     identities = sorted(spellings)
+    pal_entries = load_map(os.path.join(ROOT, "projects", "mkwii", "MAP.txt"))
+    pal_names = {a: n for a, n in pal_entries}
+    provisional = "--provisional" in sys.argv
+    only = [a for a in sys.argv[1:] if not a.startswith("-")]
     print(f"{len(identities)} guest-address identities in the runtime "
-          f"({sum(1 for a in identities if is_text(a))} code, {sum(1 for a in identities if not is_text(a))} data)")
+          f"({sum(1 for a in identities if is_text(a))} code, "
+          f"{sum(1 for a in identities if not is_text(a))} data)")
 
-    # PAL: identity.
-    path = write_header("rmcp01", REGIONS["rmcp01"], {a: a for a in identities}, spellings,
-                        "Identity table: the runtime is written against this executable.")
-    print("wrote", path)
+    failures = 0
+    for region in REGIONS:
+        if only and region.header not in only:
+            continue
+        if region.project is None:
+            # The identity region: every address maps to itself by definition.
+            path = write_header(region, {a: a for a in identities}, spellings, pal_names,
+                                "Identity table: the runtime is written against this executable.")
+            print(f"wrote {path}")
+            continue
 
-    # NTSC-U.
-    chunks = load_chunks()
-    data_table, data_path = load_data_table("rmce01")
-    validated_entries = load_validated_map()
+        mapping, problems, provisional_data = port_region(region, identities, pal_entries,
+                                                          provisional)
+        if problems:
+            failures += 1
+            print(f"{region.header}: {len(problems)} identity/identities did not resolve:")
+            for line in problems[:20]:
+                print(line)
+            print(f"  (no header written for {region.header})")
+            continue
+        note = (f"Code: PAL->{region.letter} chunk table validated against projects/"
+                f"{region.project}/MAP.txt; data: projects/{region.project}/data_addresses.txt "
+                f"(evidence recorded per entry).")
+        if provisional_data:
+            note = ("PROVISIONAL - " + str(len(provisional_data)) +
+                    " data identities left at their PAL value and are wrong at run time. " + note)
+        path = write_header(region, mapping, spellings, pal_names, note)
+        print(f"wrote {path} ({len(mapping)} identities"
+              + (f", {len(provisional_data)} provisional" if provisional_data else "") + ")")
+    return 1 if failures else 0
+
+
+def port_region(region, identities, pal_entries, provisional):
+    """Resolve every identity for one region from that region's own ported evidence."""
+    chunks = load_chunks(region.project)
+    data_table, _ = load_data_table(region.project)
+    validated_entries = load_validated_map(region.project)
     validated = {a for a, _ in validated_entries} if validated_entries is not None else None
     validated_by_name = {}
     if validated_entries is not None:
         for a, n in validated_entries:
             validated_by_name.setdefault(n, a)
-    pal_entries = load_map(os.path.join(ROOT, "projects", "mkwii", "MAP.txt"))
-    provisional = "--provisional" in sys.argv
+
     mapping, problems, provisional_data = {}, [], []
     for pal in identities:
         if is_text(pal):
@@ -196,40 +260,24 @@ def main():
                 continue
             if validated is not None and ported not in validated:
                 # Not a function entry: a jump-table label or a mid-function hook. It is right
-                # exactly when it sits at the same offset inside a validated containing function,
-                # i.e. that function's NTSC-U entry plus the PAL offset lands on the ported value
-                # (which also proves the function and the hook share one port chunk).
+                # exactly when it sits at the same offset inside a validated containing function.
                 start, name, offset = containing_function(pal_entries, pal)
-                ntsc_start = validated_by_name.get(name) if name else None
-                if ntsc_start is None or ntsc_start + offset != ported:
-                    problems.append(f"  {pal:08X} -> {ported:08X}: not a validated NTSC-U function entry "
-                                    f"(containing PAL function {name} @ {start:08X if start else 0} "
-                                    f"not confirmed at the same offset)")
+                target_start = validated_by_name.get(name) if name else None
+                if target_start is None or target_start + offset != ported:
+                    problems.append(
+                        f"  {pal:08X} -> {ported:08X}: not a validated function entry"
+                        f" (containing PAL function {name} not confirmed at the same offset)")
                     continue
-                print(f"  hook {pal:08X} -> {ported:08X}: {name}+{offset:#x} (function entry validated)")
             mapping[pal] = ported
+        elif pal in data_table:
+            mapping[pal] = data_table[pal]
+        elif provisional:
+            mapping[pal] = pal
+            provisional_data.append(pal)
         else:
-            if pal in data_table:
-                mapping[pal] = data_table[pal]
-            elif provisional:
-                # Toolchain-validation builds only: an unverified data address is left at its PAL
-                # value, which is wrong at run time. The header says so in its first line.
-                mapping[pal] = pal
-                provisional_data.append(pal)
-            else:
-                problems.append(f"  {pal:08X}: data address missing from {os.path.relpath(data_path, ROOT)}")
-    if problems:
-        print("rmce01 table is incomplete; not written:\n" + "\n".join(problems))
-        sys.exit(1)
-    provenance = ("Code: mkw-sp PAL->NTSC-U chunk table (validated against projects/mkwii-ntsc/MAP.txt); "
-                  "data: projects/mkwii-ntsc/data_addresses.txt (disassembly evidence per entry).")
-    if provisional_data:
-        provenance = ("PROVISIONAL - NOT FOR PLAY: " + str(len(provisional_data)) +
-                      " data addresses left at their PAL values pending verification. " + provenance)
-        print(f"WARNING: provisional rmce01 table, {len(provisional_data)} data identities unverified:",
-              " ".join(f"{a:08X}" for a in provisional_data))
-    path = write_header("rmce01", REGIONS["rmce01"], mapping, spellings, provenance)
-    print("wrote", path)
+            problems.append(f"  {pal:08X}: data address absent from "
+                            f"projects/{region.project}/data_addresses.txt")
+    return mapping, problems, provisional_data
 
 
 if __name__ == "__main__":

@@ -61,10 +61,36 @@ public sealed partial class GuestAddressTable
         // No `u` suffix: the registration regexes expect the comma right after the eight digits.
         source = GaddrPattern().Replace(source, m => "0x" + Resolve(m.Groups["pal"].Value));
         source = GuestFuncPattern().Replace(source, m => "func_" + Resolve(m.Groups["pal"].Value));
+
+        // This normalization is the one place the translator has to agree with the C
+        // preprocessor. If any address macro survives it, the two have diverged - a spelling
+        // these patterns do not match, in a file the compiler resolves fine - and every
+        // downstream scan would silently read a PAL address as though it were this region's.
+        // Fail loudly instead: a surviving macro is a bug in this file, not in the source.
+        // Skips macro definitions, whose argument is a parameter name rather than an address
+        // (region/guest_region.h defines MKW_GADDR itself; GX_FATAL_STUB expands it around its
+        // own `addr` parameter). Those resolve at the call site, which does carry a literal.
+        // Definitions continue across lines, so the continuation has to be skipped too.
+        var inDefine = false;
+        foreach (var raw in source.Split('\n'))
+        {
+            var line = raw.TrimEnd('\r');
+            var wasContinued = inDefine && line.TrimEnd().EndsWith("\\", StringComparison.Ordinal);
+            var startsDefine = line.TrimStart().StartsWith("#define", StringComparison.Ordinal);
+            var skip = inDefine || startsDefine;
+            inDefine = (startsDefine || wasContinued) && line.TrimEnd().EndsWith("\\", StringComparison.Ordinal);
+            if (skip) continue;
+            var leftover = LeftoverMacroPattern().Match(line);
+            if (!leftover.Success) continue;
+            throw new InvalidDataException(
+                $"Guest address macro '{leftover.Value}' was not resolved against {SourcePath}. " +
+                "GuestAddressTable's patterns and the runtime's macro spellings have diverged: " +
+                $"the unresolved use is '{line.Trim()}'.");
+        }
         return source;
     }
 
-    [GeneratedRegex(@"^\s*#\s*define\s+MKW_G_(?<pal>[0-9A-Fa-f]{8})\s+(?<region>[0-9A-Fa-f]{8})\b", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^\s*#\s*define\s+MKW_G_(?<pal>[0-9A-Fa-f]{8})\s+0x(?<region>[0-9A-Fa-f]{8})u", RegexOptions.CultureInvariant)]
     private static partial Regex DefinePattern();
 
     [GeneratedRegex(@"(?<head>(?:PPC_NATIVE_OVERRIDE(?:_VOID)?|GX_FATAL_STUB)\s*\(\s*)(?<pal>[0-9A-Fa-f]{8})\b", RegexOptions.CultureInvariant)]
@@ -75,4 +101,7 @@ public sealed partial class GuestAddressTable
 
     [GeneratedRegex(@"MKW_GUEST_FUNC\s*\(\s*(?<pal>[0-9A-Fa-f]{8})\s*\)", RegexOptions.CultureInvariant)]
     private static partial Regex GuestFuncPattern();
+
+    [GeneratedRegex(@"\bMKW_(?:GADDR|GUEST_FUNC)\s*\(", RegexOptions.CultureInvariant)]
+    private static partial Regex LeftoverMacroPattern();
 }

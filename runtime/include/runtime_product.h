@@ -7,6 +7,8 @@ namespace RuntimeProduct {
 enum class Kind {
     BaseGame,
     RetroRewind,
+    // The Wiimmfi-patched executables with the injector's stage-1 block as a mod overlay.
+    Wiimmfi,
 };
 
 struct Descriptor {
@@ -21,6 +23,16 @@ const Descriptor& Active() noexcept;
 
 inline bool IsRetroRewind() noexcept {
     return Active().kind == Kind::RetroRewind;
+}
+
+// Short lower-case name for logs and file names.
+inline std::string_view ShortName() noexcept {
+    switch (Active().kind) {
+    case Kind::RetroRewind: return "retro_rewind";
+    case Kind::Wiimmfi: return "wiimmfi";
+    case Kind::BaseGame: break;
+    }
+    return "base";
 }
 
 } // namespace RuntimeProduct

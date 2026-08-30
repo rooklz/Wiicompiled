@@ -396,7 +396,12 @@ extern "C" uint32_t OSSetPowerCallback_801ab75c(CpuContext* ctx)
     // Assembly defines the default callback address as (0x801b0000 - 0x43f4)
     constexpr uint32_t kDefaultCallbackAddr = MKW_GADDR(801ABC0C); // 0x801abc0c
 
-    // Offsets from R13 (SDA2)
+    // NOT YET NAMED BY IDENTITY. This is one of two remaining hardcoded small-data offsets in
+    // the runtime (the other is in hle/audio/ax_mix.cpp). The PAL address is 0x80386948, which
+    // sits in the same .sbss cluster that RMCK01 shifts by 0x20, so this offset is probably
+    // wrong there - but neither the chunk table nor masked instruction matching could resolve
+    // it in NTSC-U or NTSC-K, so it is left alone rather than changed on a guess. All four
+    // regions boot and play with it as it stands. See docs/REGIONS.md.
     const uint32_t kCallbackPtrAddr = r13 - 0x62b8u;
     const uint32_t kHandlerActiveAddr = r13 - 0x62c0u;
 
@@ -492,9 +497,11 @@ extern "C" int32_t IPCCltInit_80193478(CpuContext* ctx)
     InvokeIndirectCpu(MKW_GADDR(80192F7C), ctx);
 
     // Advance the buffer lo pointer by 0x1000 (iosHeap size), matching real IPCCltInit.
-    uint32_t bufferLo = Memory::Read32(ctx->gpr[13] + -25620); // 0x803867EC at r13-0x6414
+    // Named by identity: the r13 offset of this global is not the same in every region.
+    constexpr uint32_t kIpcBufferLoGlobal = MKW_GADDR(803867EC);
+    uint32_t bufferLo = Memory::Read32(kIpcBufferLoGlobal);
     uint32_t newBufLo = bufferLo + 0x1000; // Advance by 4KB for iosHeap
-    Memory::Write32(ctx->gpr[13] + -25620, newBufLo);
+    Memory::Write32(kIpcBufferLoGlobal, newBufLo);
     
     RT_LOG(RT_TAG_OS) << "IPCCltInit: IPC buffer lo advanced from 0x" << std::hex << bufferLo
               << " to 0x" << newBufLo << std::dec << std::endl;

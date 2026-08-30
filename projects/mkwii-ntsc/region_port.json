@@ -1504,7 +1504,9 @@
   ],
   "rel_load_address": {
     "P": "0x805102E0",
-    "E": "0x8050BF60"
+    "E": "0x8050BF60",
+    "J": "0x8050FC60",
+    "K": "0x804FE300"
   },
   "dol_sections": {
     "P": [
@@ -1640,6 +1642,140 @@
         "start": "0x80384DC0",
         "end": "0x80384DFC"
       }
+    ],
+    "J": [
+      {
+        "name": "init",
+        "start": "0x80004000",
+        "end": "0x80006460"
+      },
+      {
+        "name": "extab",
+        "start": "0x80006460",
+        "end": "0x80006A20"
+      },
+      {
+        "name": "extabindex",
+        "start": "0x80006A20",
+        "end": "0x800072C0"
+      },
+      {
+        "name": "text",
+        "start": "0x800072C0",
+        "end": "0x80244D00"
+      },
+      {
+        "name": "ctors",
+        "start": "0x80244D00",
+        "end": "0x80244DC0"
+      },
+      {
+        "name": "dtors",
+        "start": "0x80244DC0",
+        "end": "0x80244DE0"
+      },
+      {
+        "name": "rodata",
+        "start": "0x80244E00",
+        "end": "0x80257F20"
+      },
+      {
+        "name": "data",
+        "start": "0x80257F20",
+        "end": "0x802A39E0"
+      },
+      {
+        "name": "bss",
+        "start": "0x802A3A00",
+        "end": "0x80384580"
+      },
+      {
+        "name": "sdata",
+        "start": "0x80384580",
+        "end": "0x80385940"
+      },
+      {
+        "name": "sbss",
+        "start": "0x80385940",
+        "end": "0x80386920"
+      },
+      {
+        "name": "sdata2",
+        "start": "0x80386920",
+        "end": "0x80388AC0"
+      },
+      {
+        "name": "sbss2",
+        "start": "0x80388AC0",
+        "end": "0x80388AFC"
+      }
+    ],
+    "K": [
+      {
+        "name": "init",
+        "start": "0x80004000",
+        "end": "0x80006460"
+      },
+      {
+        "name": "extab",
+        "start": "0x80006460",
+        "end": "0x80006A20"
+      },
+      {
+        "name": "extabindex",
+        "start": "0x80006A20",
+        "end": "0x800072C0"
+      },
+      {
+        "name": "text",
+        "start": "0x800072C0",
+        "end": "0x80245160"
+      },
+      {
+        "name": "ctors",
+        "start": "0x80245160",
+        "end": "0x80245220"
+      },
+      {
+        "name": "dtors",
+        "start": "0x80245220",
+        "end": "0x80245240"
+      },
+      {
+        "name": "rodata",
+        "start": "0x80245240",
+        "end": "0x80258340"
+      },
+      {
+        "name": "data",
+        "start": "0x80258340",
+        "end": "0x80292040"
+      },
+      {
+        "name": "bss",
+        "start": "0x80292080",
+        "end": "0x80372C00"
+      },
+      {
+        "name": "sdata",
+        "start": "0x80372C00",
+        "end": "0x80373FE0"
+      },
+      {
+        "name": "sbss",
+        "start": "0x80373FE0",
+        "end": "0x80374FC0"
+      },
+      {
+        "name": "sdata2",
+        "start": "0x80374FC0",
+        "end": "0x80377160"
+      },
+      {
+        "name": "sbss2",
+        "start": "0x80377160",
+        "end": "0x8037719C"
+      }
     ]
   },
   "rel_sections": {
@@ -1705,6 +1841,70 @@
         "name": "bss",
         "start": "0x809B8F20",
         "end": "0x809C07D0"
+      }
+    ],
+    "J": [
+      {
+        "name": "text",
+        "start": "0x8050FD34",
+        "end": "0x8088EA6C"
+      },
+      {
+        "name": "ctors",
+        "start": "0x8088EA6C",
+        "end": "0x8088ED70"
+      },
+      {
+        "name": "dtors",
+        "start": "0x8088ED70",
+        "end": "0x8088ED7C"
+      },
+      {
+        "name": "rodata",
+        "start": "0x8088ED80",
+        "end": "0x808B1D30"
+      },
+      {
+        "name": "data",
+        "start": "0x808B1D30",
+        "end": "0x808DC524"
+      },
+      {
+        "name": "bss",
+        "start": "0x809BC740",
+        "end": "0x809C3FF0"
+      }
+    ],
+    "K": [
+      {
+        "name": "text",
+        "start": "0x804FE3D4",
+        "end": "0x8087D7C0"
+      },
+      {
+        "name": "ctors",
+        "start": "0x8087D7C0",
+        "end": "0x8087DAC4"
+      },
+      {
+        "name": "dtors",
+        "start": "0x8087DAC4",
+        "end": "0x8087DAD0"
+      },
+      {
+        "name": "rodata",
+        "start": "0x8087DAE0",
+        "end": "0x808A1030"
+      },
+      {
+        "name": "data",
+        "start": "0x808A1030",
+        "end": "0x808CB86C"
+      },
+      {
+        "name": "bss",
+        "start": "0x809ABD20",
+        "end": "0x809B35D0"
       }
     ]
   },

@@ -1465,6 +1465,10 @@ void InitForAXOut(CpuContext* ctx) {
     Memory::Write32(g_axTaskPtr + 0x2cu, kAxResumeCallback);
     Memory::Write32(g_axTaskPtr + 0x30u, kAxDoneCallback);
     Memory::Write32(g_axTaskPtr + 0x34u, kAxRequestCallback);
+    // NOT YET NAMED BY IDENTITY: these three reads still use hardcoded PAL small-data offsets.
+    // Their PAL addresses are 0x80385804 / 0x80385800 / 0x80385802; no method could resolve them
+    // in NTSC-U or NTSC-K, so they are left as they are rather than changed on a guess. See the
+    // matching note in hle/os/os_interrupt.cpp and docs/REGIONS.md.
     if (ctx) {
         const uint32_t r13 = ctx->gpr[13];
         Memory::Write32(g_axTaskPtr + 0x10u, Memory::Read16(r13 - 0x73fcu));
@@ -1473,11 +1477,9 @@ void InitForAXOut(CpuContext* ctx) {
     }
     Instance().ConfigureFromTask(g_axTaskPtr);
     LinkSingleDspTask(g_axTaskPtr);
-    if (ctx) {
-        const uint32_t r13 = ctx->gpr[13];
-        Memory::Write32(r13 - 0x66d8u, 1);
-        Memory::Write32(r13 - 0x66dcu, 0);
-    }
+    // Named by identity: RMCK01 keeps these two 0x20 lower in .sbss than PAL/NTSC-U/NTSC-J.
+    Memory::Write32(MKW_GADDR(80386528), 1);
+    Memory::Write32(MKW_GADDR(80386524), 0);
 }
 
 void Stop() {

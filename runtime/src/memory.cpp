@@ -1,4 +1,5 @@
 #include "memory.h"
+#include <execinfo.h>
 
 #include <algorithm>
 #include <array>

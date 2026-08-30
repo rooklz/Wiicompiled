@@ -1,3 +1,4 @@
+#include "kart_trace.h"
 #include "hle_stubs.h"
 #include "memory.h"
 #include "abi_bridge.h"
@@ -7,6 +8,8 @@
 #include "settings_overlay.h"
 #include "fiber_manager.h"
 #include "runtime_log.h"
+#include "runtime_config.h"
+#include "recomp_mod_loader.h"
 
 #include <dolphin/vi.h>
 
@@ -155,6 +158,16 @@ constexpr uint32_t kViRetraceQueueAddr      = MKW_GADDR(80386bc0); // Thread que
 // EGG::BaseSystem::sSystem pointer - must be non-null before post-retrace callback is valid
 constexpr uint32_t kEggSSystemAddr = MKW_GADDR(80386F60);
 
+bool FrameLimitEnabled();
+
+// Benchmark mode collapses the VI period. Skipping the pace sleep alone does not uncap anything:
+// the guest self-paces on VIWaitForRetrace, and the retrace timeline still advances on the
+// wall clock, so the guest just busy-waits for the same 60 Hz grid (measured: 60.6 fps unpaced).
+// Shortening the period is what actually lets the guest run ahead, up to 1 kHz.
+std::chrono::microseconds ApplyFrameLimitPolicy(std::chrono::microseconds interval) {
+    return FrameLimitEnabled() ? interval : std::chrono::microseconds{1000};
+}
+
 std::chrono::microseconds IntervalForFormat(uint32_t tvFormat) {
     // NTSC-ish defaults to 60 Hz; PAL uses 50 Hz.
     return tvFormat == 1 ? 20000us : 16666us;
@@ -279,7 +292,7 @@ void EnsureInitializedLocked() {
         return;
     }
     g_vi.initialized = true;
-    g_vi.retraceInterval = IntervalForFormat(g_vi.tvFormat);
+    g_vi.retraceInterval = ApplyFrameLimitPolicy(IntervalForFormat(g_vi.tvFormat));
     g_vi.lastRetrace = Clock::now();
     WriteGuestStateLocked();
 }
@@ -329,7 +342,7 @@ void AdvanceRetrace(CpuContext* ctx, Clock::time_point retraceStamp, bool servic
             g_vi.viYOrigin = g_vi.pendingViYOrigin;
             g_vi.xfbWidth = g_vi.pendingXfbWidth;
             g_vi.xfbHeight = g_vi.pendingXfbHeight;
-            g_vi.retraceInterval = g_vi.pendingRetraceInterval;
+            g_vi.retraceInterval = ApplyFrameLimitPolicy(g_vi.pendingRetraceInterval);
             
             // Clear flush armed flag
             g_vi.flushArmed = false;
@@ -489,6 +502,9 @@ void VI_HLE_ProcessRetracesDeferred(int maxToProcess) {
     OS_HLE_EndDeferredGuestCallbacks();
 }
 
+// Defined with the pacing helpers below; benchmark mode makes every VI wait return immediately.
+namespace { bool FrameLimitEnabled(); }
+
 void VI_HLE_WaitForNextRetracePoll() {
     Clock::time_point retraceDeadline;
     {
@@ -498,7 +514,7 @@ void VI_HLE_WaitForNextRetracePoll() {
     }
 
     const auto now = Clock::now();
-    if (now >= retraceDeadline) {
+    if (now >= retraceDeadline || !FrameLimitEnabled()) {
         return;
     }
     // Audio DMA and alarm queues still need regular service even when the VI
@@ -523,7 +539,40 @@ uint64_t s_lastPresentAnchorNanos = 0;
 
 // Sleeps to the same VI retrace boundary VIWaitForRetrace targets, servicing alarms every 1 ms so audio
 // DMA and timers keep running, then delivers that retrace so guest logic starts exactly on the grid.
+// [video] frame_limit = false: benchmark mode. Pacing is what makes the runtime sleep ~70% of
+// every frame on a fast host, which makes CPU-time measurements dominated by idle and too noisy
+// to compare builds. Unpaced, the guest produces frames as fast as the host can translate and
+// render them, and the frames/second below is a direct throughput number.
+bool FrameLimitEnabled() {
+    static const bool enabled = RuntimeConfigFile::FrameLimit(true);
+    return enabled;
+}
+
+void ReportUnpacedThroughput() {
+    // Reported at fixed FRAME milestones, not fixed wall-clock intervals. The attract loop is a
+    // deterministic replay, so frame N is always the same guest content; comparing "seconds to
+    // reach frame N" across builds compares identical work. Sampling on a wall-clock timer
+    // instead compares whatever scene each build happened to be in, which measured the same
+    // binary at both 87 and 120 fps.
+    static uint64_t frames = 0;
+    static Clock::time_point start = Clock::now();
+    static uint64_t nextMilestone = 2000;
+    ++frames;
+    if (frames < nextMilestone) {
+        return;
+    }
+    const double elapsed = std::chrono::duration<double>(Clock::now() - start).count();
+    RT_LOG(RT_TAG_RUNTIME) << "unpaced: frame " << frames << " at " << elapsed << " s -> "
+                           << (frames / elapsed) << " fps avg (" << (frames / elapsed / 60.0)
+                           << "x of 60 Hz)" << std::endl;
+    nextMilestone += 2000;
+}
+
 void PaceToRetraceBoundary(Clock::time_point deadline) {
+    if (!FrameLimitEnabled()) {
+        VI_HLE_ProcessRetracesDeferred(1);
+        return;
+    }
     constexpr auto kServiceSlice = 1ms;
     for (;;) {
         const auto now = Clock::now();
@@ -619,6 +668,9 @@ void VI_HLE_PresentFrame(bool presentedXfb, bool paceToRetrace) {
         std::lock_guard<std::mutex> lock(g_viMutex);
         s_lastPacedRetraceCount = g_vi.retraceCount;
     }
+    if (!FrameLimitEnabled()) {
+        ReportUnpacedThroughput();
+    }
     settings_overlay::AdvancePresentedFrame();
     g_auroraFrameActive.store(false, std::memory_order_release);
     g_auroraFrameHadWork.store(false, std::memory_order_release);
@@ -669,8 +721,7 @@ static void SeedViStateForInit(CpuContext* ctx, const char* who)
 }
 
 extern "C" void VIInit_HLE_801b94a4(CpuContext* ctx)
-{
-    SeedViStateForInit(ctx, "VIInit_801b94a4");
+{    SeedViStateForInit(ctx, "VIInit_801b94a4");
 }
 PPC_NATIVE_OVERRIDE_VOID(801B94A4, VIInit_HLE_801b94a4, (CpuContext* ctx), (ctx));
 
@@ -923,6 +974,10 @@ PPC_NATIVE_OVERRIDE_VOID(801BAC48, VIGetCurrentLine_HLE_801bac48, (CpuContext* c
 
 extern "C" void VIWaitForRetrace_HLE_801b99ec(CpuContext* ctx)
 {
+    // One retrace is one frame, which is the cadence a recorded trace has to match: the
+    // game's behaviour is defined in frames, so the reimplementation compares per frame.
+    KartTrace::Tick();
+
     CpuContext* cpu = ctx ? ctx : &GetPersistentCpuContext();
     
     if (Fiber::GuestFiberManager::IsInitialized()) {

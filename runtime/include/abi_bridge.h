@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tls_model.h"
+
 #include "region/guest_region.h"
 #include "memory.h"
 #include "ppc_runtime.h"
@@ -314,7 +316,7 @@ struct IndirectResolvedDispatchMemoEntry {
     uint32_t address;
     const TranslatedFunctionInfo* info;
 };
-inline thread_local IndirectResolvedDispatchMemoEntry
+inline thread_local MKW_TLS_FAST IndirectResolvedDispatchMemoEntry
     g_indirectResolvedDispatchMemo[kIndirectDispatchCacheEntries]{};
 
 struct IndirectRawDispatchMemoEntry {
@@ -322,7 +324,7 @@ struct IndirectRawDispatchMemoEntry {
     uint32_t address;
     const RawDispatchRecord* record;
 };
-inline thread_local IndirectRawDispatchMemoEntry
+inline thread_local MKW_TLS_FAST IndirectRawDispatchMemoEntry
     g_indirectRawDispatchMemo[kIndirectDispatchCacheEntries]{};
 
 class TranslatedFunctionRegistry {

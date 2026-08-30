@@ -4,7 +4,7 @@
 #
 #   ./build-macos.sh --disc <image.rvz|.iso|.wbfs|dir>   extract (nodtool) or use an extracted
 #                                                        DATA directory containing sys/ and files/
-#   ./build-macos.sh --region rmce01|rmcp01              executable region (default: detected)
+#   ./build-macos.sh --region rmcp01|rmce01|rmcj01|rmck01  executable region (default: detected)
 #   ./build-macos.sh --clean                             discard translation and build caches
 #   ./build-macos.sh --parallel N                        pin all parallelism to N
 #   ./build-macos.sh --cpu <-mcpu flag>                  e.g. -mcpu=apple-m4 (default -mcpu=native)
@@ -85,17 +85,28 @@ game_id=$(dd if="$assets/main.dol" bs=1 count=0 2>/dev/null; python3 - "$assets/
 import sys, hashlib
 h = hashlib.sha256(open(sys.argv[1], 'rb').read()).hexdigest()
 print({'80d18895b39c63bd80f457398bfcbb91b7d16ac116a41a88967e954080155b05': 'rmcp01',
-       'd2beec1b1645fcd134efe9e7e63774b546667764ed8d431029daccd725995694': 'rmce01'}.get(h, 'unknown'))
+       'd2beec1b1645fcd134efe9e7e63774b546667764ed8d431029daccd725995694': 'rmce01',
+       '1b9621ef7c5d97dada103e50e5389730e67f3c2545dda592edd4b5843655af91': 'rmcj01',
+       '3098a1e9259b4915e32a4ccb5a1f124823f2a0914db29cd2476e10bdb01a77da': 'rmck01'}.get(h, 'unknown'))
 PY
 )
 [[ -n "$region" ]] || region=$game_id
-[[ "$region" == "rmcp01" || "$region" == "rmce01" ]] || fail "unrecognised executable (sha256 not a clean RMCP01/RMCE01 main.dol); pass --region explicitly"
+case "$region" in rmcp01|rmce01|rmcj01|rmck01) ;; *) fail "unrecognised executable (sha256 is not a clean RMCP01/RMCE01/RMCJ01/RMCK01 main.dol); pass --region explicitly" ;; esac
 case "$region" in
     rmcp01) project=$workspace/projects/mkwii/recomp.yml; manifest_region=P ;;
     rmce01) project=$workspace/projects/mkwii-ntsc/recomp.yml; manifest_region=E ;;
+    rmcj01) project=$workspace/projects/mkwii-ntsc-j/recomp.yml; manifest_region=J ;;
+    rmck01) project=$workspace/projects/mkwii-ntsc-k/recomp.yml; manifest_region=K ;;
 esac
 product_name=WiiCompiled
+# Translator output and base manifest are per region: each region translates a different
+# executable, so they cannot share a directory.
 generated_name=generated
+manifest_name=base
+case "$region" in
+    rmcj01) generated_name=generated-j; manifest_name=rmcj01 ;;
+    rmck01) generated_name=generated-k; manifest_name=rmck01 ;;
+esac
 retro_root=$workspace/PulsarPacks/completed/RetroRewind/RetroRewind6
 if [[ "$profile" == "retro-rewind" ]]; then
     [[ -f "$retro_root/Binaries/Code.pul" ]] || fail "Retro Rewind pack missing: $retro_root/Binaries/Code.pul (download the full pack and place/symlink RetroRewind6 there)"
@@ -125,8 +136,12 @@ if [[ "$profile" == "wiimmfi" ]]; then
             done
         done
     fi
+    if [[ ! -f "$assets/wiimmfi/main.stage1.dol" || ! -f "$assets/wiimmfi/stage1.kamek" || "$assets/wiimmfi/main.dol" -nt "$assets/wiimmfi/stage1.kamek" ]]; then
+        step wiimmfi-stage1 "Extracting the injector's stage-1 block and patches from the patched DOL"
+        python3 "$workspace/tools/wiimmfi/gen_stage1.py"
+    fi
     project=$workspace/projects/mkwii-ntsc-wiimmfi/recomp.yml
-    product_name=WiiCompiled-Wiimmfi
+    product_name=Wiimmfi
     generated_name=generated-wiimmfi
 fi
 echo "MKWCBUILD: region=$region profile=$profile project=$(basename "$(dirname "$project")") cpu=$cpu_flag jobs=$global_jobs translated=$translated_jobs"
@@ -144,9 +159,9 @@ base_metadata=$generated/base_translation_output.json
 if [[ "$profile" == "wiimmfi" ]]; then
     base_manifest_dir=$workspace/build/wiimmfi; build=$workspace/native-build-$region-wiimmfi; dist=$workspace/dist/$region-wiimmfi
 elif [[ "$profile" == "retro-rewind" ]]; then
-    base_manifest_dir=$workspace/build/base; build=$workspace/native-build-$region; dist=$workspace/dist/$region-retro-rewind
+    base_manifest_dir=$workspace/build/$manifest_name; build=$workspace/native-build-$region; dist=$workspace/dist/$region-retro-rewind
 else
-    base_manifest_dir=$workspace/build/base; build=$workspace/native-build-$region; dist=$workspace/dist/$region
+    base_manifest_dir=$workspace/build/$manifest_name; build=$workspace/native-build-$region; dist=$workspace/dist/$region
 fi
 base_manifest=$base_manifest_dir/mkwii_base_manifest.json
 shards=$generated/build_shards
@@ -162,7 +177,7 @@ fi
 
 entry_point=$(awk '/^translation:/{t=1} t && /^[[:space:]]*-[[:space:]]*0[xX][0-9a-fA-F]+/{gsub(/^[[:space:]]*-[[:space:]]*/,""); print; exit}' "$project")
 dol_in=$assets/main.dol; rel_in=$assets/StaticR.rel
-[[ "$profile" == "wiimmfi" ]] && { dol_in=$assets/wiimmfi/main.dol; rel_in=$assets/wiimmfi/StaticR.rel; }
+[[ "$profile" == "wiimmfi" ]] && { dol_in=$assets/wiimmfi/main.stage1.dol; rel_in=$assets/wiimmfi/StaticR.rel; }
 # Everything the base translation depends on: the inputs, the project, the region table, the
 # translator build itself, and the runtime sources (their native registrations decide which
 # functions are excluded from translation and which call sites bind natively).
@@ -193,29 +208,46 @@ if [[ "$profile" == "retro-rewind" ]]; then
         --code-pul "$retro_root/Binaries/Code.pul" --mod-root "$retro_root" --mod-name "Retro Rewind" \
         --region "$manifest_region" --out "$retro_out" --prefer-cached-inputs --emit-cpp \
         --threads "$translator_threads" ${MKW_RETRO_WFC_PAYLOAD:+--retro-wfc-payload "$MKW_RETRO_WFC_PAYLOAD"} ${MKW_SKIP_RETRO_WFC:+--skip-retro-wfc}
+elif [[ "$profile" == "wiimmfi" ]]; then
+    # The injector's stage-1 block and its three patches, as a Kamek chunk (tools/wiimmfi/gen_stage1.py).
+    retro_out=$workspace/build/mods/wiimmfi_stage1
+    step translate-mod "Translating the Wiimmfi stage-1 block (region $manifest_region)"
+    translator translate-mod --project "$project" --profile wiimmfi \
+        --base-manifest "$base_manifest" --base-translation-output-metadata "$base_metadata" \
+        --code-pul "$assets/wiimmfi/stage1.kamek" --mod-name "Wiimmfi stage 1" \
+        --region "$manifest_region" --out "$retro_out" --prefer-cached-inputs --emit-cpp \
+        --threads "$translator_threads" --skip-retro-wfc
 fi
 step generate-data-init "Generating local game data initialization"
 translator generate-data-init --project "$project"
 step emit-build-shards "Preparing local native build shards"
 shard_args=(emit-build-shards --project "$project" --base-metadata "$base_metadata"
     --base-functions-dir "$functions" --native-source-dir "$workspace/runtime/src" --out "$shards")
-if [[ "$profile" == "retro-rewind" ]]; then
+if [[ "$profile" == "retro-rewind" || "$profile" == "wiimmfi" ]]; then
     shard_args+=(--resolved-profile "$retro_out/resolved_dispatch_profile.json" --retro-cpp-dir "$retro_out/cpp")
 fi
 translator "${shard_args[@]}"
 
 # --- native build ------------------------------------------------------------------------------
 step configure-native "Configuring the native build ($build)"
+cmake_product_args=()
+if [[ "$profile" == "wiimmfi" ]]; then
+    cmake_product_args=(-DMKW_MOD_PRODUCT_TARGET=Wiimmfi -DMKW_MOD_PRODUCT_SOURCE="$workspace/runtime/src/product/wiimmfi_product.cpp")
+else
+    cmake_product_args=(-DMKW_MOD_PRODUCT_TARGET=RetroRewind -DMKW_MOD_PRODUCT_SOURCE="$workspace/runtime/src/product/retro_rewind_product.cpp")
+fi
 cmake -S "$workspace/runtime" -B "$build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_C_COMPILER="$cc_bin" -DCMAKE_CXX_COMPILER="$cxx_bin" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
     -DAURORA_DAWN_PROVIDER=package -DAURORA_SDL3_PROVIDER=vendor -DAURORA_SDL3_LINKAGE=static \
     -DMKW_GUEST_REGION="$region" -DMKW_AARCH64_CPU_FLAG="$cpu_flag" -DMKW_GENERATED_DIR="$generated" \
-    -DMKW_TRANSLATED_COMPILE_JOBS="$translated_jobs"
-# CMake target: the Wiimmfi variant is the WiiCompiled target built from its own translation;
-# only its published name differs. Retro Rewind is its own target.
-cmake_target=WiiCompiled; [[ "$profile" == "retro-rewind" ]] && cmake_target=RetroRewind
+    -DMKW_TRANSLATED_COMPILE_JOBS="$translated_jobs" "${cmake_product_args[@]}"
+# CMake target: the base game is WiiCompiled; the mod-overlay products (Retro Rewind, the
+# Wiimmfi stage-1 build) are the parametrised mod product target.
+cmake_target=WiiCompiled
+[[ "$profile" == "retro-rewind" ]] && cmake_target=RetroRewind
+[[ "$profile" == "wiimmfi" ]] && cmake_target=Wiimmfi
 step compile "Compiling $cmake_target"
 cmake --build "$build" --target "$cmake_target" --parallel "$global_jobs"
 

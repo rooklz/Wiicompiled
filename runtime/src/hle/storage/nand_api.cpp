@@ -157,7 +157,10 @@ extern "C" int32_t NANDOpen_HLE(uint32_t pathPtr, uint32_t fileInfoPtr, uint32_t
             file = std::fopen(hostPath.c_str(), fopenMode);
         }
         if (!file) {
-            LogNandError("NANDOpen", "FAILED to open");
+            // Name the path: which guest file could not be opened is the whole content of this
+            // report, and without it the only way to find out is to bisect a boot.
+            LogNandError("NANDOpen", "FAILED to open '%s' (guest path '%s', mode %u)",
+                         hostPath.c_str(), path, mode);
             return NAND_RESULT_NOEXISTS;
         }
     }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tls_model.h"
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -23,10 +25,21 @@ struct MemoryReservation {
 // Defined here as `inline thread_local` with a constant initializer, not `extern thread_local`
 // in the .cpp: every indirect dispatch scopes this, so an out-of-line ctor/dtor would cost two
 // un-inlinable calls plus a register spill each for three instructions of work.
-inline thread_local uint32_t g_currentTranslatedExecutionAddress = 0;
+//
+// MKW_TRACK_EXECUTION_ADDRESS=0 compiles the tracking out entirely. Every indirect dispatch
+// scopes this, so it costs a thread-local read plus two writes per guest indirect call for a
+// value that is only ever read when the process is already crashing. Builds for hosts where the
+// CPU budget is the binding constraint can trade the fault-report detail for those cycles; the
+// reporters fall back to "unknown" for the address.
+#ifndef MKW_TRACK_EXECUTION_ADDRESS
+#define MKW_TRACK_EXECUTION_ADDRESS 1
+#endif
+
+inline thread_local MKW_TLS_FAST uint32_t g_currentTranslatedExecutionAddress = 0;
 
 class ScopedTranslatedExecutionAddress {
 public:
+#if MKW_TRACK_EXECUTION_ADDRESS
     explicit ScopedTranslatedExecutionAddress(uint32_t address) noexcept
         : previous_(g_currentTranslatedExecutionAddress) {
         // Address 0 means "nothing new to report" - the enclosing scope's value
@@ -39,12 +52,17 @@ public:
     ~ScopedTranslatedExecutionAddress() noexcept {
         g_currentTranslatedExecutionAddress = previous_;
     }
+#else
+    explicit ScopedTranslatedExecutionAddress(uint32_t) noexcept {}
+#endif
 
     ScopedTranslatedExecutionAddress(const ScopedTranslatedExecutionAddress&) = delete;
     ScopedTranslatedExecutionAddress& operator=(const ScopedTranslatedExecutionAddress&) = delete;
 
 private:
+#if MKW_TRACK_EXECUTION_ADDRESS
     uint32_t previous_ = 0;
+#endif
 };
 
 inline constexpr uint32_t kExecutableWriteGuardPageShift = 12;

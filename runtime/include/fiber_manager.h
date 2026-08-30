@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tls_model.h"
+
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -124,7 +126,7 @@ private:
     static uint32_t s_currentGuestThread;
     static bool s_initialized;
     // Stored CPU context pointer for fiber switches
-    static thread_local CpuContext* s_cpuContext;
+    static thread_local MKW_TLS_FAST CpuContext* s_cpuContext;
 
     static void PurgePendingFibers();
 };

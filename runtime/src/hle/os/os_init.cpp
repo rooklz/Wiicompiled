@@ -189,27 +189,25 @@ PPC_NATIVE_OVERRIDE(801A8A50, OSGetResetCode_801a8a50, uint32_t, (), ());
 // fake handles and the success flag into the SDA (r13) block so OSResetSystem's checks pass.
 extern "C" uint32_t __OSInitSTM_HLE_801ab848(CpuContext* ctx)
 {
-    CpuContext* cpu = ctx ? ctx : &GetPersistentCpuContext();
-    if (!cpu) return 0;
-
+    (void)ctx;
     RT_LOG(RT_TAG_OS) << "__OSInitSTM_HLE_801ab848 called: initializing STM state" << std::endl;
 
-    // R13 (SDA2) holds the base for small data variables
-    const uint32_t r13 = cpu->gpr[13];
-    if (r13 == 0) {
-         RT_LOG(RT_TAG_OS) << "__OSInitSTM: Warning - R13 is 0, cannot write state." << std::endl;
-         return 0;
-    }
+    // These three globals are named by identity, not by an r13 offset. Their offsets inside the
+    // small-data block differ per region: RMCK01 keeps them 0x20 lower than PAL/NTSC-U/NTSC-J,
+    // and PAL's r13-0x62c8 is RMCK01's OSDisableScheduler nesting count - writing a fake handle
+    // there left the scheduler permanently "disabled", so every OSSleepThread refused to park
+    // and the Korean build hung during OS::Init.
+    constexpr uint32_t kStmInitializedAddr = MKW_GADDR(80386934);
+    constexpr uint32_t kStmImmediateHandleAddr = MKW_GADDR(80386938);
+    constexpr uint32_t kStmEventHookHandleAddr = MKW_GADDR(8038693C);
 
-    // Offsets from disassembly: r13-0x62cc=STM_Initialized, r13-0x62c8=/dev/stm/immediate,
-    // r13-0x62c4=/dev/stm/eventhook.
     try {
         // Mark STM as initialized
-        ::Memory::Write32(r13 - 0x62ccu, 1);
+        ::Memory::Write32(kStmInitializedAddr, 1);
 
         // Fake non-zero handles so callers' zero-checks pass.
-        ::Memory::Write32(r13 - 0x62c8u, 0x00535401); // "ST\x01"
-        ::Memory::Write32(r13 - 0x62c4u, 0x00535402); // "ST\x02"
+        ::Memory::Write32(kStmImmediateHandleAddr, 0x00535401); // "ST\x01"
+        ::Memory::Write32(kStmEventHookHandleAddr, 0x00535402); // "ST\x02"
 
         // Default Power/Reset callback pointers are left unset; safe since we never fire
         // the STM hardware interrupt that would invoke them.

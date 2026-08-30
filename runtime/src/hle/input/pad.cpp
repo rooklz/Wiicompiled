@@ -2,6 +2,10 @@
 #include "memory.h"
 #include "hle/controller_status_contract.h"
 #include "wup028_adapter.h"
+#include "keyboard_pad.h"
+#include "runtime_log.h"
+#include "pad_script.h"
+#include "runtime_config.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -35,7 +39,12 @@ void WritePadStatus(uint32_t base, const PADStatus& status) {
 extern "C" uint32_t PAD__Init_HLE()
 {
     Wup028Adapter::Initialize();
-    return PADInit() ? 1u : 0u;
+    PadScript::Load(RuntimeConfigFile::PadScript());
+    const uint32_t ok = PADInit() ? 1u : 0u;
+    // Before any read: the game latches which ports have controllers from its first PADRead, so
+    // the keyboard layout has to exist by then or the port stays PAD_ERR_NO_CONTROLLER forever.
+    KeyboardPad::ApplyOnce();
+    return ok;
 }
 PPC_NATIVE_OVERRIDE(801AF2F0, PAD__Init_HLE, uint32_t, (), ());
 
@@ -48,6 +57,7 @@ extern "C" uint32_t PAD__Read_HLE(uint32_t statusPtr)
     PADStatus statuses[PAD_CHANMAX]{};
     std::array<PADStatus, PAD_CHANMAX> adapterStatuses{};
     uint32_t rumbleMask = PADRead(statuses);
+    KeyboardPad::ApplyOnce();  // idempotent; PAD__Init_HLE already ran it
     if (Wup028Adapter::Read(adapterStatuses) && !PADIsInputBlocked()) {
         for (uint32_t port = 0; port < PAD_CHANMAX; ++port) {
             if (adapterStatuses[port].err == PAD_ERR_NONE) {
@@ -56,6 +66,7 @@ extern "C" uint32_t PAD__Read_HLE(uint32_t statusPtr)
             }
         }
     }
+    PadScript::Apply(statuses[0]);
 
     try {
         for (uint32_t i = 0; i < PAD_CHANMAX; ++i) {

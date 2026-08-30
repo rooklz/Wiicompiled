@@ -188,3 +188,45 @@
 # * The runtime's comment labels for some DVD .sbss globals do not match the SDK roles visible in the code
 #   (0x80386664 is the flag DVDPause sets / DVDResume clears, 0x80386668 the one DVDResume tests-and-clears,
 #   0x80386670 the one __DVDPrepareReset tests); the address identities are unaffected.
+# STM (State Transition Manager) globals. __OSInitSTM stores the two /dev/stm handles and its
+# initialized flag into the small-data block; the runtime's stub writes the same three words so
+# OSResetSystem's zero-checks pass. Their SDA offsets are NOT the same in every region (RMCK01
+# puts them 0x20 lower, where PAL/NTSC-U/NTSC-J keep the OSDisableScheduler nesting count), so
+# they are named as identities here rather than as a hardcoded r13 offset.
+80386934 803825B4 __OSInitSTM@801AB810 stw r31,-0x62cc(r13) (STM initialized flag)
+80386938 803825B8 __OSInitSTM@801AB808 stw r3,-0x62c8(r13) (/dev/stm/immediate handle)
+8038693C 803825BC __OSInitSTM@801AB830 stw r3,-0x62c4(r13) (/dev/stm/eventhook handle)
+
+# ISFS / IPC globals. The runtime's ISFS_OpenLib stub brings the filesystem client up itself:
+# it writes the "/dev/fs" path string and the device fd, then creates the ISFS heap out of the
+# IPC buffer window. Like the STM globals above, these do NOT sit at the same r13 offsets in
+# every region - RMCK01 keeps the .sbss cluster 0x20 lower and __ISFS_fd/__ISFS_path 0x8 lower -
+# so they are named as identities rather than as hardcoded r13 offsets. Addresses below are the
+# NTSC-U ones, each confirmed by the RMCE01 instructions cited; PAL is uniformly +0x4380 here,
+# matching the .sbss delta documented at the top of this file.
+80386770 803823F0 ISFS@80169B44 [800d9b70] lwz r0,-0x6490(r13); ISFS@80169B64 [800d9b70] lwz r0,-0x6490(r13); ISFS@80169BCC [808d9b70] lwz r4,-0x6490(r13); ISFS@80169C18 [900d9b70] stw r0,-0x6490(r13)    # isfsHeapInitialized, 4 sites in RMCE01
+80386774 803823F4 ISFS@80169B74 [906d9b74] stw r3,-0x648C(r13); ISFS@80169BAC [806d9b74] lwz r3,-0x648C(r13); ISFS@80169BD0 [83cd9b74] lwz r30,-0x648C(r13)    # isfsHeapBase, 3 sites in RMCE01
+8038677C 803823FC ISFS@80169B54 [906d9b7c] stw r3,-0x6484(r13); ISFS@80169B60 [806d9b7c] lwz r3,-0x6484(r13)    # __IPCArenaLo, 2 sites in RMCE01
+80386780 80382400 ISFS@80169B5C [906d9b80] stw r3,-0x6480(r13); ISFS@80169B7C [800d9b80] lwz r0,-0x6480(r13); ISFS@80169BDC [800d9b80] lwz r0,-0x6480(r13)    # __IPCArenaHi, 3 sites in RMCE01
+80386784 80382404 ISFS@80169C2C [906d9b84] stw r3,-0x647C(r13); ISFS@80169DAC [806d9b84] lwz r3,-0x647C(r13); ISFS@80169E30 [806d9b84] lwz r3,-0x647C(r13); ISFS@80169EA0 [806d9b84] lwz r3,-0x647C(r13)    # isfsHeapHandle, 36 sites in RMCE01
+803867EC 8038246C ISFS@80192F10 [906d9bec] stw r3,-0x6414(r13); ISFS@80192F58 [906d9bec] stw r3,-0x6414(r13); ISFS@80192F98 [806d9bec] lwz r3,-0x6414(r13); ISFS@80192FA0 [906d9bec] stw r3,-0x6414(r13)    # ipcBufferLo, 4 sites in RMCE01
+803867F0 80382470 ISFS@80192F0C [908d9bf0] stw r4,-0x6410(r13); ISFS@80192F54 [908d9bf0] stw r4,-0x6410(r13); ISFS@80192F90 [806d9bf0] lwz r3,-0x6410(r13)    # ipcBufferHi, 3 sites in RMCE01
+80385920 803815A0 ISFS@80169BBC [906d8d20] stw r3,-0x72E0(r13); ISFS@80169E08 [800d8d20] lwz r0,-0x72E0(r13); ISFS@80169E88 [806d8d20] lwz r3,-0x72E0(r13); ISFS@80169F00 [800d8d20] lwz r0,-0x72E0(r13)    # __ISFS_fd, 33 sites in RMCE01
+80385928 803815A8 ISFS@80169BA4 [388d8d28] addi r4,r13,-0x72D8    # __ISFS_path, 1 sites in RMCE01
+
+# OS alarm queue and the two AX state flags. Same story as the STM and ISFS globals above: the
+# runtime's alarm stubs walk OSAlarmQueue and the AX stub sets two flags, and RMCK01 keeps this
+# part of .sbss 0x20 lower than PAL/NTSC-U/NTSC-J (OSAlarmQueue is r13-0x6360 in PAL but
+# r13-0x6340 in RMCK01), so a hardcoded offset walks a string table there instead of the queue.
+803868A0 80382520 OSAlarmQueue@801A0540 [386d9ca0] addi r3,r13,-0x6360; OSAlarmQueue@801A054C [900d9ca0] stw r0,-0x6360(r13); OSAlarmQueue@801A064C [80ed9ca0] lwz r7,-0x6360(r13); OSAlarmQueue@801A0698 [93cd9ca0] stw r30,-0x6360(r13)   # OSAlarmQueue, 13 sites in RMCE01
+80386528 803821A8 AX@801268AC [900d9928] stw r0,-0x66D8(r13); AX@8012698C [918d9928] stw r12,-0x66D8(r13); AX@801269E4 [800d9928] lwz r0,-0x66D8(r13)   # AX flag 0x66d8, 3 sites in RMCE01
+80386524 803821A4 AX@80126804 [800d9924] lwz r0,-0x66DC(r13); AX@80126910 [900d9924] stw r0,-0x66DC(r13); AX@801269C0 [918d9924] stw r12,-0x66DC(r13)   # AX flag 0x66dc, 3 sites in RMCE01
+
+# EGG fog constants in .sdata2, read through r2 by the EGG::StateGX fog-quad code. Unlike the
+# .sbss globals above, the r2 offset of these three is 8 LARGER in NTSC-U than in PAL, while
+# NTSC-J and NTSC-K keep PAL's offset. The values settle it: at the addresses below all four
+# regions read 0.0 / 0.99 / 0.5, whereas NTSC-U at PAL's offset reads 176.0 / 176.0 / 1.0 -
+# so the runtime's old hardcoded PAL r2 offsets were reading the wrong constants on NTSC-U only.
+80388DD0 80384A48 EGG@8022D3F0 [c0029e28] lfs r0,-0x61D8(r2); EGG@8022D71C [c0429e28] lfs r2,-0x61D8(r2); EGG@8022D7A0 [c0a29e28] lfs r5,-0x61D8(r2); EGG@8022DB0C [c3e29e28] lfs r31,-0x61D8(r2)   # EGG fog origin (m!=2), 9 sites in RMCE01
+80388DE0 80384A58 EGG@8022DB24 [c0029e38] lfs r0,-0x61C8(r2); EGG@8022DEBC [c0029e38] lfs r0,-0x61C8(r2); EGG@8022E018 [c0029e38] lfs r0,-0x61C8(r2)   # EGG fog span, 3 sites in RMCE01
+80388DF4 80384A6C EGG@8022DE7C [c3e29e4c] lfs r31,-0x61B4(r2); EGG@8022DE90 [c3c29e4c] lfs r30,-0x61B4(r2); EGG@8022DFD8 [c3e29e4c] lfs r31,-0x61B4(r2); EGG@8022DFEC [c3c29e4c] lfs r30,-0x61B4(r2)   # EGG fog origin (m==2), 4 sites in RMCE01

@@ -46,7 +46,9 @@ constexpr uint32_t kSchedulerPendingFlagAddr = MKW_GADDR(80386920);
 // RVL OS uses this as the OSDisableScheduler/OSEnableScheduler nesting count.
 // SelectThread exits early while the count is non-zero.
 constexpr uint32_t kSchedulerIdleFlagAddr = MKW_GADDR(80386918);
-constexpr uint32_t kAlarmQueueOffsetFromR13 = 0x6360u;
+// OSAlarmQueue. Named by identity, not by an r13 offset: RMCK01 keeps this part of .sbss
+// 0x20 lower, so PAL's r13-0x6360 lands in a string table there and the queue walk faults.
+constexpr uint32_t kAlarmQueueAddr = MKW_GADDR(803868A0);
 
 constexpr uint32_t kThreadStateOffset = 0x2C8u;
 constexpr uint32_t kThreadAttrOffset = 0x2CAu;

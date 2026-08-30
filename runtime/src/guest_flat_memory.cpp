@@ -1,4 +1,6 @@
 #include "guest_flat_memory.h"
+#include <execinfo.h>
+#include <thread>
 
 #include <algorithm>
 #include <atomic>
@@ -16,6 +18,7 @@
 #include "memory.h"
 #include "ppc_runtime.h"
 #include "recomp_mod_loader.h"
+#include "isa/ppc_isa_context.h"
 #include "runtime_log.h"
 #include "system_bridge.h"
 
@@ -259,6 +262,16 @@ void ResolvePlacementApi() {
 }
 #endif
 
+#if UINTPTR_MAX <= 0xFFFFFFFFull
+}  // namespace (anonymous)
+namespace GuestFlat {
+// Declared in guest_flat_memory.h; the 32-bit access path reads the base from here because no
+// single fixed address is reliably free across 32-bit process layouts.
+uint8_t* g_flatGuestBase = nullptr;
+}
+namespace {
+#endif
+
 void EnsureReservation() {
     if (g_base != nullptr) return;
 #if defined(_WIN32)
@@ -290,6 +303,8 @@ void EnsureReservation() {
             "compiled against.");
     }
 #else
+    // On 32-bit kFixedFlatGuestBase is 0, i.e. "no hint": there is no address that is reliably
+    // free across Win32/Linux-x86/ARM32 layouts, so the window goes wherever the OS puts it.
     void* requested = reinterpret_cast<void*>(kFixedFlatGuestBase);
 
     // No MAP_FIXED here (and deliberately no MAP_FIXED_NOREPLACE, which needs Linux 4.17+ -
@@ -310,7 +325,7 @@ void EnsureReservation() {
                "cannot fall back to another one.";
         throw std::runtime_error(oss.str());
     }
-    if (reserved != requested) {
+    if (reserved != requested && kFixedFlatGuestBase != 0) {
         munmap(reserved, kGuestSpaceSize + kAllocationGranularity);
         std::ostringstream oss;
         oss << "Unable to reserve the 4 GiB flat guest address space at 0x" << std::hex
@@ -326,6 +341,10 @@ void EnsureReservation() {
 #endif
 
     g_base = static_cast<uint8_t*>(reserved);
+#if UINTPTR_MAX <= 0xFFFFFFFFull
+    // 32-bit: the window landed wherever the OS chose, and every guest access reads it from here.
+    GuestFlat::g_flatGuestBase = g_base;
+#endif
 }
 
 #if defined(_WIN32)

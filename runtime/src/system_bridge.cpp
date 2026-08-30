@@ -1,4 +1,7 @@
+#include "kart_trace.h"
 #include "system_bridge.h"
+#include "guest_flat_memory.h"
+#include <cstdlib>
 
 #include <cctype>
 #include <fstream>
@@ -330,8 +333,7 @@ void SystemBridge::Initialize() {
     g_suppressSehReporting = true;
 
     // Run main DOL static constructors first
-    // These set up vtables and other critical infrastructure
-    RT_LOG(RT_TAG_RUNTIME) << "Running static constructors for main DOL..." << std::endl;
+    // These set up vtables and other critical infrastructure    RT_LOG(RT_TAG_RUNTIME) << "Running static constructors for main DOL..." << std::endl;
 
     const uint32_t dolCtorStart = MKW_GADDR(80244DE0);
     const uint32_t dolCtorEnd = MKW_GADDR(80244EA0);
@@ -369,8 +371,8 @@ void SystemBridge::Initialize() {
     }
     RT_LOG(RT_TAG_RUNTIME) << "Executed " << dolCount << " main DOL static constructors." << std::endl;
 
-    // StaticR.rel ctors must be run manually since we aren't using OSLink
-    RT_LOG(RT_TAG_RUNTIME) << "Running static constructors for StaticR.rel..." << std::endl;
+    KartTrace::Initialize();
+    // StaticR.rel ctors must be run manually since we aren't using OSLink    RT_LOG(RT_TAG_RUNTIME) << "Running static constructors for StaticR.rel..." << std::endl;
 
     // Define range for StaticR.rel .ctors
     const uint32_t ctorStart = MKW_GADDR(8088f400);

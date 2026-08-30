@@ -53,6 +53,13 @@ public sealed class KamekPulFile
         }
 
         var regionChar = region[0];
+        if (!IsCombined)
+        {
+            // A raw Kamek chunk is one region's build by construction (there is nothing else to
+            // choose from); the project's profile says which region it is for.
+            return Chunks[0];
+        }
+
         var regionIndex = Array.IndexOf(DefaultRegionOrder, regionChar);
         var chunk = Chunks.FirstOrDefault(c => c.Index == regionIndex);
         return chunk ?? throw new InvalidDataException($"Code.pul does not contain a non-empty chunk for region {regionChar} at index {regionIndex}.");

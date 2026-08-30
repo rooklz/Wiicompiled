@@ -234,7 +234,7 @@ MKW_MEMORY_FORCE_INLINE uint8_t* ResolveRangeHost(uint32_t base, int32_t minOffs
     if (needsWrite &&
         (FlatWriteNeedsPolicy(guestStart) || FlatWriteNeedsPolicy(guestStart + (length - 1))))
         [[unlikely]] return nullptr;
-    return MKW_FLAT_GUEST_BASE + guestStart;
+    return MKW_FLAT_GUEST_BASE + MKW_GUEST_OFFSET(guestStart);
 }
 
 // Guest-address byte order. Distinct from isa/big_endian.h, which is the
@@ -526,14 +526,14 @@ MKW_MEMORY_FORCE_INLINE void WriteResolvedFloat64(uint8_t* r, uint32_t o, uint32
 template <typename T>
 MKW_MEMORY_FORCE_INLINE T FlatLoad(uint32_t address) {
     T value{};
-    std::memcpy(&value, MKW_FLAT_GUEST_BASE + address, sizeof(T));
+    std::memcpy(&value, MKW_FLAT_GUEST_BASE + MKW_GUEST_OFFSET(address), sizeof(T));
     return MaybeByteSwap(value);
 }
 
 template <typename T>
 MKW_MEMORY_FORCE_INLINE void FlatStore(uint32_t address, T value) {
     const T swapped = MaybeByteSwap(value);
-    std::memcpy(MKW_FLAT_GUEST_BASE + address, &swapped, sizeof(T));
+    std::memcpy(MKW_FLAT_GUEST_BASE + MKW_GUEST_OFFSET(address), &swapped, sizeof(T));
 }
 
 MKW_MEMORY_FORCE_INLINE uint8_t FlatRead8(uint32_t address) { return FlatLoad<uint8_t>(address); }

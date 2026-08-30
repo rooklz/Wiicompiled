@@ -18,6 +18,7 @@
 #include "timebase_contract.h"
 #include "runtime_log.h"
 #include "os_internal.h"
+#include "recomp_mod_loader.h"
 
 namespace OsHleInternal {
 std::mutex gSleepTimerMutex;

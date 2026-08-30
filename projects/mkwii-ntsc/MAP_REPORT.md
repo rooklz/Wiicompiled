@@ -87,7 +87,7 @@ First-instruction quality of emitted entries (strong = typical prologue/first in
 
 - 24751 of 29792 entries land on an address the NTSC-U binaries reference as code (call target, exception-table record, entry point, function-pointer table, jump table for case labels); 4500 more sit right after a function terminator (or are verified switch dispatch sites) with a decodable first instruction.
 - 206 UNVERIFIED entries are withheld: see the per-class breakdown in the Unverified section. None of the no-evidence ones lies near a chunk edge; they are surrounded by validated neighbours inside their chunk, which points at PAL-map noise (mid-function addresses, round addresses, names misplaced by one instruction) rather than at the chunk table.
-- 320 DROPPED entries: jump tables and other data symbols the PAL map carries, PAL-only code regions with no NTSC-U counterpart, chunk-table holes whose tertiary candidate is not a proven entry point, and 3 tertiary candidates that conflicted with a chunk-ported entry.
+- 320 DROPPED entries: jump tables and other data symbols the PAL map carries, PAL-only code regions with no NTSC-U counterpart, chunk-table holes whose tertiary candidate is not a proven entry point, and 0 tertiary candidates that conflicted with a chunk-ported entry.
 - The PAL project uses sda_base/sda2_base 0x8038CC00/0x8038EFA0; the NTSC-U values read below are the ones an NTSC-U project must configure.
 
 ### Non-function labels carried by the PAL map
@@ -389,757 +389,25 @@ The named entry is kept (both PAL entries are functions, so the address is a rea
 
 ## Disagreements with the tertiary (linear-delta) map
 
-- Tertiary DOL map: `/Users/rookie/dolphin-ps3/external/mkwii-ntsc/MAP_ntsc_full.txt` (13680 named entries, compared by name); REL delta table: `/Users/rookie/dolphin-ps3/external/mkwii-ntsc/rel_delta_table.txt` (101 rows, model NTSC = PAL - (0x4380 + delta), compared by address)
-- Delta-table rows vs the chunk table at the row's own PAL address: 94 agree, 3 disagree, 4 unportable
-- Named entries compared: 15323; agree: 11091; disagree: 4315 (563 DOL by name, 3752 REL by delta model)
-- DOL disagreements by 64 KiB PAL region: 80000000=116, 80010000=350, 80020000=74, 800f0000=1, 80100000=1, 80110000=1, 80120000=5, 80130000=1, 80140000=1, 80150000=1, 801a0000=3, 801b0000=1, 801d0000=3, 80200000=2, 80240000=3
-- DOL (our verdict / tertiary verdict) pairs: PLAUSIBLE/PLAUSIBLE=7, PLAUSIBLE/UNVERIFIED=43, PROVEN/PLAUSIBLE=4, PROVEN/PROVEN=10, PROVEN/REFERENCED=6, PROVEN/UNVERIFIED=302, REFERENCED/PLAUSIBLE=26, REFERENCED/PROVEN=3, REFERENCED/REFERENCED=6, REFERENCED/UNVERIFIED=156
-- REL (our verdict / tertiary verdict) pairs: DROPPED/UNVERIFIED=1, PLAUSIBLE/PLAUSIBLE=6, PLAUSIBLE/PROVEN=3, PLAUSIBLE/REFERENCED=6, PLAUSIBLE/UNVERIFIED=372, PROVEN/PLAUSIBLE=10, PROVEN/PROVEN=34, PROVEN/REFERENCED=15, PROVEN/UNVERIFIED=1037, REFERENCED/PLAUSIBLE=48, REFERENCED/PROVEN=16, REFERENCED/REFERENCED=60, REFERENCED/UNVERIFIED=2144
+- Tertiary DOL map: `/Users/rookie/dolphin-ps3/external/mkwii-ntsc/MAP_ntsc_full.txt` (0 named entries, compared by name); REL delta table: `/Users/rookie/dolphin-ps3/external/mkwii-ntsc/rel_delta_table.txt` (0 rows, model NTSC = PAL - (0x4380 + delta), compared by address)
+- Delta-table rows vs the chunk table at the row's own PAL address: 0 agree, 0 disagree, 0 unportable
+- Named entries compared: 0; agree: 0; disagree: 0 (0 DOL by name, 0 REL by delta model)
 
 The binary supports whichever side has the stronger verdict (PROVEN > REFERENCED > PLAUSIBLE > UNVERIFIED). When both sides are PROVEN the two addresses are both real entry points and only the name assignment differs; the chunk table is the primary source in that case.
 
-### Attention: disagreements where the binary supports the tertiary address more than ours (29)
+### Attention: disagreements where the binary supports the tertiary address more than ours (0)
 
 Our address is still a validated entry point (or was not emitted), but the name may belong to the tertiary address instead. Without the PAL binaries the function bodies cannot be compared, so these are listed rather than changed.
 
-| PAL | name | ours | our verdict | our evidence | tertiary | tertiary verdict | tertiary evidence | src |
-|---|---|---|---|---|---|---|---|---|
-| 8000b6b4 | __DBMtrHandler | 80021048 | REFERENCED | hiaddr | 8000b614 | PROVEN | bl+b | name |
-| 80010e78 | _pformatter_caseD_64 | 80010318 | REFERENCED | ptr | 80010dd8 | PROVEN | bl | name |
-| 80012764 | __sformatter_caseD_75 | 80011c04 | REFERENCED | ptr | 800126c4 | PROVEN | bl | name |
-| 8052d298 | ElineController::__ct | 8054f800 | PLAUSIBLE | - | 80528e24 | REFERENCED | hiaddr | delta |
-| 805bb2b8 | Pages::AwardFade::GetPlayersVolumeMgr | 80621034 | PLAUSIBLE | - | 805b56f8 | REFERENCED | ptr | delta |
-| 805bf3dc | NotifyButton::__ct | 805b69e0 | PLAUSIBLE | - | 805b981c | PROVEN | bl | delta |
-| 805bfe8c | NotifyButton::UpdateText_caseD_6 | 805b749c | REFERENCED | ptr | 805ba2cc | PROVEN | bl | delta |
-| 805c0884 | Pages::Channel::OnDispose | 805b7eec | REFERENCED | ptr | 805bacc4 | PROVEN | bl | delta |
-| 805c3700 | Pages::BatteryMgr::OnActivate | 80623f10 | REFERENCED | ptr | 805bad6c | PROVEN | bl | delta |
-| 805d9614 | FriendMatchingPlayer::InitSelf | 80629b88 | REFERENCED | ptr | 805cc4f8 | PROVEN | bl | delta |
-| 805e11b0 | Pages::GhostManager::RequestAllGhosts | 805cb3d4 | PLAUSIBLE | - | 805d4094 | PROVEN | bl | delta |
-| 805ea66c | LayoutResourceAccessor::Init | 805d3f80 | PLAUSIBLE | - | 805d4890 | REFERENCED | ptr | delta |
-| 805ff6c4 | Pages::MasterOptions::OnResume | 8063e060 | REFERENCED | ptr | 805deb7c | PROVEN | bl | delta |
-| 80611a3c | RankingGraphControl::UpdateImpl | 805e6028 | PLAUSIBLE | b | 805ed168 | REFERENCED | ptr | delta |
-| 80618934 | RankedItemSelectable::OnSelect_caseD_1 | 80648e7c | REFERENCED | ptr | 805f4060 | PROVEN | bl | delta |
-| 80668814 | ServerMgr::__dt | 806610b0 | REFERENCED | ptr | 80676464 | PROVEN | bl | delta |
-| 806c6b44 | Objects::HanachanPart::LoadModels | 806bbf50 | REFERENCED | ptr | 806e880c | PROVEN | bl | delta |
-| 806ec7c0 | Objects::HwanwanBall::__dt(thunk) | 806d8564 | DROPPED | jt | 806db77c | UNVERIFIED | - | delta |
-| 8074c4a8 | AwardCupModel::Disposer__dt | 8076ceac | REFERENCED | ptr | 8073c5dc | PROVEN | bl | delta |
-| 8077a35c | nlListContainer<P8SaveData>__ct | 8076588c | PLAUSIBLE | - | 807660c8 | REFERENCED | ptr | delta |
-| 807af140 | Item::ObjKumo::CreateArray | 807d6b94 | PLAUSIBLE | jt | 807a4498 | PROVEN | bl | delta |
-| 807b7c04 | Item::ObjThunder::InitSelf | 807a91a4 | REFERENCED | ptr | 807acf5c | PROVEN | bl | delta |
-| 807f76f8 | CtrlRaceScore::InitSelf | 808428f4 | REFERENCED | ptr | 807ed0d0 | PROVEN | bl | delta |
-| 807f8988 | CtrlRaceWifiStartMessage::GetClassName | 80842dc0 | REFERENCED | ptr | 807ede88 | PROVEN | bl | delta |
-| 8084247c | Pages::StartRace::CreateExternalControl | 80852e48 | REFERENCED | ptr | 8082a584 | PROVEN | bl | delta |
-| 80842914 | Pages::StartRace::AfterControlUpdate | 808532e0 | REFERENCED | ptr | 8082aa1c | PROVEN | bl | delta |
-| 808471c4 | Pages::KartSelect::GetButtonMachineById | 8082a2ec | PLAUSIBLE | - | 80857b90 | REFERENCED | ptr | delta |
-| 8084db7c | Pages::MultiPlayer::OnButtonDeselect | 8082e568 | REFERENCED | ptr | 80830ca4 | PROVEN | ctor+ptr | delta |
-| 808516ac | Pages::MainMenu::OnBackPress | 80832098 | REFERENCED | ptr | 808347d4 | PROVEN | ctor+ptr | delta |
+None.
 
-### DOL disagreements (563, full list)
+### DOL disagreements (0, full list)
 
-| PAL | name | ours | our verdict | our evidence | tertiary | tertiary verdict | tertiary evidence |
-|---|---|---|---|---|---|---|---|
-| 8000b6b4 | __DBMtrHandler | 80021048 | REFERENCED | hiaddr | 8000b614 | PROVEN | bl+b |
-| 8000b6d8 | __DBIntrHandler | 8002106c | REFERENCED | hiaddr | 8000b638 | UNVERIFIED | - |
-| 8000b6fc | DBInitComm | 80021090 | PROVEN | bl | 8000b65c | UNVERIFIED | - |
-| 8000b758 | DBInitInterrupts | 800210ec | PROVEN | bl | 8000b6b8 | UNVERIFIED | - |
-| 8000b7ac | DBQueryData | 80021140 | PROVEN | bl | 8000b70c | UNVERIFIED | bc |
-| 8000b850 | DBRead | 800211e4 | PROVEN | bl | 8000b7b0 | UNVERIFIED | - |
-| 8000b8d0 | DBWrite | 80021264 | PROVEN | bl | 8000b830 | UNVERIFIED | - |
-| 8000b9e0 | DBOpen | 80021374 | PROVEN | bl | 8000b940 | UNVERIFIED | - |
-| 8000b9e4 | DBClose | 80021378 | PROVEN | bl | 8000b944 | UNVERIFIED | - |
-| 8000b9e8 | __EXI2Imm | 8002137c | PROVEN | bl | 8000b948 | UNVERIFIED | - |
-| 8000bcd0 | __DBEXIInit | 80021664 | PROVEN | bl | 8000bc30 | UNVERIFIED | - |
-| 8000bd8c | __DBEXIReadReg | 80021720 | PROVEN | bl | 8000bcec | UNVERIFIED | - |
-| 8000beb0 | __DBEXIWriteReg | 80021844 | PROVEN | bl | 8000be10 | UNVERIFIED | - |
-| 8000bfb4 | __DBEXIReadRam | 80021948 | PROVEN | bl | 8000bf14 | UNVERIFIED | - |
-| 8000c094 | __DBEXIWriteRam | 80021a28 | PROVEN | bl | 8000bff4 | UNVERIFIED | b |
-| 8000c174 | _ftell | 8000b614 | PROVEN | bl+b | 8000c0d4 | UNVERIFIED | - |
-| 8000c21c | ftell | 8000b6bc | PROVEN | bl | 8000c17c | UNVERIFIED | - |
-| 8000c220 | _fseek | 8000b6c0 | PROVEN | bl+b | 8000c180 | UNVERIFIED | - |
-| 8000c3e4 | fseek | 8000b884 | PROVEN | bl | 8000c344 | UNVERIFIED | bc |
-| 8000c3e8 | rewind | 8000b888 | PROVEN | bl | 8000c348 | UNVERIFIED | - |
-| 8000c430 | atexit | 8000b8d0 | PROVEN | bl | 8000c390 | UNVERIFIED | - |
-| 8000c434 | Block_link | 8000b8d4 | PROVEN | bl | 8000c394 | UNVERIFIED | - |
-| 8000c584 | SubBlock_merge_next | 8000ba24 | PROVEN | bl | 8000c4e4 | UNVERIFIED | - |
-| 8000c62c | deallocate_from_fixed_pools | 8000bacc | PROVEN | bl | 8000c58c | UNVERIFIED | - |
-| 8000c818 | free | 8000bcb8 | PROVEN | bl | 8000c778 | UNVERIFIED | - |
-| 8000c948 | __close_all | 8000bde8 | REFERENCED | hiaddr | 8000c8a8 | UNVERIFIED | bc |
-| 8000c9ec | __flush_line_buffered_output_files | 8000be8c | PROVEN | bl | 8000c94c | UNVERIFIED | - |
-| 8000ca70 | __flush_all | 8000bf10 | PROVEN | bl | 8000c9d0 | UNVERIFIED | - |
-| 8000cadc | __ull2dec | 8000bf7c | PROVEN | bl | 8000ca3c | UNVERIFIED | - |
-| 8000cbb8 | __timesdec | 8000c058 | PROVEN | bl | 8000cb18 | UNVERIFIED | - |
-| 8000ce40 | __str2dec | 8000c2e0 | PROVEN | bl | 8000cda0 | UNVERIFIED | - |
-| 8000cf2c | __two_exp | 8000c3cc | PROVEN | bl | 8000ce8c | UNVERIFIED | - |
-| 8000cf68 | __two_exp_switch | 8000c408 | PLAUSIBLE | mtctr/bctr | 8000cec8 | UNVERIFIED | - |
-| 8000cf6c | __two_exp_caseD_ffffffc0 | 8000c40c | REFERENCED | jt | 8000cecc | UNVERIFIED | - |
-| 8000cf80 | __two_exp_caseD_ffffffcb | 8000c420 | REFERENCED | jt | 8000cee0 | UNVERIFIED | - |
-| 8000cf98 | __two_exp_caseD_ffffffe0 | 8000c438 | REFERENCED | jt | 8000cef8 | UNVERIFIED | - |
-| 8000cfb0 | __two_exp_caseD_fffffff0 | 8000c450 | REFERENCED | jt | 8000cf10 | UNVERIFIED | - |
-| 8000cfc8 | __two_exp_caseD_fffffff8 | 8000c468 | REFERENCED | jt | 8000cf28 | UNVERIFIED | - |
-| 8000cfe0 | __two_exp_caseD_fffffff9 | 8000c480 | REFERENCED | jt | 8000cf40 | UNVERIFIED | - |
-| 8000cff8 | __two_exp_caseD_fffffffa | 8000c498 | REFERENCED | jt | 8000cf58 | UNVERIFIED | - |
-| 8000d010 | __two_exp_caseD_fffffffb | 8000c4b0 | REFERENCED | jt | 8000cf70 | UNVERIFIED | - |
-| 8000d028 | __two_exp_caseD_fffffffc | 8000c4c8 | REFERENCED | jt | 8000cf88 | UNVERIFIED | - |
-| 8000d040 | __two_exp_caseD_fffffffd | 8000c4e0 | REFERENCED | jt | 8000cfa0 | UNVERIFIED | - |
-| 8000d058 | __two_exp_caseD_fffffffe | 8000c4f8 | REFERENCED | jt | 8000cfb8 | UNVERIFIED | - |
-| 8000d070 | __two_exp_caseD_ffffffff | 8000c510 | REFERENCED | jt | 8000cfd0 | UNVERIFIED | - |
-| 8000d088 | __two_exp_caseD_0 | 8000c528 | REFERENCED | jt | 8000cfe8 | UNVERIFIED | - |
-| 8000d0a0 | __two_exp_caseD_1 | 8000c540 | REFERENCED | jt | 8000d000 | UNVERIFIED | - |
-| 8000d0b8 | __two_exp_caseD_2 | 8000c558 | REFERENCED | jt | 8000d018 | UNVERIFIED | - |
-| 8000d0d0 | __two_exp_caseD_3 | 8000c570 | REFERENCED | jt | 8000d030 | PLAUSIBLE | bc |
-| 8000d0e8 | __two_exp_caseD_4 | 8000c588 | REFERENCED | jt | 8000d048 | UNVERIFIED | - |
-| 8000d100 | __two_exp_caseD_5 | 8000c5a0 | REFERENCED | jt | 8000d060 | UNVERIFIED | - |
-| 8000d118 | __two_exp_caseD_6 | 8000c5b8 | REFERENCED | jt | 8000d078 | UNVERIFIED | - |
-| 8000d130 | __two_exp_caseD_7 | 8000c5d0 | REFERENCED | jt | 8000d090 | UNVERIFIED | - |
-| 8000d148 | __two_exp_caseD_8 | 8000c5e8 | REFERENCED | jt | 8000d0a8 | UNVERIFIED | - |
-| 8000d160 | __two_exp_caseD_ffffffc1 | 8000c600 | REFERENCED | jt+bc | 8000d0c0 | UNVERIFIED | - |
-| 8000d298 | __equals_dec | 8000c738 | PROVEN | bl | 8000d1f8 | UNVERIFIED | - |
-| 8000d37c | __less_dec | 8000c81c | PROVEN | bl | 8000d2dc | UNVERIFIED | - |
-| 8000d47c | __minus_dec | 8000c91c | PROVEN | bl | 8000d3dc | UNVERIFIED | - |
-| 8000d998 | __num2dec_internal | 8000ce38 | PROVEN | bl | 8000d8f8 | UNVERIFIED | - |
-| 8000dafc | __num2dec | 8000cf9c | PROVEN | bl | 8000da5c | UNVERIFIED | - |
-| 8000dc9c | __dec2num | 8000d13c | PROVEN | bl | 8000dbfc | UNVERIFIED | - |
-| 8000e434 | __prep_buffer | 8000d8d4 | PROVEN | bl | 8000e394 | UNVERIFIED | - |
-| 8000e45c | __load_buffer | 8000d8fc | PROVEN | bl | 8000e3bc | UNVERIFIED | - |
-| 8000e558 | __flush_buffer | 8000d9f8 | PROVEN | bl | 8000e4b8 | UNVERIFIED | - |
-| 8000e610 | fread | 8000dab0 | PROVEN | bl | 8000e570 | UNVERIFIED | - |
-| 8000e954 | __fwrite | 8000ddf4 | PROVEN | bl | 8000e8b4 | UNVERIFIED | - |
-| 8000ec5c | fclose | 8000e0fc | PROVEN | bl | 8000ebbc | UNVERIFIED | bc |
-| 8000ed18 | fflush | 8000e1b8 | PROVEN | bl | 8000ec78 | UNVERIFIED | - |
-| 8000ee4c | __msl_strnicmp | 8000e2ec | PLAUSIBLE | b | 8000edac | UNVERIFIED | - |
-| 8000ef04 | __fpclassifyf | 8000e3a4 | PROVEN | bl | 8000ee64 | UNVERIFIED | - |
-| 8000ef64 | __signbitd | 8000e404 | PROVEN | bl | 8000eec4 | UNVERIFIED | - |
-| 8000ef7c | __fpclassifyd | 8000e41c | PROVEN | bl | 8000eedc | UNVERIFIED | - |
-| 8000eff8 | mbtowc | 8000e498 | PROVEN | bl | 8000ef58 | UNVERIFIED | - |
-| 8000f010 | __mbtowc_noconv | 8000e4b0 | PLAUSIBLE | jt | 8000ef70 | UNVERIFIED | - |
-| 8000f05c | __wctomb_noconv | 8000e4fc | PLAUSIBLE | jt | 8000efbc | UNVERIFIED | - |
-| 8000f078 | mbstowcs | 8000e518 | PROVEN | bl | 8000efd8 | REFERENCED | ptr |
-| 8000f138 | wcstombs | 8000e5d8 | PROVEN | bl | 8000f098 | UNVERIFIED | - |
-| 8000f1f0 | memmove | 8000e690 | PROVEN | bl | 8000f150 | UNVERIFIED | - |
-| 8000f2bc | memchr | 8000e75c | PROVEN | bl | 8000f21c | UNVERIFIED | - |
-| 8000f2e8 | __memrchr | 8000e788 | PROVEN | bl | 8000f248 | UNVERIFIED | - |
-| 8000f314 | memcmp | 8000e7b4 | PROVEN | bl+b | 8000f274 | UNVERIFIED | - |
-| 8000f360 | __copy_longs_aligned | 8000e800 | PROVEN | bl | 8000f2c0 | UNVERIFIED | - |
-| 8000f41c | __copy_longs_rev_aligned | 8000e8bc | PROVEN | bl | 8000f37c | UNVERIFIED | - |
-| 8000f4c4 | __copy_longs_unaligned | 8000e964 | PROVEN | bl | 8000f424 | UNVERIFIED | bc |
-| 8000f584 | __copy_longs_rev_unaligned | 8000ea24 | PROVEN | bl | 8000f4e4 | UNVERIFIED | - |
-| 8000f630 | __stdio_atexit | 8000ead0 | PROVEN | bl | 8000f590 | UNVERIFIED | - |
-| 8000f640 | parse_format | 8000eae0 | PROVEN | bl | 80011bf8 | UNVERIFIED | - |
-| 8000f640 | parse_format | 8000eae0 | PROVEN | bl | 800155e0 | UNVERIFIED | - |
-| 8000f9d0 | parse_format_switch | 8000ee70 | PLAUSIBLE | mtctr/bctr | 8000f930 | UNVERIFIED | - |
-| 8000f9d0 | parse_format_switch | 8000ee70 | PLAUSIBLE | mtctr/bctr | 80011ecc | UNVERIFIED | b |
-| 8000f9d0 | parse_format_switch | 8000ee70 | PLAUSIBLE | mtctr/bctr | 80015930 | UNVERIFIED | - |
-| 8000f9d4 | parse_format_caseD_58 | 8000ee74 | REFERENCED | ptr | 8000f934 | UNVERIFIED | - |
-| 8000f9d4 | parse_format_caseD_58 | 8000ee74 | REFERENCED | ptr | 80011ed0 | UNVERIFIED | - |
-| 8000f9d4 | parse_format_caseD_58 | 8000ee74 | REFERENCED | ptr | 80015934 | UNVERIFIED | - |
-| 8000fa1c | parse_format_caseD_46 | 8000eebc | REFERENCED | ptr | 8000f97c | UNVERIFIED | - |
-| 8000fa1c | parse_format_caseD_46 | 8000eebc | REFERENCED | ptr | 80015978 | PLAUSIBLE | b |
-| 8000fa64 | parse_format_caseD_41 | 8000ef04 | REFERENCED | ptr | 8000f9c4 | UNVERIFIED | - |
-| 8000fa64 | parse_format_caseD_41 | 8000ef04 | REFERENCED | ptr | 80011ee8 | UNVERIFIED | - |
-| 8000fa64 | parse_format_caseD_41 | 8000ef04 | REFERENCED | ptr | 800159c4 | UNVERIFIED | - |
-| 8000fab0 | parse_format_caseD_47 | 8000ef50 | REFERENCED | ptr | 8000fa10 | UNVERIFIED | - |
-| 8000fab0 | parse_format_caseD_47 | 8000ef50 | REFERENCED | ptr | 80015a14 | UNVERIFIED | - |
-| 8000fac4 | parse_format_caseD_45 | 8000ef64 | REFERENCED | ptr+bc | 8000fa24 | UNVERIFIED | - |
-| 8000fac4 | parse_format_caseD_45 | 8000ef64 | REFERENCED | ptr+bc | 80015a28 | UNVERIFIED | - |
-| 8000fb14 | parse_format_caseD_70 | 8000efb4 | REFERENCED | ptr | 8000fa74 | UNVERIFIED | - |
-| 8000fb14 | parse_format_caseD_70 | 8000efb4 | REFERENCED | ptr | 80011f30 | UNVERIFIED | - |
-| 8000fb14 | parse_format_caseD_70 | 8000efb4 | REFERENCED | ptr | 80015a7c | UNVERIFIED | - |
-| 8000fb38 | parse_format_caseD_63 | 8000efd8 | REFERENCED | ptr | 8000fa98 | UNVERIFIED | - |
-| 8000fb38 | parse_format_caseD_63 | 8000efd8 | REFERENCED | ptr | 80011f44 | UNVERIFIED | - |
-| 8000fb38 | parse_format_caseD_63 | 8000efd8 | REFERENCED | ptr | 80015aa0 | UNVERIFIED | - |
-| 8000fb70 | parse_format_caseD_73 | 8000f010 | REFERENCED | ptr | 8000fad0 | UNVERIFIED | - |
-| 8000fb70 | parse_format_caseD_73 | 8000f010 | REFERENCED | ptr | 80011f70 | PLAUSIBLE | bc |
-| 8000fb70 | parse_format_caseD_73 | 8000f010 | REFERENCED | ptr | 80015adc | UNVERIFIED | - |
-| 8000fbfc | long2str | 8000f09c | PROVEN | bl | 8000fb5c | UNVERIFIED | - |
-| 8000fbfc | long2str | 8000f09c | PROVEN | bl | 80015b70 | UNVERIFIED | - |
-| 8000fe34 | longlong2str | 8000f2d4 | PROVEN | bl | 8000fd94 | UNVERIFIED | - |
-| 8000fe34 | longlong2str | 8000f2d4 | PROVEN | bl | 80015db4 | UNVERIFIED | - |
-| 800100e4 | double2hex | 8000f584 | PROVEN | bl | 80010044 | UNVERIFIED | - |
-| 800100e4 | double2hex | 8000f584 | PROVEN | bl | 80016070 | UNVERIFIED | - |
-| 800104b4 | round_decimal | 8000f954 | PROVEN | bl | 80010414 | UNVERIFIED | - |
-| 800104b4 | round_decimal | 8000f954 | PROVEN | bl | 800164c8 | UNVERIFIED | - |
-| 800105dc | float2str | 8000fa7c | PROVEN | bl | 8001053c | UNVERIFIED | - |
-| 800105dc | float2str | 8000fa7c | PROVEN | bl | 800165f0 | UNVERIFIED | - |
-| 80010e74 | _pformatter_switch | 80010314 | PLAUSIBLE | mtctr/bctr | 80010dd4 | UNVERIFIED | - |
-| 80010e78 | _pformatter_caseD_64 | 80010318 | REFERENCED | ptr | 80010dd8 | PROVEN | bl |
-| 80010fd4 | _pformatter_caseD_58 | 80010474 | REFERENCED | ptr | 80010f34 | UNVERIFIED | - |
-| 80011130 | _pformatter_caseD_45 | 800105d0 | REFERENCED | ptr | 80011090 | UNVERIFIED | - |
-| 800111a0 | _pformatter_caseD_41 | 80010640 | REFERENCED | ptr | 80011100 | UNVERIFIED | - |
-| 80011210 | _pformatter_caseD_73 | 800106b0 | REFERENCED | ptr | 80011170 | UNVERIFIED | - |
-| 80011334 | _pformatter_caseD_6e | 800107d4 | REFERENCED | ptr | 80011294 | UNVERIFIED | - |
-| 800113ec | _pformatter_caseD_63 | 8001088c | REFERENCED | ptr | 8001134c | PLAUSIBLE | bc |
-| 8001140c | _pformatter_caseD_25 | 800108ac | REFERENCED | ptr | 8001136c | UNVERIFIED | - |
-| 8001141c | _pformatter_caseD_26 | 800108bc | REFERENCED | ptr+bc | 8001137c | UNVERIFIED | - |
-| 80011620 | __FileWrite | 80010ac0 | REFERENCED | hiaddr | 80011580 | UNVERIFIED | bc |
-| 80011678 | __StringWrite | 80010b18 | PLAUSIBLE | - | 800115d8 | PLAUSIBLE | b |
-| 800116e4 | printf | 80010b84 | PROVEN | bl | 80011644 | UNVERIFIED | - |
-| 800117b0 | vprintf | 80010c50 | PROVEN | bl+b | 80011710 | UNVERIFIED | - |
-| 8001182c | vsnprintf | 80010ccc | PROVEN | bl+b | 8001178c | UNVERIFIED | - |
-| 800118b4 | vsprintf | 80010d54 | PROVEN | bl | 80011814 | UNVERIFIED | - |
-| 80011938 | snprintf | 80010dd8 | PROVEN | bl | 80011898 | UNVERIFIED | - |
-| 80011a2c | sprintf | 80010ecc | PROVEN | bl | 8001198c | UNVERIFIED | - |
-| 80011b00 | qsort | 80010fa0 | PROVEN | bl+b | 80011a60 | UNVERIFIED | - |
-| 80011c70 | rand | 80011110 | PROVEN | bl | 80011bd0 | REFERENCED | ptr |
-| 80011c90 | srand | 80011130 | PROVEN | bl | 80011bf0 | UNVERIFIED | - |
-| 80011c98 | parse_format | 80011138 | PROVEN | bl | 80011bf8 | UNVERIFIED | - |
-| 80011c98 | parse_format | 80011138 | PROVEN | bl | 800155e0 | UNVERIFIED | - |
-| 80011f6c | parse_format_switch | 8001140c | PLAUSIBLE | mtctr/bctr | 8000f930 | UNVERIFIED | - |
-| 80011f6c | parse_format_switch | 8001140c | PLAUSIBLE | mtctr/bctr | 80011ecc | UNVERIFIED | b |
-| 80011f6c | parse_format_switch | 8001140c | PLAUSIBLE | mtctr/bctr | 80015930 | UNVERIFIED | - |
-| 80011f70 | parse_format_caseD_58 | 80011410 | REFERENCED | ptr | 8000f934 | UNVERIFIED | - |
-| 80011f70 | parse_format_caseD_58 | 80011410 | REFERENCED | ptr | 80011ed0 | UNVERIFIED | - |
-| 80011f70 | parse_format_caseD_58 | 80011410 | REFERENCED | ptr | 80015934 | UNVERIFIED | - |
-| 80011f88 | parse_format_caseD_41 | 80011428 | REFERENCED | ptr | 8000f9c4 | UNVERIFIED | - |
-| 80011f88 | parse_format_caseD_41 | 80011428 | REFERENCED | ptr | 80011ee8 | UNVERIFIED | - |
-| 80011f88 | parse_format_caseD_41 | 80011428 | REFERENCED | ptr | 800159c4 | UNVERIFIED | - |
-| 80011fd0 | parse_format_caseD_70 | 80011470 | REFERENCED | ptr | 8000fa74 | UNVERIFIED | - |
-| 80011fd0 | parse_format_caseD_70 | 80011470 | REFERENCED | ptr | 80011f30 | UNVERIFIED | - |
-| 80011fd0 | parse_format_caseD_70 | 80011470 | REFERENCED | ptr | 80015a7c | UNVERIFIED | - |
-| 80011fe4 | parse_format_caseD_63 | 80011484 | REFERENCED | ptr | 8000fa98 | UNVERIFIED | - |
-| 80011fe4 | parse_format_caseD_63 | 80011484 | REFERENCED | ptr | 80011f44 | UNVERIFIED | - |
-| 80011fe4 | parse_format_caseD_63 | 80011484 | REFERENCED | ptr | 80015aa0 | UNVERIFIED | - |
-| 80012010 | parse_format_caseD_73 | 800114b0 | REFERENCED | ptr | 8000fad0 | UNVERIFIED | - |
-| 80012010 | parse_format_caseD_73 | 800114b0 | REFERENCED | ptr | 80011f70 | PLAUSIBLE | bc |
-| 80012010 | parse_format_caseD_73 | 800114b0 | REFERENCED | ptr | 80015adc | UNVERIFIED | - |
-| 800120c8 | parse_format_caseD_5b | 80011568 | REFERENCED | ptr | 80012028 | PLAUSIBLE | bc |
-| 800122b4 | parse_format_caseD_42 | 80011754 | REFERENCED | ptr+bc | 80012214 | UNVERIFIED | - |
-| 800122b4 | parse_format_caseD_42 | 80011754 | REFERENCED | ptr+bc | 80015b24 | UNVERIFIED | - |
-| 800122bc | parse_format_caseD_6e | 8001175c | REFERENCED | ptr+b+bc | 8001221c | UNVERIFIED | - |
-| 800122bc | parse_format_caseD_6e | 8001175c | REFERENCED | ptr+b+bc | 80015b0c | UNVERIFIED | - |
-| 80012320 | __sformatter | 800117c0 | PROVEN | bl | 80012280 | UNVERIFIED | - |
-| 800125a4 | __sformatter_switch | 80011a44 | PLAUSIBLE | mtctr/bctr | 80012504 | UNVERIFIED | - |
-| 800125a4 | __sformatter_switch | 80011a44 | PLAUSIBLE | mtctr/bctr | 80012650 | UNVERIFIED | - |
-| 800125a4 | __sformatter_switch | 80011a44 | PLAUSIBLE | mtctr/bctr | 800127e8 | PLAUSIBLE | bc |
-| 800125a8 | __sformatter_caseD_64 | 80011a48 | REFERENCED | ptr | 80012508 | UNVERIFIED | - |
-| 800125b0 | __sformatter_caseD_69 | 80011a50 | REFERENCED | ptr | 80012510 | UNVERIFIED | - |
-| 800126f0 | __sformatter_switch | 80011b90 | PLAUSIBLE | mtctr/bctr | 80012504 | UNVERIFIED | - |
-| 800126f0 | __sformatter_switch | 80011b90 | PLAUSIBLE | mtctr/bctr | 80012650 | UNVERIFIED | - |
-| 800126f0 | __sformatter_switch | 80011b90 | PLAUSIBLE | mtctr/bctr | 800127e8 | PLAUSIBLE | bc |
-| 800126f4 | __sformatter_caseD_0 | 80011b94 | REFERENCED | ptr | 80012654 | UNVERIFIED | - |
-| 800126f4 | __sformatter_caseD_0 | 80011b94 | REFERENCED | ptr | 800127ec | UNVERIFIED | - |
-| 800126fc | __sformatter_caseD_1 | 80011b9c | REFERENCED | ptr | 8001265c | PLAUSIBLE | bc |
-| 800126fc | __sformatter_caseD_1 | 80011b9c | REFERENCED | ptr | 800127f4 | UNVERIFIED | - |
-| 80012704 | __sformatter_caseD_2 | 80011ba4 | REFERENCED | ptr | 80012664 | UNVERIFIED | - |
-| 80012704 | __sformatter_caseD_2 | 80011ba4 | REFERENCED | ptr | 800127fc | UNVERIFIED | - |
-| 8001270c | __sformatter_caseD_3 | 80011bac | REFERENCED | ptr | 8001266c | PLAUSIBLE | bc |
-| 8001270c | __sformatter_caseD_3 | 80011bac | REFERENCED | ptr | 80012804 | UNVERIFIED | - |
-| 80012714 | __sformatter_caseD_4 | 80011bb4 | REFERENCED | ptr | 80012674 | UNVERIFIED | - |
-| 80012714 | __sformatter_caseD_4 | 80011bb4 | REFERENCED | ptr | 8001280c | UNVERIFIED | - |
-| 80012728 | __sformatter_caseD_5 | 80011bc8 | REFERENCED | ptr | 80012688 | UNVERIFIED | - |
-| 80012728 | __sformatter_caseD_5 | 80011bc8 | REFERENCED | ptr | 80012820 | PLAUSIBLE | bc |
-| 80012730 | __sformatter_caseD_6 | 80011bd0 | REFERENCED | ptr | 80012690 | PLAUSIBLE | bc |
-| 80012730 | __sformatter_caseD_6 | 80011bd0 | REFERENCED | ptr | 80012828 | UNVERIFIED | - |
-| 80012738 | __sformatter_caseD_7 | 80011bd8 | REFERENCED | ptr | 80012698 | UNVERIFIED | - |
-| 80012738 | __sformatter_caseD_7 | 80011bd8 | REFERENCED | ptr | 80012830 | PLAUSIBLE | bc |
-| 8001275c | __sformatter_caseD_6f | 80011bfc | REFERENCED | ptr | 800126bc | UNVERIFIED | - |
-| 80012764 | __sformatter_caseD_75 | 80011c04 | REFERENCED | ptr | 800126c4 | PROVEN | bl |
-| 8001276c | __sformatter_caseD_58 | 80011c0c | REFERENCED | ptr | 800126cc | PLAUSIBLE | bc |
-| 80012888 | __sformatter_switch | 80011d28 | PLAUSIBLE | mtctr/bctr | 80012504 | UNVERIFIED | - |
-| 80012888 | __sformatter_switch | 80011d28 | PLAUSIBLE | mtctr/bctr | 80012650 | UNVERIFIED | - |
-| 80012888 | __sformatter_switch | 80011d28 | PLAUSIBLE | mtctr/bctr | 800127e8 | PLAUSIBLE | bc |
-| 8001288c | __sformatter_caseD_0 | 80011d2c | REFERENCED | ptr | 80012654 | UNVERIFIED | - |
-| 8001288c | __sformatter_caseD_0 | 80011d2c | REFERENCED | ptr | 800127ec | UNVERIFIED | - |
-| 80012894 | __sformatter_caseD_1 | 80011d34 | REFERENCED | ptr | 8001265c | PLAUSIBLE | bc |
-| 80012894 | __sformatter_caseD_1 | 80011d34 | REFERENCED | ptr | 800127f4 | UNVERIFIED | - |
-| 8001289c | __sformatter_caseD_2 | 80011d3c | REFERENCED | ptr | 80012664 | UNVERIFIED | - |
-| 8001289c | __sformatter_caseD_2 | 80011d3c | REFERENCED | ptr | 800127fc | UNVERIFIED | - |
-| 800128a4 | __sformatter_caseD_3 | 80011d44 | REFERENCED | ptr | 8001266c | PLAUSIBLE | bc |
-| 800128a4 | __sformatter_caseD_3 | 80011d44 | REFERENCED | ptr | 80012804 | UNVERIFIED | - |
-| 800128ac | __sformatter_caseD_4 | 80011d4c | REFERENCED | ptr | 80012674 | UNVERIFIED | - |
-| 800128ac | __sformatter_caseD_4 | 80011d4c | REFERENCED | ptr | 8001280c | UNVERIFIED | - |
-| 800128c0 | __sformatter_caseD_5 | 80011d60 | REFERENCED | ptr | 80012688 | UNVERIFIED | - |
-| 800128c0 | __sformatter_caseD_5 | 80011d60 | REFERENCED | ptr | 80012820 | PLAUSIBLE | bc |
-| 800128c8 | __sformatter_caseD_6 | 80011d68 | REFERENCED | ptr | 80012690 | PLAUSIBLE | bc |
-| 800128c8 | __sformatter_caseD_6 | 80011d68 | REFERENCED | ptr | 80012828 | UNVERIFIED | - |
-| 800128d0 | __sformatter_caseD_7 | 80011d70 | REFERENCED | ptr | 80012698 | UNVERIFIED | - |
-| 800128d0 | __sformatter_caseD_7 | 80011d70 | REFERENCED | ptr | 80012830 | PLAUSIBLE | bc |
-| 800128f4 | __sformatter_caseD_41 | 80011d94 | REFERENCED | ptr | 80012854 | UNVERIFIED | - |
-| 8001299c | __sformatter_caseD_63 | 80011e3c | REFERENCED | ptr | 800128fc | UNVERIFIED | - |
-| 80012b48 | __sformatter_caseD_25 | 80011fe8 | REFERENCED | ptr | 80012aa8 | UNVERIFIED | - |
-| 80012bf0 | __sformatter_caseD_73 | 80012090 | REFERENCED | ptr | 80012b50 | UNVERIFIED | - |
-| 80012c94 | __sformatter_caseD_5b | 80012134 | REFERENCED | ptr+bc | 80012bf4 | UNVERIFIED | - |
-| 80012efc | __sformatter_caseD_6e | 8001239c | REFERENCED | ptr | 80012e5c | UNVERIFIED | - |
-| 80012f6c | __sformatter_caseD_26 | 8001240c | REFERENCED | ptr+bc | 80012ecc | PLAUSIBLE | bc |
-| 80012fb8 | __StringRead | 80012458 | REFERENCED | hiaddr | 80012f18 | UNVERIFIED | - |
-| 80013040 | sscanf | 800124e0 | PROVEN | bl | 80012fa0 | UNVERIFIED | - |
-| 80013108 | raise | 800125a8 | PROVEN | bl | 80013068 | UNVERIFIED | bc |
-| 80013120 | strcpy | 800125c0 | PROVEN | bl+b | 80013080 | UNVERIFIED | - |
-| 800131e0 | strncpy | 80012680 | PROVEN | bl | 80013140 | UNVERIFIED | - |
-| 80013224 | strcat | 800126c4 | PROVEN | bl | 80013184 | UNVERIFIED | - |
-| 80013250 | strncat | 800126f0 | PROVEN | bl | 800131b0 | UNVERIFIED | - |
-| 8001329c | strcmp | 8001273c | PROVEN | bl+b | 800131fc | UNVERIFIED | - |
-| 800133b8 | strncmp | 80012858 | PROVEN | bl | 80013318 | UNVERIFIED | - |
-| 800133f8 | strchr | 80012898 | PROVEN | bl | 80013358 | UNVERIFIED | - |
-| 80013428 | strcspn | 800128c8 | PROVEN | bl | 80013388 | UNVERIFIED | - |
-| 800134cc | strtok | 8001296c | PROVEN | bl | 8001342c | UNVERIFIED | - |
-| 800135f0 | strstr | 80012a90 | PROVEN | bl | 80013550 | UNVERIFIED | bc |
-| 8001365c | __strtold | 80012afc | PROVEN | bl | 800135bc | UNVERIFIED | - |
-| 80014990 | atof | 80013e30 | PROVEN | bl | 800148f0 | UNVERIFIED | - |
-| 800149ec | __strtoul | 80013e8c | PROVEN | bl | 8001494c | UNVERIFIED | - |
-| 80014e00 | __strtoull | 800142a0 | PROVEN | bl | 80014d60 | UNVERIFIED | - |
-| 800152a8 | strtoul | 80014748 | PROVEN | bl | 80015208 | UNVERIFIED | - |
-| 80015350 | strtol | 800147f0 | PROVEN | bl | 800152b0 | UNVERIFIED | bc |
-| 8001543c | atoi | 800148dc | PROVEN | bl | 8001539c | UNVERIFIED | - |
-| 80015500 | __write_console | 800149a0 | REFERENCED | ptr | 80015460 | UNVERIFIED | - |
-| 800155d8 | fwide | 80014a78 | PROVEN | bl | 80015538 | UNVERIFIED | - |
-| 80015650 | wmemcpy | 80014af0 | PROVEN | bl | 800155b0 | PROVEN | bl |
-| 80015658 | wmemchr | 80014af8 | PROVEN | bl | 800155b8 | UNVERIFIED | - |
-| 80015680 | parse_format | 80014b20 | PROVEN | bl | 80011bf8 | UNVERIFIED | - |
-| 80015680 | parse_format | 80014b20 | PROVEN | bl | 800155e0 | UNVERIFIED | - |
-| 800159d0 | parse_format_switch | 80014e70 | PLAUSIBLE | mtctr/bctr | 8000f930 | UNVERIFIED | - |
-| 800159d0 | parse_format_switch | 80014e70 | PLAUSIBLE | mtctr/bctr | 80011ecc | UNVERIFIED | b |
-| 800159d0 | parse_format_switch | 80014e70 | PLAUSIBLE | mtctr/bctr | 80015930 | UNVERIFIED | - |
-| 800159d4 | parse_format_caseD_58 | 80014e74 | REFERENCED | ptr | 8000f934 | UNVERIFIED | - |
-| 800159d4 | parse_format_caseD_58 | 80014e74 | REFERENCED | ptr | 80011ed0 | UNVERIFIED | - |
-| 800159d4 | parse_format_caseD_58 | 80014e74 | REFERENCED | ptr | 80015934 | UNVERIFIED | - |
-| 80015a18 | parse_format_caseD_46 | 80014eb8 | REFERENCED | ptr | 8000f97c | UNVERIFIED | - |
-| 80015a18 | parse_format_caseD_46 | 80014eb8 | REFERENCED | ptr | 80015978 | PLAUSIBLE | b |
-| 80015a64 | parse_format_caseD_41 | 80014f04 | REFERENCED | ptr | 8000f9c4 | UNVERIFIED | - |
-| 80015a64 | parse_format_caseD_41 | 80014f04 | REFERENCED | ptr | 80011ee8 | UNVERIFIED | - |
-| 80015a64 | parse_format_caseD_41 | 80014f04 | REFERENCED | ptr | 800159c4 | UNVERIFIED | - |
-| 80015ab4 | parse_format_caseD_47 | 80014f54 | REFERENCED | ptr | 8000fa10 | UNVERIFIED | - |
-| 80015ab4 | parse_format_caseD_47 | 80014f54 | REFERENCED | ptr | 80015a14 | UNVERIFIED | - |
-| 80015ac8 | parse_format_caseD_45 | 80014f68 | REFERENCED | ptr+bc | 8000fa24 | UNVERIFIED | - |
-| 80015ac8 | parse_format_caseD_45 | 80014f68 | REFERENCED | ptr+bc | 80015a28 | UNVERIFIED | - |
-| 80015b1c | parse_format_caseD_70 | 80014fbc | REFERENCED | ptr | 8000fa74 | UNVERIFIED | - |
-| 80015b1c | parse_format_caseD_70 | 80014fbc | REFERENCED | ptr | 80011f30 | UNVERIFIED | - |
-| 80015b1c | parse_format_caseD_70 | 80014fbc | REFERENCED | ptr | 80015a7c | UNVERIFIED | - |
-| 80015b40 | parse_format_caseD_63 | 80014fe0 | REFERENCED | ptr | 8000fa98 | UNVERIFIED | - |
-| 80015b40 | parse_format_caseD_63 | 80014fe0 | REFERENCED | ptr | 80011f44 | UNVERIFIED | - |
-| 80015b40 | parse_format_caseD_63 | 80014fe0 | REFERENCED | ptr | 80015aa0 | UNVERIFIED | - |
-| 80015b7c | parse_format_caseD_73 | 8001501c | REFERENCED | ptr | 8000fad0 | UNVERIFIED | - |
-| 80015b7c | parse_format_caseD_73 | 8001501c | REFERENCED | ptr | 80011f70 | PLAUSIBLE | bc |
-| 80015b7c | parse_format_caseD_73 | 8001501c | REFERENCED | ptr | 80015adc | UNVERIFIED | - |
-| 80015bac | parse_format_caseD_6e | 8001504c | REFERENCED | ptr | 8001221c | UNVERIFIED | - |
-| 80015bac | parse_format_caseD_6e | 8001504c | REFERENCED | ptr | 80015b0c | UNVERIFIED | - |
-| 80015bc4 | parse_format_caseD_42 | 80015064 | REFERENCED | ptr+bc | 80012214 | UNVERIFIED | - |
-| 80015bc4 | parse_format_caseD_42 | 80015064 | REFERENCED | ptr+bc | 80015b24 | UNVERIFIED | - |
-| 80015c10 | long2str | 800150b0 | PROVEN | bl | 8000fb5c | UNVERIFIED | - |
-| 80015c10 | long2str | 800150b0 | PROVEN | bl | 80015b70 | UNVERIFIED | - |
-| 80015e54 | longlong2str | 800152f4 | PROVEN | bl | 8000fd94 | UNVERIFIED | - |
-| 80015e54 | longlong2str | 800152f4 | PROVEN | bl | 80015db4 | UNVERIFIED | - |
-| 80016110 | double2hex | 800155b0 | PROVEN | bl | 80010044 | UNVERIFIED | - |
-| 80016110 | double2hex | 800155b0 | PROVEN | bl | 80016070 | UNVERIFIED | - |
-| 80016568 | round_decimal | 80015a08 | PROVEN | bl | 80010414 | UNVERIFIED | - |
-| 80016568 | round_decimal | 80015a08 | PROVEN | bl | 800164c8 | UNVERIFIED | - |
-| 80016690 | float2str | 80015b30 | PROVEN | bl | 8001053c | UNVERIFIED | - |
-| 80016690 | float2str | 80015b30 | PROVEN | bl | 800165f0 | UNVERIFIED | - |
-| 80016e1c | __wpformatter | 800162bc | PROVEN | bl | 80016d7c | UNVERIFIED | bc |
-| 80016f2c | __wpformatter_switch | 800163cc | PLAUSIBLE | mtctr/bctr | 80016e8c | UNVERIFIED | - |
-| 80016f30 | __wpformatter_caseD_64 | 800163d0 | REFERENCED | ptr | 80016e90 | UNVERIFIED | - |
-| 8001708c | __wpformatter_caseD_58 | 8001652c | REFERENCED | ptr | 80016fec | UNVERIFIED | - |
-| 800171e8 | __wpformatter_caseD_45 | 80016688 | REFERENCED | ptr | 80017148 | UNVERIFIED | - |
-| 80017264 | __wpformatter_caseD_41 | 80016704 | REFERENCED | ptr | 800171c4 | UNVERIFIED | - |
-| 800172e0 | __wpformatter_caseD_73 | 80016780 | REFERENCED | ptr | 80017240 | UNVERIFIED | - |
-| 8001748c | __wpformatter_caseD_6e | 8001692c | REFERENCED | ptr | 800173ec | UNVERIFIED | - |
-| 80017544 | __wpformatter_caseD_63 | 800169e4 | REFERENCED | ptr | 800174a4 | UNVERIFIED | - |
-| 8001759c | __wpformatter_caseD_25 | 80016a3c | REFERENCED | ptr | 800174fc | UNVERIFIED | - |
-| 800175ac | __wpformatter_caseD_26 | 80016a4c | REFERENCED | ptr+bc | 8001750c | UNVERIFIED | - |
-| 800177a8 | __wStringWrite | 80016c48 | PLAUSIBLE | - | 80017708 | UNVERIFIED | - |
-| 80017814 | swprintf | 80016cb4 | PROVEN | bl | 80017774 | UNVERIFIED | - |
-| 8001790c | vswprintf | 80016dac | PROVEN | bl+b | 8001786c | UNVERIFIED | - |
-| 80017998 | wcslen | 80016e38 | PROVEN | bl | 800178f8 | UNVERIFIED | bc |
-| 800179b4 | wcscpy | 80016e54 | PROVEN | bl | 80017914 | UNVERIFIED | - |
-| 800179d0 | wcsncpy | 80016e70 | PROVEN | bl | 80017930 | UNVERIFIED | bc |
-| 80017a14 | wcscmp | 80016eb4 | PROVEN | bl | 80017974 | UNVERIFIED | - |
-| 80017a48 | wcschr | 80016ee8 | PROVEN | bl | 800179a8 | UNVERIFIED | - |
-| 80017a74 | __ieee754_acos | 80016f14 | PLAUSIBLE | b | 800179d4 | UNVERIFIED | - |
-| 80017d40 | __ieee754_asin | 800171e0 | PLAUSIBLE | b | 80017ca0 | UNVERIFIED | - |
-| 80017fd8 | __ieee754_atan2 | 80017478 | PLAUSIBLE | b | 80017f38 | UNVERIFIED | - |
-| 80018230 | __ieee754_fmod | 800176d0 | PLAUSIBLE | b | 80018190 | UNVERIFIED | - |
-| 80018560 | __ieee754_log | 80017a00 | PROVEN | bl | 800184c0 | UNVERIFIED | - |
-| 80018814 | __ieee754_log10 | 80017cb4 | PLAUSIBLE | b | 80018774 | UNVERIFIED | - |
-| 80018928 | __ieee754_pow | 80017dc8 | PLAUSIBLE | b | 80018888 | UNVERIFIED | - |
-| 8001913c | __ieee754_rem_pio2 | 800185dc | PROVEN | bl | 8001909c | UNVERIFIED | - |
-| 800194c0 | __ieee754_sqrt | 80018960 | PLAUSIBLE | b | 80019420 | UNVERIFIED | - |
-| 80019708 | __kernel_cos | 80018ba8 | PROVEN | bl | 80019668 | UNVERIFIED | - |
-| 80019818 | __kernel_rem_pio2 | 80018cb8 | PROVEN | bl | 80019778 | UNVERIFIED | - |
-| 8001aed0 | __kernel_sin | 8001a370 | PROVEN | bl | 8001ae30 | UNVERIFIED | - |
-| 8001af90 | __kernel_tan | 8001a430 | PROVEN | bl | 8001aef0 | UNVERIFIED | - |
-| 8001b1e0 | nan | 8001a680 | PROVEN | bl | 8001b140 | UNVERIFIED | - |
-| 8001b1e4 | scalbn | 8001a684 | PROVEN | bl | 8001b144 | UNVERIFIED | - |
-| 8001b1e8 | atan | 8001a688 | PROVEN | bl | 8001b148 | UNVERIFIED | bc |
-| 8001b418 | ceil | 8001a8b8 | PROVEN | bl | 8001b378 | UNVERIFIED | - |
-| 8001b564 | copysign | 8001aa04 | PROVEN | bl | 8001b4c4 | PLAUSIBLE | - |
-| 8001b590 | cos | 8001aa30 | PROVEN | bl | 8001b4f0 | UNVERIFIED | - |
-| 8001b658 | floor | 8001aaf8 | PROVEN | bl | 8001b5b8 | UNVERIFIED | - |
-| 8001b7a8 | frexp | 8001ac48 | PROVEN | bl | 8001b708 | UNVERIFIED | - |
-| 8001b830 | ldexp | 8001acd0 | PROVEN | bl+b | 8001b790 | UNVERIFIED | - |
-| 8001b99c | modf | 8001ae3c | PROVEN | bl | 8001b8fc | UNVERIFIED | - |
-| 8001ba98 | sin | 8001af38 | PROVEN | bl | 8001b9f8 | UNVERIFIED | - |
-| 8001bb64 | tan | 8001b004 | PROVEN | bl | 8001bac4 | UNVERIFIED | - |
-| 8001bbdc | acos | 8001b07c | PROVEN | bl | 8001bb3c | UNVERIFIED | b |
-| 8001bbe0 | asin | 8001b080 | PROVEN | bl | 8001bb40 | UNVERIFIED | - |
-| 8001bbe4 | atan2 | 8001b084 | PROVEN | bl | 8001bb44 | UNVERIFIED | - |
-| 8001bbe8 | fmod | 8001b088 | PROVEN | bl | 8001bb48 | UNVERIFIED | - |
-| 8001bbec | log10 | 8001b08c | PROVEN | bl | 8001bb4c | UNVERIFIED | - |
-| 8001bbf0 | pow | 8001b090 | PROVEN | bl | 8001bb50 | UNVERIFIED | - |
-| 8001bbf4 | sqrt | 8001b094 | PROVEN | bl | 8001bb54 | UNVERIFIED | - |
-| 8001bbf8 | stricmp | 8001b098 | PROVEN | bl | 8001bb58 | UNVERIFIED | - |
-| 8001bc98 | strncasecmp | 8001b138 | PROVEN | bl | 8001bbf8 | UNVERIFIED | - |
-| 8001bc9c | strcasecmp | 8001b13c | PROVEN | bl+b | 8001bbfc | UNVERIFIED | - |
-| 8001bd3c | CBGetBytesAvailableForRead | 8001b1dc | PROVEN | bl | 8001bc9c | UNVERIFIED | - |
-| 8001bd44 | CircleBufferInitialize | 8001b1e4 | PROVEN | bl | 8001bca4 | UNVERIFIED | - |
-| 8001bd68 | CircleBufferWriteBytes | 8001b208 | PROVEN | bl | 8001bcc8 | UNVERIFIED | - |
-| 8001be70 | CircleBufferReadBytes | 8001b310 | PROVEN | bl | 8001bdd0 | UNVERIFIED | - |
-| 8001bf7c | MWEnterCriticalSection | 8001b41c | PROVEN | bl | 8001bedc | UNVERIFIED | - |
-| 8001bfac | MWExitCriticalSection | 8001b44c | PROVEN | bl | 8001bf0c | UNVERIFIED | - |
-| 8001bfb4 | gdev_cc_initialize | 8001b454 | PLAUSIBLE | - | 8001bf14 | UNVERIFIED | - |
-| 8001c024 | gdev_cc_read | 8001b4c4 | PLAUSIBLE | - | 8001bf84 | UNVERIFIED | - |
-| 8001c0d8 | gdev_cc_write | 8001b578 | PLAUSIBLE | - | 8001c038 | UNVERIFIED | - |
-| 8001c14c | gdev_cc_pre_continue | 8001b5ec | PLAUSIBLE | - | 8001c0ac | UNVERIFIED | - |
-| 8001c170 | gdev_cc_post_stop | 8001b610 | PLAUSIBLE | - | 8001c0d0 | UNVERIFIED | - |
-| 8001c194 | gdev_cc_peek | 8001b634 | PLAUSIBLE | - | 8001c0f4 | UNVERIFIED | - |
-| 8001c208 | gdev_cc_initinterrupts | 8001b6a8 | PLAUSIBLE | - | 8001c168 | UNVERIFIED | bc |
-| 8001c270 | TRK_DispatchMessage_switch | 8001b710 | PLAUSIBLE | mtctr/bctr | 8001c1d0 | UNVERIFIED | - |
-| 8001c274 | TRK_DispatchMessage_caseD_1 | 8001b714 | REFERENCED | jt | 8001c1d4 | UNVERIFIED | - |
-| 8001c284 | TRK_DispatchMessage_caseD_2 | 8001b724 | REFERENCED | jt | 8001c1e4 | UNVERIFIED | - |
-| 8001c294 | TRK_DispatchMessage_caseD_3 | 8001b734 | REFERENCED | jt | 8001c1f4 | UNVERIFIED | - |
-| 8001c2a4 | TRK_DispatchMessage_caseD_7 | 8001b744 | REFERENCED | jt | 8001c204 | UNVERIFIED | - |
-| 8001c2b4 | TRK_DispatchMessage_caseD_10 | 8001b754 | REFERENCED | jt | 8001c214 | UNVERIFIED | - |
-| 8001c2c4 | TRK_DispatchMessage_caseD_11 | 8001b764 | REFERENCED | jt | 8001c224 | UNVERIFIED | - |
-| 8001c2d4 | TRK_DispatchMessage_caseD_12 | 8001b774 | REFERENCED | jt | 8001c234 | PLAUSIBLE | bc |
-| 8001c2e4 | TRK_DispatchMessage_caseD_13 | 8001b784 | REFERENCED | jt | 8001c244 | UNVERIFIED | - |
-| 8001c2f4 | TRK_DispatchMessage_caseD_18 | 8001b794 | REFERENCED | jt | 8001c254 | UNVERIFIED | - |
-| 8001c304 | TRK_DispatchMessage_caseD_19 | 8001b7a4 | REFERENCED | jt | 8001c264 | UNVERIFIED | - |
-| 8001c314 | TRK_DispatchMessage_caseD_1a | 8001b7b4 | REFERENCED | jt | 8001c274 | UNVERIFIED | - |
-| 8001c324 | TRK_DispatchMessage_caseD_17 | 8001b7c4 | REFERENCED | jt | 8001c284 | UNVERIFIED | - |
-| 8001c330 | TRK_DispatchMessage_caseD_0 | 8001b7d0 | REFERENCED | b+jt+bc | 8001c290 | UNVERIFIED | - |
-| 8001c34c | InitMetroTRK | 8001b7ec | REFERENCED | hiaddr | 8001c2ac | UNVERIFIED | - |
-| 8001c3e4 | InitMetroTRK_BBA | 8001b884 | PROVEN | bl | 8001c344 | UNVERIFIED | - |
-| 8001c478 | EnableMetroTRKInterrupts | 8001b918 | PROVEN | bl | 8001c3d8 | UNVERIFIED | - |
-| 8001c47c | TRKTargetTranslate | 8001b91c | PROVEN | bl | 8001c3dc | UNVERIFIED | - |
-| 8001c4e4 | __TRK_copy_vectors | 8001b984 | PROVEN | bl | 8001c444 | UNVERIFIED | - |
-| 8001c618 | TRKInitializeTarget | 8001bab8 | PROVEN | bl | 8001c578 | UNVERIFIED | - |
-| 8001c660 | __TRKreset | 8001bb00 | PROVEN | bl+b | 8001c5c0 | UNVERIFIED | - |
-| 8001c670 | TRKLoadContext | 8001bb10 | PROVEN | bl | 8001c5d0 | UNVERIFIED | - |
-| 8001c6f8 | TRKEXICallBack | 8001bb98 | REFERENCED | hiaddr | 8001c658 | UNVERIFIED | - |
-| 8001c730 | InitMetroTRKCommTable | 8001bbd0 | PROVEN | bl | 8001c690 | UNVERIFIED | - |
-| 8001c868 | TRKUARTInterruptHandler | 8001bd08 | PROVEN | bl | 8001c7c8 | UNVERIFIED | - |
-| 8001c8ec | TRKPollUART | 8001bd8c | PROVEN | bl | 8001c84c | UNVERIFIED | - |
-| 8001c900 | TRKReadUARTN | 8001bda0 | PROVEN | bl | 8001c860 | UNVERIFIED | - |
-| 8001c93c | TRK_WriteUARTN | 8001bddc | PROVEN | bl | 8001c89c | UNVERIFIED | - |
-| 8001c978 | ReserveEXI2Port | 8001be18 | PROVEN | bl | 8001c8d8 | UNVERIFIED | - |
-| 8001c98c | UnreserveEXI2Port | 8001be2c | PROVEN | bl | 8001c8ec | UNVERIFIED | - |
-| 8001c9b8 | InitializeProgramEndTrap | 8001be58 | PROVEN | bl | 8001c918 | UNVERIFIED | - |
-| 8001ca0c | TRK_flush_cache | 8001beac | PROVEN | bl | 8001c96c | UNVERIFIED | - |
-| 8001ca44 | TRK_main | 8001bee4 | PLAUSIBLE | b | 8001c9a4 | UNVERIFIED | - |
-| 8001cb6c | TRK_memcpy | 8001c00c | PROVEN | bl | 8001cacc | UNVERIFIED | - |
-| 8001cca8 | TRK_memset | 8001c148 | PROVEN | bl+b | 8001cc08 | UNVERIFIED | - |
-| 8001cdd0 | TRKSaveExtended1Block | 8001c270 | PROVEN | bl | 8001cd30 | UNVERIFIED | - |
-| 8001cf94 | TRKRestoreExtended1Block | 8001c434 | PROVEN | bl | 8001cef4 | UNVERIFIED | - |
-| 8001d0f8 | TRK_MessageSend | 8001c598 | PROVEN | bl | 8001d058 | UNVERIFIED | - |
-| 8001d17c | TRK_GetFreeBuffer | 8001c61c | PROVEN | bl | 8001d0dc | UNVERIFIED | - |
-| 8001d218 | TRKGetBuffer | 8001c6b8 | PROVEN | bl | 8001d178 | REFERENCED | ptr |
-| 8001d23c | TRK_ReleaseBuffer | 8001c6dc | PROVEN | bl+b | 8001d19c | UNVERIFIED | b |
-| 8001d264 | TRKResetBuffer | 8001c704 | PROVEN | bl | 8001d1c4 | UNVERIFIED | - |
-| 8001d28c | TRK_SetBufferPosition | 8001c72c | PROVEN | bl | 8001d1ec | UNVERIFIED | - |
-| 8001d2bc | TRK_AppendBuffer | 8001c75c | PROVEN | bl | 8001d21c | UNVERIFIED | - |
-| 8001d360 | TRK_ReadBuffer | 8001c800 | PROVEN | bl | 8001d2c0 | UNVERIFIED | - |
-| 8001d3f0 | TRKAppendBuffer1_ui32 | 8001c890 | PROVEN | bl | 8001d350 | UNVERIFIED | - |
-| 8001d4c0 | TRKAppendBuffer1_ui64 | 8001c960 | PROVEN | bl | 8001d420 | UNVERIFIED | - |
-| 8001d5b4 | TRKAppendBuffer_ui8 | 8001ca54 | PROVEN | bl | 8001d514 | UNVERIFIED | - |
-| 8001d618 | TRKAppendBuffer_ui32 | 8001cab8 | PROVEN | bl | 8001d578 | UNVERIFIED | - |
-| 8001d708 | TRKReadBuffer1_ui64 | 8001cba8 | PROVEN | bl | 8001d668 | UNVERIFIED | - |
-| 8001d7e8 | TRKReadBuffer_ui8 | 8001cc88 | PROVEN | bl | 8001d748 | UNVERIFIED | - |
-| 8001d880 | TRKReadBuffer_ui32 | 8001cd20 | PROVEN | bl | 8001d7e0 | UNVERIFIED | bc |
-| 8001d968 | GetTRKConnected | 8001ce08 | PROVEN | bl | 8001d8c8 | UNVERIFIED | - |
-| 8001d970 | TRK_DoConnect | 8001ce10 | PROVEN | bl | 8001d8d0 | UNVERIFIED | - |
-| 8001d9e0 | TRKDoDisconnect | 8001ce80 | PROVEN | bl | 8001d940 | UNVERIFIED | - |
-| 8001da68 | TRKDoReset | 8001cf08 | PROVEN | bl | 8001d9c8 | UNVERIFIED | - |
-| 8001dad4 | TRKDoOverride | 8001cf74 | PROVEN | bl | 8001da34 | UNVERIFIED | - |
-| 8001db40 | TRKDoReadMemory | 8001cfe0 | PROVEN | bl | 8001daa0 | UNVERIFIED | - |
-| 8001dccc | TRKDoReadMemory_switch | 8001d16c | PLAUSIBLE | mtctr/bctr | 8001dc2c | UNVERIFIED | - |
-| 8001dcd0 | TRKDoReadMemory_caseD_702 | 8001d170 | REFERENCED | ptr | 8001dc30 | UNVERIFIED | - |
-| 8001dcd8 | TRKDoReadMemory_caseD_700 | 8001d178 | REFERENCED | ptr | 8001dc38 | UNVERIFIED | - |
-| 8001dce0 | TRKDoReadMemory_caseD_704 | 8001d180 | REFERENCED | ptr | 8001dc40 | PLAUSIBLE | bc |
-| 8001dce8 | TRKDoReadMemory_caseD_705 | 8001d188 | REFERENCED | ptr | 8001dc48 | PLAUSIBLE | bc |
-| 8001dcf0 | TRKDoReadMemory_caseD_706 | 8001d190 | REFERENCED | ptr | 8001dc50 | PLAUSIBLE | bc |
-| 8001dcf8 | TRKDoReadMemory_caseD_701 | 8001d198 | REFERENCED | ptr+bc | 8001dc58 | PLAUSIBLE | bc |
-| 8001dd74 | TRKDoWriteMemory | 8001d214 | PROVEN | bl | 8001dcd4 | UNVERIFIED | - |
-| 8001dedc | TRKDoWriteMemory_switch | 8001d37c | PLAUSIBLE | mtctr/bctr | 8001de3c | UNVERIFIED | - |
-| 8001dee0 | TRKDoWriteMemory_caseD_702 | 8001d380 | REFERENCED | ptr | 8001de40 | PLAUSIBLE | b |
-| 8001dee8 | TRKDoWriteMemory_caseD_700 | 8001d388 | REFERENCED | ptr | 8001de48 | UNVERIFIED | - |
-| 8001def0 | TRKDoWriteMemory_caseD_704 | 8001d390 | REFERENCED | ptr | 8001de50 | UNVERIFIED | - |
-| 8001def8 | TRKDoWriteMemory_caseD_705 | 8001d398 | REFERENCED | ptr | 8001de58 | UNVERIFIED | - |
-| 8001df00 | TRKDoWriteMemory_caseD_706 | 8001d3a0 | REFERENCED | ptr | 8001de60 | UNVERIFIED | - |
-| 8001df08 | TRKDoWriteMemory_caseD_701 | 8001d3a8 | REFERENCED | ptr+bc | 8001de68 | UNVERIFIED | - |
-| 8001df84 | TRKDoReadRegisters | 8001d424 | PROVEN | bl | 8001dee4 | UNVERIFIED | bc |
-| 8001e180 | TRKDoWriteRegisters | 8001d620 | PROVEN | bl | 8001e0e0 | UNVERIFIED | - |
-| 8001e420 | TRKDoContinue | 8001d8c0 | PROVEN | bl | 8001e380 | UNVERIFIED | - |
-| 8001e4e4 | TRKDoStep | 8001d984 | PROVEN | bl | 8001e444 | UNVERIFIED | - |
-| 8001e768 | TRKDoStop | 8001dc08 | PROVEN | bl | 8001e6c8 | UNVERIFIED | bc |
-| 8001e820 | TRKDoSetOption | 8001dcc0 | PROVEN | bl | 8001e780 | UNVERIFIED | - |
-| 8001e8ec | __read_console | 8001dd8c | REFERENCED | ptr | 8001e84c | UNVERIFIED | - |
-| 8001e954 | __TRK_write_console | 8001ddf4 | PROVEN | bl | 8001e8b4 | UNVERIFIED | - |
-| 8001e9bc | __read_file | 8001de5c | PROVEN | bl | 8001e91c | UNVERIFIED | - |
-| 8001e9c4 | __access_file | 8001de64 | PROVEN | bl | 8001e924 | UNVERIFIED | - |
-| 8001ea78 | TRKDoNotifyStopped | 8001df18 | PROVEN | bl | 8001e9d8 | UNVERIFIED | - |
-| 8001eb08 | TRKInitializeEventQueue | 8001dfa8 | PROVEN | bl | 8001ea68 | PROVEN | bl |
-| 8001eb2c | TRKGetNextEvent | 8001dfcc | PROVEN | bl | 8001ea8c | UNVERIFIED | - |
-| 8001ebb8 | TRKPostEvent | 8001e058 | PROVEN | bl | 8001eb18 | UNVERIFIED | - |
-| 8001ec84 | TRKConstructEvent | 8001e124 | PROVEN | bl | 8001ebe4 | UNVERIFIED | - |
-| 8001ec9c | TRKDestructEvent | 8001e13c | PROVEN | bl | 8001ebfc | UNVERIFIED | - |
-| 8001ed74 | TRK_board_display | 8001e214 | PROVEN | bl | 8001c900 | UNVERIFIED | - |
-| 8001edf4 | TRKTestForPacket | 8001e294 | PROVEN | bl | 8001ed54 | UNVERIFIED | - |
-| 8001eec0 | TRKGetInput | 8001e360 | PROVEN | bl | 8001ee20 | UNVERIFIED | b |
-| 8001eeec | TRKProcessInput | 8001e38c | PROVEN | bl | 8001ee4c | UNVERIFIED | - |
-| 8001ef2c | TRKInitializeSerialHandler | 8001e3cc | PROVEN | bl | 8001ee8c | UNVERIFIED | - |
-| 8001ef34 | TRKTerminateSerialHandler | 8001e3d4 | PROVEN | bl | 8001ee94 | UNVERIFIED | - |
-| 8001ef3c | TRK_strlen | 8001e3dc | PROVEN | bl | 8001ee9c | UNVERIFIED | - |
-| 8001ef58 | TRK_SuppAccessFile | 8001e3f8 | PROVEN | bl | 8001eeb8 | UNVERIFIED | - |
-| 8001f14c | TRK_RequestSend | 8001e5ec | PROVEN | bl | 8001f0ac | UNVERIFIED | - |
-| 8001f274 | HandleOpenFileSupportRequest | 8001e714 | PROVEN | bl | 8001f1d4 | UNVERIFIED | - |
-| 8001f38c | HandleCloseFileSupportRequest | 8001e82c | PROVEN | bl | 8001f2ec | UNVERIFIED | - |
-| 8001f470 | HandlePositionFileSupportRequest | 8001e910 | PROVEN | bl | 8001f3d0 | UNVERIFIED | - |
-| 8001f57c | TRKTargetContinue | 8001ea1c | PROVEN | bl | 8001f4dc | UNVERIFIED | - |
-| 8001f5b0 | SetUseSerialIO | 8001ea50 | PROVEN | bl | 8001f510 | UNVERIFIED | - |
-| 8001f5b8 | GetUseSerialIO | 8001ea58 | PROVEN | bl | 8001f518 | UNVERIFIED | - |
-| 8001f5c0 | __TRK_get_MSR | 8001ea60 | PROVEN | bl | 8001f520 | UNVERIFIED | - |
-| 8001f5c8 | __TRK_set_MSR | 8001ea68 | PROVEN | bl | 8001f528 | UNVERIFIED | - |
-| 8001f5d0 | TRKValidMemory32 | 8001ea70 | PROVEN | bl | 8001f530 | UNVERIFIED | - |
-| 8001f6c8 | TRK_ppc_memcpy | 8001eb68 | PROVEN | bl | 8001f628 | UNVERIFIED | - |
-| 8001f794 | TRKTargetAccessMemory | 8001ec34 | PROVEN | bl | 8001f6f4 | UNVERIFIED | - |
-| 8001f8e4 | TRKTargetAccessDefault | 8001ed84 | PROVEN | bl | 8001f844 | UNVERIFIED | - |
-| 8001f9dc | TRKTargetAccessFP | 8001ee7c | PROVEN | bl | 8001f93c | UNVERIFIED | - |
-| 8001fb18 | TRKTargetAccessExtended1 | 8001efb8 | PROVEN | bl | 8001fa78 | UNVERIFIED | - |
-| 8001fc7c | TRKTargetAccessExtended2 | 8001f11c | PROVEN | bl | 8001fbdc | UNVERIFIED | - |
-| 800200d4 | TRKSwapAndGo | 8001f574 | PROVEN | bl | 80020034 | UNVERIFIED | - |
-| 800201ec | TRKTargetInterrupt | 8001f68c | PROVEN | bl | 8002014c | UNVERIFIED | bc |
-| 80020248 | TRKTargetAddStopInfo | 8001f6e8 | PROVEN | bl | 800201a8 | PLAUSIBLE | - |
-| 8002037c | TRKTargetAddExceptionInfo | 8001f81c | PROVEN | bl | 800202dc | UNVERIFIED | - |
-| 80020418 | TRKTargetCheckStep | 8001f8b8 | PROVEN | bl | 80020378 | UNVERIFIED | - |
-| 80020534 | TRKTargetSingleStep | 8001f9d4 | PROVEN | bl | 80020494 | PROVEN | bl+extab+b |
-| 800205b8 | TRKTargetStepOutOfRange | 8001fa58 | PROVEN | bl | 80020518 | UNVERIFIED | - |
-| 80020628 | TRKTargetGetPC | 8001fac8 | PROVEN | bl | 80020588 | UNVERIFIED | - |
-| 80020638 | TRKTargetSupportRequest | 8001fad8 | PROVEN | bl | 80020598 | UNVERIFIED | - |
-| 8002082c | TRKTargetStopped | 8001fccc | PROVEN | bl | 8002078c | UNVERIFIED | - |
-| 8002083c | TRKTargetSetStopped | 8001fcdc | PROVEN | bl | 8002079c | UNVERIFIED | bc |
-| 8002084c | TRKTargetStop | 8001fcec | PROVEN | bl | 800207ac | UNVERIFIED | - |
-| 80020864 | TRKPPCAccessSPR | 8001fd04 | PROVEN | bl | 800207c4 | UNVERIFIED | b |
-| 80020940 | TRKPPCAccessPairedSingleRegister | 8001fde0 | PROVEN | bl | 800208a0 | UNVERIFIED | - |
-| 800209e8 | ReadFPSCR | 8001fe88 | PROVEN | bl | 80020948 | UNVERIFIED | - |
-| 80020a0c | WriteFPSCR | 8001feac | PROVEN | bl | 8002096c | UNVERIFIED | bc |
-| 80020a30 | TRKPPCAccessFPRegister | 8001fed0 | PROVEN | bl | 80020990 | UNVERIFIED | - |
-| 80020bf8 | TRKPPCAccessSpecialReg | 80020098 | PROVEN | bl | 80020b58 | UNVERIFIED | - |
-| 80020c60 | TRKTargetSetInputPendingPtr | 80020100 | PROVEN | bl | 80020bc0 | UNVERIFIED | - |
-| 80020c70 | GetThreadInfo | 80020110 | PROVEN | bl | 80020bd0 | UNVERIFIED | bc |
-| 80020d00 | TRKAccessFile | 800201a0 | PROVEN | bl | 80020c60 | UNVERIFIED | - |
-| 80020dd8 | __register_fragment | 80020278 | PROVEN | bl | 80020d38 | UNVERIFIED | - |
-| 80020e0c | __unregister_fragment | 800202ac | PROVEN | bl | 80020d6c | UNVERIFIED | - |
-| 80020e34 | __construct_new_array | 800202d4 | PROVEN | bl+extab | 80020d94 | UNVERIFIED | - |
-| 80020ff4 | __construct_array | 80020494 | PROVEN | bl+extab+b | 80020f54 | UNVERIFIED | - |
-| 80021164 | __destroy_new_array | 80020604 | PROVEN | bl+extab | 800210c4 | UNVERIFIED | - |
-| 800211e4 | __init_cpp_exceptions | 80020684 | PROVEN | ctor+ptr | 80021144 | UNVERIFIED | - |
-| 80021220 | __fini_cpp_exceptions | 800206c0 | PROVEN | ctor+ptr | 80021180 | UNVERIFIED | - |
-| 80021254 | strlen | 800206f4 | PROVEN | bl+b | 800211b4 | UNVERIFIED | - |
-| 80021270 | __va_arg | 80020710 | PROVEN | bl | 800211d0 | UNVERIFIED | - |
-| 80021398 | __register_atexit | 80020838 | PLAUSIBLE | b | 800212f8 | UNVERIFIED | - |
-| 800213e4 | __ptmf_test | 80020884 | PROVEN | bl | 80021344 | UNVERIFIED | - |
-| 80021414 | __ptmf_cmpr | 800208b4 | PROVEN | bl | 80021374 | PROVEN | bl |
-| 80021450 | __ptmf_scall | 800208f0 | PROVEN | bl | 800213b0 | UNVERIFIED | - |
-| 80021478 | __cvt_fp2unsigned | 80020918 | PROVEN | bl | 800213d8 | UNVERIFIED | - |
-| 800214d4 | __save_fpr | 80020974 | PLAUSIBLE | - | 80021434 | UNVERIFIED | - |
-| 800214f8 | _save_fpr_23 | 80020998 | PROVEN | bl | 80021458 | UNVERIFIED | - |
-| 8002150c | _save_fpr_28 | 800209ac | PROVEN | bl | 8002146c | UNVERIFIED | - |
-| 80021520 | __restore_fpr | 800209c0 | PLAUSIBLE | - | 80021480 | UNVERIFIED | - |
-| 80021544 | _rest_fpr_23 | 800209e4 | PROVEN | bl | 800214a4 | UNVERIFIED | - |
-| 80021558 | _rest_fpr_28 | 800209f8 | PROVEN | bl | 800214b8 | UNVERIFIED | - |
-| 80021570 | _save_gpr_15 | 80020a10 | PROVEN | bl | 800214d0 | UNVERIFIED | - |
-| 80021574 | _save_gpr_16 | 80020a14 | PROVEN | bl | 800214d4 | UNVERIFIED | - |
-| 80021578 | _save_gpr_17 | 80020a18 | PROVEN | bl | 800214d8 | UNVERIFIED | - |
-| 8002157c | _save_gpr_18 | 80020a1c | PROVEN | bl | 800214dc | UNVERIFIED | - |
-| 80021580 | _save_gpr_19 | 80020a20 | PROVEN | bl | 800214e0 | UNVERIFIED | - |
-| 80021584 | _save_gpr_20 | 80020a24 | PROVEN | bl | 800214e4 | UNVERIFIED | - |
-| 80021588 | _save_gpr_21 | 80020a28 | PROVEN | bl | 800214e8 | UNVERIFIED | bc |
-| 8002158c | _save_gpr_22 | 80020a2c | PROVEN | bl | 800214ec | UNVERIFIED | - |
-| 80021590 | _save_gpr_23 | 80020a30 | PROVEN | bl | 800214f0 | UNVERIFIED | bc |
-| 80021594 | _save_gpr_24 | 80020a34 | PROVEN | bl | 800214f4 | UNVERIFIED | - |
-| 80021598 | _save_gpr_25 | 80020a38 | PROVEN | bl | 800214f8 | UNVERIFIED | - |
-| 8002159c | _save_gpr_26 | 80020a3c | PROVEN | bl | 800214fc | UNVERIFIED | - |
-| 800215a0 | _save_gpr_27 | 80020a40 | PROVEN | bl | 80021500 | UNVERIFIED | - |
-| 800215bc | _rest_gpr_15 | 80020a5c | PROVEN | bl | 8002151c | UNVERIFIED | - |
-| 800215c0 | _rest_gpr_16 | 80020a60 | PROVEN | bl | 80021520 | UNVERIFIED | - |
-| 800215c4 | _rest_gpr_17 | 80020a64 | PROVEN | bl | 80021524 | UNVERIFIED | - |
-| 800215c8 | _rest_gpr_18 | 80020a68 | PROVEN | bl | 80021528 | UNVERIFIED | - |
-| 800215cc | _rest_gpr_19 | 80020a6c | PROVEN | bl | 8002152c | UNVERIFIED | - |
-| 800215d0 | _rest_gpr_20 | 80020a70 | PROVEN | bl | 80021530 | UNVERIFIED | - |
-| 800215d4 | _rest_gpr_21 | 80020a74 | PROVEN | bl | 80021534 | UNVERIFIED | - |
-| 800215d8 | _rest_gpr_22 | 80020a78 | PROVEN | bl | 80021538 | UNVERIFIED | - |
-| 800215dc | _rest_gpr_23 | 80020a7c | PROVEN | bl | 8002153c | UNVERIFIED | - |
-| 800215e0 | _rest_gpr_24 | 80020a80 | PROVEN | bl | 80021540 | UNVERIFIED | - |
-| 800215e4 | _rest_gpr_25 | 80020a84 | PROVEN | bl | 80021544 | UNVERIFIED | - |
-| 800215e8 | _rest_gpr_26 | 80020a88 | PROVEN | bl | 80021548 | UNVERIFIED | - |
-| 800215ec | _rest_gpr_27 | 80020a8c | PROVEN | bl | 8002154c | UNVERIFIED | - |
-| 80021604 | __div2u | 80020aa4 | PROVEN | bl | 80021564 | UNVERIFIED | - |
-| 800216f0 | __div2i | 80020b90 | PROVEN | bl | 80021650 | UNVERIFIED | - |
-| 80021828 | __mod2u | 80020cc8 | PROVEN | bl | 80021788 | UNVERIFIED | - |
-| 8002190c | __mod2i | 80020dac | PROVEN | bl | 8002186c | UNVERIFIED | - |
-| 80021a18 | __shl2i | 80020eb8 | PROVEN | bl | 80021978 | UNVERIFIED | - |
-| 80021a3c | __shr2u | 80020edc | PROVEN | bl | 8002199c | UNVERIFIED | bc |
-| 80021b00 | __cvt_dbl_ull | 80020fa0 | PROVEN | bl | 80021a60 | UNVERIFIED | - |
-| 800f489c | gsUdpRemotePeerCompare | 800f47fc | REFERENCED | hiaddr | 800f481c | REFERENCED | hiaddr |
-| 8010ac60 | gti2CloseAllConnectionsHardMap | 8010abc0 | PROVEN | bl | 8010abc8 | REFERENCED | hiaddr |
-| 8011d098 | RefStringFree | 8011cff8 | REFERENCED | hiaddr | 8011d004 | REFERENCED | hiaddr |
-| 801239a0 | sakeiGetMyRecordsValidateInput | 80123900 | PROVEN | bl | 8012390c | PLAUSIBLE | jt |
-| 80123ad4 | sakeiGetMyRecordsFreeData | 80123a34 | PLAUSIBLE | jt | 80123a4c | PLAUSIBLE | jt |
-| 801269a8 | __AXDSPRequestCallback | 80126908 | PLAUSIBLE | - | 80126918 | PLAUSIBLE | - |
-| 801284b4 | AXFXReverbHiCallback | 80128414 | PROVEN | bl+b | 80128014 | REFERENCED | hiaddr |
-| 8012e52c | __AXFXFreeFunction | 8012e48c | PLAUSIBLE | jt | 8012e498 | PLAUSIBLE | jt |
-| 801347ec | bta_dm_reset_complete | 8013474c | PROVEN | bl | 80134768 | REFERENCED | hiaddr |
-| 801441d4 | gap_btm_cback1 | 80144134 | REFERENCED | hiaddr | 80144140 | REFERENCED | hiaddr |
-| 8015bcec | ARCConvertPathToEntrynum | 8015bc4c | PROVEN | bl | 801247f4 | PROVEN | bl+b |
-| 801afffc | OnShutdown | 801aff5c | REFERENCED | ptr | 801a7560 | REFERENCED | ptr |
-| 801afffc | OnShutdown | 801aff5c | REFERENCED | ptr | 801b86b0 | REFERENCED | ptr |
-| 801afffc | OnShutdown | 801aff5c | REFERENCED | ptr | 801bd458 | REFERENCED | ptr |
-| 801b11c4 | SCReplaceByteArrayItem | 801b1124 | PROVEN | bl | 801b1000 | PLAUSIBLE | b |
-| 801d09cc | DEBUGPrint | 801d092c | PROVEN | bl+b | 801cb8e8 | PROVEN | bl |
-| 801da02c | NETMemCpy | 801d9f8c | PROVEN | bl | 801d1758 | PROVEN | bl+b |
-| 801da030 | NETMemSet | 801d9f90 | PROVEN | bl | 801d1b00 | PROVEN | bl+b |
-| 802087dc | VFSeekFile | 8020873c | PROVEN | bl | 80207e10 | PROVEN | bl |
-| 8020f6dc | free | 8020f63c | REFERENCED | ptr | 8000c778 | UNVERIFIED | - |
-| 802402e0 | shadTex_802402E0 | 802441fc | PROVEN | bl | 8023ff5c | PROVEN | bl |
-| 80243be8 | __sinit__eggVector_cpp | 80242d2c | PROVEN | ctor+ptr | 80243864 | UNVERIFIED | - |
-| 802440b4 | set__Q23EGG8ViewportFiiii | 802431f8 | PROVEN | bl | 80243d30 | UNVERIFIED | - |
+None.
 
-### REL disagreements where the binary supports the delta-model address (134 of 3752; the rest have an UNVERIFIED/PLAUSIBLE delta-model address)
+### REL disagreements where the binary supports the delta-model address (0 of 0; the rest have an UNVERIFIED/PLAUSIBLE delta-model address)
 
-| PAL | name | ours | our verdict | our evidence | tertiary | tertiary verdict | tertiary evidence |
-|---|---|---|---|---|---|---|---|
-| 8052d298 | ElineController::__ct | 8054f800 | PLAUSIBLE | - | 80528e24 | REFERENCED | hiaddr |
-| 8053d97c | Raceinfo::RaceinfoGamemodeDataMissionTournament | 8054fed4 | PROVEN | bl | 80538e34 | REFERENCED | ptr |
-| 8053f4a0 | GMDataOnlineVS::HandlePositionTracking | 80539f64 | REFERENCED | ptr | 8053a958 | REFERENCED | ptr |
-| 8056ab6c | Kart::ScaleAnmController::LoadAnimations | 805ae0e8 | PROVEN | bl | 805667ec | PROVEN | bl |
-| 8056b63c | Kart::StarAnmMgr::LoadAnm | 805667ec | PROVEN | bl | 805672bc | REFERENCED | ptr |
-| 805ab57c | AutoCameraMoverRace::vf_0x10 | 805a060c | PROVEN | bl+ptr+b | 805a0544 | REFERENCED | ptr |
-| 805b9010 | MatModelDirector::__ct | 805b4c90 | PROVEN | bl | 805ae0e8 | PROVEN | bl |
-| 805bb2b8 | Pages::AwardFade::GetPlayersVolumeMgr | 80621034 | PLAUSIBLE | - | 805b56f8 | REFERENCED | ptr |
-| 805bb2c4 | Pages::AwardFade::__ct | 80621040 | PROVEN | bl | 805b5704 | PROVEN | bl+hiaddr |
-| 805bcfe0 | Pages::AwardResults::PrepareCup_caseD_4 | 80622d5c | REFERENCED | ptr | 805b7420 | REFERENCED | ptr |
-| 805bd340 | TriggerPtmf | 806230b0 | REFERENCED | ptr | 805b7780 | REFERENCED | ptr |
-| 805be7f4 | CtrlMenuBackButton::__dt | 805b76d0 | REFERENCED | ptr | 805b8c34 | REFERENCED | ptr |
-| 805bed74 | Pages::AddMKChannel::OnCancelButtonClick | 806237b0 | REFERENCED | ptr | 805b91b4 | REFERENCED | ptr |
-| 805bee00 | Pages::AddMKChannel::OnBackButtonClick | 8062383c | REFERENCED | ptr | 805b9240 | REFERENCED | ptr |
-| 805bf3dc | NotifyButton::__ct | 805b69e0 | PLAUSIBLE | - | 805b981c | PROVEN | bl |
-| 805bfe8c | NotifyButton::UpdateText_caseD_6 | 805b749c | REFERENCED | ptr | 805ba2cc | PROVEN | bl |
-| 805c0884 | Pages::Channel::OnDispose | 805b7eec | REFERENCED | ptr | 805bacc4 | PROVEN | bl |
-| 805c1b34 | Pages::ChannelRankingChoice::GetRuntimeTypeInfo | 805b91a0 | REFERENCED | ptr | 805b919c | REFERENCED | ptr |
-| 805c35f8 | Pages::BatteryMgr::__ct | 80623e08 | PROVEN | bl | 805bac64 | PROVEN | bl |
-| 805c3700 | Pages::BatteryMgr::OnActivate | 80623f10 | REFERENCED | ptr | 805bad6c | PROVEN | bl |
-| 805cad78 | NumericEditBox::GetRuntimeTypeInfo | 805c0dc8 | REFERENCED | ptr | 805e2808 | REFERENCED | ptr |
-| 805cad84 | NumericEditBox::EditLetter::GetRuntimeTypeInfo | 805c0dd4 | REFERENCED | ptr | 805e2814 | REFERENCED | ptr |
-| 805cad90 | TriggerPtmf | 805c0de0 | REFERENCED | ptr | 806091a0 | REFERENCED | ptr |
-| 805cadc0 | NumericEditBox_cpp_sinit_ | 805c0e10 | PROVEN | ctor+ptr | 806091d0 | PROVEN | ctor+ptr |
-| 805cfaf8 | Text::GlyphDrawer::SetupGXColors_caseD_21 | 805c2fd8 | REFERENCED | ptr | 8062a140 | REFERENCED | ptr |
-| 805d1e84 | FriendList::__ct | 805c4d68 | PROVEN | bl | 806284ec | PROVEN | bl |
-| 805d7190 | Pages::FriendRemove::OnCancelAndBackButtonClick | 805ca074 | REFERENCED | ptr | 8062d7f8 | REFERENCED | ptr |
-| 805d7f78 | Pages::FriendRoom::__ct | 806284ec | PROVEN | bl | 805cae5c | PROVEN | bl |
-| 805d8444 | Pages::FriendRoom::OnActivate | 806289b8 | REFERENCED | ptr | 805cb328 | REFERENCED | ptr |
-| 805d9614 | FriendMatchingPlayer::InitSelf | 80629b88 | REFERENCED | ptr | 805cc4f8 | PROVEN | bl |
-| 805deba8 | Pages::GhostRaceExplanation::OnInit | 8062f0b8 | REFERENCED | ptr | 805d1a8c | REFERENCED | ptr |
-| 805e11b0 | Pages::GhostManager::RequestAllGhosts | 805cb3d4 | PLAUSIBLE | - | 805d4094 | PROVEN | bl |
-| 805e1214 | Pages::GhostManager::UpdateState | 805cb438 | PROVEN | bl+b | 805d40f8 | REFERENCED | ptr |
-| 805ea66c | LayoutResourceAccessor::Init | 805d3f80 | PLAUSIBLE | - | 805d4890 | REFERENCED | ptr |
-| 805eeb68 | ManipulatorManager::__ct | 805d4094 | PROVEN | bl | 80635e40 | REFERENCED | ptr |
-| 805eece8 | ManipulatorManager::OnLoad | 805d4214 | REFERENCED | ptr | 80635fc0 | REFERENCED | ptr |
-| 805f8b34 | BMGHolder::__ct | 805d8250 | PROVEN | bl | 8063bc50 | PROVEN | bl |
-| 805f8eb8 | Pages::Click:::OnLoad | 805d85d4 | REFERENCED | ptr | 8063bfd4 | REFERENCED | ptr |
-| 805fb5bc | Pages::BackModel::__ct | 8063bc50 | PROVEN | bl | 805dacd8 | REFERENCED | hiaddr |
-| 805fd518 | Pages::Options::__ct | 8063beb4 | PROVEN | bl | 805dc9d0 | REFERENCED | ptr |
-| 805fd6e4 | Pages::Options::OnInit | 8063c080 | REFERENCED | ptr | 805dcb9c | REFERENCED | ptr |
-| 805fe5f8 | Pages::OptionChoice::__ct | 8063cf94 | PROVEN | bl | 805ddab0 | PROVEN | bl |
-| 805ff6c4 | Pages::MasterOptions::OnResume | 8063e060 | REFERENCED | ptr | 805deb7c | PROVEN | bl |
-| 80608d18 | Pages::GlobeSearch::BeforeEntranceAnimations | 805e4444 | REFERENCED | ptr | 805e4438 | REFERENCED | ptr |
-| 8060a72c | RankingDetailItem_getTypeName | 8063fc4c | REFERENCED | ptr | 805e5e58 | REFERENCED | ptr |
-| 80611a3c | RankingGraphControl::UpdateImpl | 805e6028 | PLAUSIBLE | b | 805ed168 | REFERENCED | ptr |
-| 806175a4 | RankingItemSelectable::Load_caseD_2 | 80647aec | REFERENCED | ptr | 805f2cd0 | REFERENCED | jt |
-| 806175d4 | RankingItemSelectable::Load_caseD_5 | 80647b1c | REFERENCED | ptr | 805f2d00 | REFERENCED | jt |
-| 80618934 | RankedItemSelectable::OnSelect_caseD_1 | 80648e7c | REFERENCED | ptr | 805f4060 | PROVEN | bl |
-| 8061ae6c | SectionPad::__ct | 805eae30 | PROVEN | bl | 8064b3b4 | PROVEN | bl |
-| 8061c384 | Pages::RecognizePad::BeforeEntranceAnimations | 805ec348 | REFERENCED | ptr | 8064c8cc | REFERENCED | ptr |
-| 80634fbc | SectionMgr::LoadSection | 80604124 | PROVEN | bl | 80604108 | PROVEN | bl |
-| 80637494 | SheetSelectControlScaleFade::GetRuntimeTypeInfo | 806066a4 | REFERENCED | ptr | 806065fc | REFERENCED | ptr |
-| 80637560 | Pages::ESRBNotice::__dt | 8064c250 | REFERENCED | ptr | 806066c8 | REFERENCED | ptr |
-| 806478c4 | Pages::WFCConnect::GetNextPage | 806150b4 | REFERENCED | ptr | 806164a4 | REFERENCED | ptr |
-| 8064a3f4 | Pages::VR::__ct | 8064db7c | PROVEN | bl | 80617be4 | PROVEN | bl |
-| 80651bec | CountDownTimerPage_cpp_sinit_ | 8064e66c | PROVEN | ctor+ptr | 8061e8d8 | PROVEN | ctor+ptr |
-| 80651f78 | Pages::Wipe::OnInit | 8064e9f8 | REFERENCED | ptr | 8061ec64 | REFERENCED | ptr |
-| 8065c0ec | RKNet::ITEMHandler::CreateInstance | 8065cd74 | PROVEN | bl | 80657ad0 | PROVEN | bl |
-| 80668814 | ServerMgr::__dt | 806610b0 | REFERENCED | ptr | 80676464 | PROVEN | bl |
-| 8067b318 | Effects::MGWhiteFog::__ct | 80676e90 | PROVEN | bl | 80688f68 | PROVEN | bl |
-| 8067b3c8 | Effects::MGWhiteFog::Update | 80676f40 | PROVEN | bl | 80689018 | PROVEN | bl |
-| 806c3fcc | obj_FlamePole_v_update | 806e5cb8 | REFERENCED | ptr | 806e61b4 | REFERENCED | ptr |
-| 806c6b44 | Objects::HanachanPart::LoadModels | 806bbf50 | REFERENCED | ptr | 806e880c | PROVEN | bl |
-| 806cca04 | Objects::HanachanPart::vf_0x104 | 806c1e10 | REFERENCED | ptr | 806ee6cc | REFERENCED | ptr |
-| 806d5c60 | Objects::HighwayManager::LoadCollision | 806ec7d4 | REFERENCED | ptr | 806c7090 | REFERENCED | ptr |
-| 806d5c64 | Objects::HighwayManager::LoadRoute | 806ec7d8 | REFERENCED | ptr | 806c7094 | REFERENCED | ptr |
-| 806d5c68 | Objects::HighwayManager::LoadModels | 806ec7dc | REFERENCED | ptr | 806c7098 | REFERENCED | ptr |
-| 806d5c6c | Objects::HighwayManager::GetPropertiesBitfield | 806ec7e0 | REFERENCED | ptr | 806c709c | REFERENCED | ptr |
-| 806d7af8 | Objects::HighwayCar::LoadCollision | 806c8cb8 | REFERENCED | ptr | 806c8f28 | REFERENCED | ptr |
-| 806da914 | Objects::KoopaFigure64::__ct | 806eca58 | PROVEN | bl | 806cbad4 | PROVEN | bl |
-| 806dd5e0 | Objects::Balloon::Update | 806cdf30 | REFERENCED | ptr | 806ce7a0 | REFERENCED | ptr |
-| 806e4b98 | Objects::Wanwan::vf_0x10 | 806d3b54 | REFERENCED | ptr | 806d3ee8 | REFERENCED | ptr |
-| 806e95b0 | Objects::HwanwanBall::__ct | 806eec5c | PROVEN | bl | 806d856c | PROVEN | bl |
-| 806ecc40 | Route::__dt | 806d89e4 | PROVEN | bl+ptr | 806dbbfc | REFERENCED | ptr |
-| 806f8934 | Audio::SinglePlayer::__dt | 806f3978 | PROVEN | bl | 806f3924 | REFERENCED | hiaddr |
-| 806ff6c0 | Audio::FileManager::InvalidateWaveData(thunk) | 80715160 | REFERENCED | ptr | 806fa7b0 | REFERENCED | ptr+b |
-| 80717e34 | Audio::EchoMgr::Disposer__dt | 80716f88 | PROVEN | bl+ptr | 8071041c | PROVEN | bl+ptr |
-| 80717f60 | Audio::EchoMgr::CreateInstance | 807170b4 | PROVEN | bl | 80710548 | PROVEN | bl |
-| 807182e8 | Audio::SoundTriggerMgr::Disposer__dt | 8071041c | PROVEN | bl+ptr | 807108d0 | REFERENCED | ptr |
-| 80719598 | Audio::SoundTriggerMgr::ApplyTrigger_caseD_4 | 807116cc | REFERENCED | ptr | 80711b80 | REFERENCED | ptr |
-| 8071a830 | Audio::SoundTriggerMgr::ApplyTrigger_case2D_0 | 80712964 | REFERENCED | ptr | 80712e18 | REFERENCED | ptr |
-| 80730198 | AI::CPUDrivingRace::__ct | 80726de8 | PROVEN | bl | 80741544 | PROVEN | bl |
-| 80735948 | AI::Character::__ct | 80742364 | PROVEN | bl | 8072b790 | REFERENCED | ptr |
-| 80738e50 | AI::Manager::CreateInstance | 8072b828 | PROVEN | bl | 8072ec98 | PROVEN | bl |
-| 8073c54c | AI::ENPTController::__ct | 807457d4 | PROVEN | bl | 8072ef24 | PROVEN | bl |
-| 8074c4a8 | AwardCupModel::Disposer__dt | 8076ceac | REFERENCED | ptr | 8073c5dc | PROVEN | bl |
-| 8074c94c | AwardCupModel::Load_caseD_1 | 8076d350 | REFERENCED | jt | 8073ca80 | REFERENCED | ptr |
-| 8076cf48 | Objects::W_Itembox::LoadAnimations | 8075a860 | REFERENCED | ptr | 8077b810 | REFERENCED | ptr |
-| 8076e9a8 | Objects::W_Itemboxline::UpdateModel | 8075c2c0 | REFERENCED | ptr | 8077d270 | REFERENCED | ptr |
-| 8076ebe0 | Objects::ItemDropper::__ct | 8077b0b8 | PROVEN | bl | 8075c4f8 | PROVEN | bl |
-| 80773714 | Objects::MiiPoster::OnStart | 8077c7c8 | REFERENCED | ptr | 80761120 | REFERENCED | ptr+b |
-| 807787f0 | Objects::Dokan_sfc::__ct | 8077cd10 | PROVEN | bl | 8076455c | PROVEN | bl |
-| 80778830 | Objects::Dokan_sfc::OnStart | 8077cd50 | REFERENCED | ptr | 8076459c | REFERENCED | ptr |
-| 8077a35c | nlListContainer<P8SaveData>__ct | 8076588c | PLAUSIBLE | - | 807660c8 | REFERENCED | ptr |
-| 8077cec8 | Objects::Sin_ItemBox::__ct | 8077d54c | PROVEN | bl | 807683f8 | PROVEN | bl |
-| 8077dd50 | Objects::Fall::OnStart | 8077e3d4 | REFERENCED | ptr | 80769280 | REFERENCED | ptr |
-| 80787d84 | AwardsMgr::Disposer__dt | 807d031c | PROVEN | bl+ptr | 80783954 | REFERENCED | ptr |
-| 807a81b4 | Item::Player::UseBlooper | 807d4f74 | REFERENCED | ptr | 8079f1a8 | REFERENCED | ptr |
-| 807a9d3c | Item::Player::UseMushroom | 807d6afc | REFERENCED | ptr | 807a0d30 | REFERENCED | ptr |
-| 807af140 | Item::ObjKumo::CreateArray | 807d6b94 | PLAUSIBLE | jt | 807a4498 | PROVEN | bl |
-| 807b7c04 | Item::ObjThunder::InitSelf | 807a91a4 | REFERENCED | ptr | 807acf5c | PROVEN | bl |
-| 807d976c | DriverController::GetBoneMatId | 807da94c | PROVEN | bl | 807cad0c | PROVEN | bl |
-| 807edd98 | CtrlRaceBattleSetPoint::GetClassName | 80841b6c | REFERENCED | ptr | 807e44ec | REFERENCED | ptr |
-| 807edda4 | CtrlRaceBattleSetPoint::Load | 80841b78 | PROVEN | bl | 807e44f8 | REFERENCED | ptr |
-| 807f76ec | CtrlRaceScore::GetClassName | 808428e8 | REFERENCED | ptr | 807ed0c4 | REFERENCED | ptr |
-| 807f76f8 | CtrlRaceScore::InitSelf | 808428f4 | REFERENCED | ptr | 807ed0d0 | PROVEN | bl |
-| 807f8968 | CtrlRaceTime::GetRuntimeTypeInfo | 80842da0 | REFERENCED | ptr | 807ede68 | REFERENCED | ptr |
-| 807f8974 | CtrlRaceTime_cpp_sinit_ | 80842dac | PROVEN | ctor+ptr | 807ede74 | PROVEN | ctor+ptr |
-| 807f8988 | CtrlRaceWifiStartMessage::GetClassName | 80842dc0 | REFERENCED | ptr | 807ede88 | PROVEN | bl |
-| 807fb58c | Objects::Aurora::IsCollidingNoTerrainInfoNoTriangleCheck | 807ee9cc | REFERENCED | ptr | 808458ac | REFERENCED | ptr |
-| 80805a0c | Objects::bblock::__dt | 80845df0 | REFERENCED | ptr | 807f7e94 | REFERENCED | ptr |
-| 80805a4c | Objects::DKturibashiGCc::__ct | 80845e30 | PROVEN | bl | 807f7ed4 | PROVEN | bl |
-| 80809448 | Objects::TownBridgeDS::__ct | 80847a00 | PROVEN | bl | 807f9d00 | PROVEN | bl |
-| 8081e284 | MenuModelBRRESHandle::__ct | 8084b064 | PROVEN | bl | 8080b4d8 | PROVEN | bl |
-| 80821070 | Object::LoadClipInfo | 8080d55c | REFERENCED | ptr | 8080e2c4 | REFERENCED | ptr+b |
-| 8082e540 | Objects::WLscreenGC::__ct | 8084bdcc | PROVEN | bl | 8081aa2c | PROVEN | bl |
-| 8082f408 | BackModelMgr::__ct | 8084c0e0 | PROVEN | bl | 8081b5e0 | PROVEN | bl |
-| 808367c4 | ObjectCollisionPolyhedra::SetPositionAndScale(translation) | 8081e8cc | PROVEN | bl+ptr | 8082299c | REFERENCED | ptr |
-| 80838f70 | Pages::BattleCupSelect::OnInit | 808502c8 | REFERENCED | ptr | 80821078 | REFERENCED | ptr |
-| 8083b24c | Pages::BattleModeSelect::CreateExternalControl | 808210d4 | REFERENCED | ptr | 80823354 | REFERENCED | ptr |
-| 8084247c | Pages::StartRace::CreateExternalControl | 80852e48 | REFERENCED | ptr | 8082a584 | PROVEN | bl |
-| 80842914 | Pages::StartRace::AfterControlUpdate | 808532e0 | REFERENCED | ptr | 8082aa1c | PROVEN | bl |
-| 808448dc | ButtonMachine::GetClassName | 80827a04 | REFERENCED | ptr | 808552a8 | REFERENCED | ptr |
-| 808471c4 | Pages::KartSelect::GetButtonMachineById | 8082a2ec | PLAUSIBLE | - | 80857b90 | REFERENCED | ptr |
-| 8084a9a0 | MultiKartSelectPage_cpp_sinit_ | 80855184 | PROVEN | ctor+ptr | 8082dac8 | PROVEN | ctor+ptr |
-| 8084aac4 | Pages::MultiDriftSelect::OnInit | 808552a8 | REFERENCED | ptr | 8082dbec | REFERENCED | ptr |
-| 8084c014 | Pages::MultiTeamSelect::SetButtonHandlers | 808567f8 | REFERENCED | ptr | 8082f13c | REFERENCED | ptr |
-| 8084db7c | Pages::MultiPlayer::OnButtonDeselect | 8082e568 | REFERENCED | ptr | 80830ca4 | PROVEN | ctor+ptr |
-| 808502ac | Pages::VSTeamsView::GetRuntimeTypeInfo | 80830c98 | REFERENCED | ptr | 808333d4 | REFERENCED | ptr |
-| 808516ac | Pages::MainMenu::OnBackPress | 80832098 | REFERENCED | ptr | 808347d4 | PROVEN | ctor+ptr |
-| 808574b8 | Pages::RaceHUD::AfterControlUpdate | 80835a28 | REFERENCED | ptr | 8083a5e0 | REFERENCED | ptr |
-| 80859f34 | Pages::RaceMenu::BeforeExitAnimations | 808384a4 | REFERENCED | ptr | 8083d05c | REFERENCED | ptr+b |
-| 8086708c | Audio::RandomSoundPicker::__ct | 80864d38 | PROVEN | bl+hiaddr | 80862c5c | REFERENCED | hiaddr |
+None.
 
 ## Dropped entries (320)
 
@@ -1316,54 +584,54 @@ Our address is still a validated entry point (or was not emitted), but the name 
 | 8055382c | 0x8055382c | outside every chunk; no interpolation gap; unnamed |
 | 80553838 | 0x80553838 | outside every chunk; no interpolation gap; unnamed |
 | 80553844 | 0x80553844 | outside every chunk; no interpolation gap; unnamed |
-| 80553850 | GlobeScene::__ct | tertiary REL delta table candidate 8054d830 is proven but already claimed by chunk-ported PAL 80553788 (0x80553788); conflict, not accepted |
+| 80553850 | GlobeScene::__ct | no tertiary REL delta table candidate |
 | 805758e4 | 0x805758e4 | outside every chunk; no interpolation gap; unnamed |
 | 805a0550 | 0x805a0550 | collision at 8059682c; kept 'CameraLink::__ct' (PAL 805a1864) |
-| 805a05a0 | AutoCameraMoverRace::__dt | tertiary REL delta table candidate(s) 8059687c (UNVERIFIED): not proven, not accepted |
-| 805a05e0 | CamMove::__dt | tertiary REL delta table candidate(s) 805968bc (UNVERIFIED): not proven, not accepted |
+| 805a05a0 | AutoCameraMoverRace::__dt | no tertiary REL delta table candidate |
+| 805a05e0 | CamMove::__dt | no tertiary REL delta table candidate |
 | 805a0620 | 0x805a0620 | outside every chunk; no interpolation gap; unnamed |
-| 805a0660 | AutoCameraMover::__dt | tertiary REL delta table candidate(s) 8059693c (UNVERIFIED): not proven, not accepted |
-| 805a1478 | AutoCameraMoverRace::vf_0x14 | tertiary REL delta table candidate(s) 80597754 (UNVERIFIED): not proven, not accepted |
-| 805a1480 | AutoCameraMoverRace::vf_0x18 | tertiary REL delta table candidate(s) 8059775c (UNVERIFIED): not proven, not accepted |
-| 805be61c | PushButton::TriggerPtmf | tertiary REL delta table candidate(s) 805b8a5c (UNVERIFIED): not proven, not accepted |
-| 805be64c | PushButton_cpp_sinit_ | tertiary REL delta table candidate(s) 805b8a8c (UNVERIFIED): not proven, not accepted |
-| 805bf2dc | Pages::MKChannelExplanation::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 805b971c (UNVERIFIED): not proven, not accepted |
-| 805bf2e8 | Pages::AddMKChannel::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 805b9728 (UNVERIFIED): not proven, not accepted |
-| 805bf2f4 | Pages::MKChannelExplanation::TriggerButtonPtmf | tertiary REL delta table candidate(s) 805b9734 (UNVERIFIED): not proven, not accepted |
-| 805bf324 | Pages::AddMKChannel::TriggerButtonPtmf | tertiary REL delta table candidate(s) 805b9764 (UNVERIFIED): not proven, not accepted |
-| 805bf354 | Pages::MKChannelExplanation::TriggerBackPtmf | tertiary REL delta table candidate(s) 805b9794 (UNVERIFIED): not proven, not accepted |
-| 805bf384 | Pages::AddMKChannel::TriggerBackPtmf | tertiary REL delta table candidate(s) 805b97c4 (UNVERIFIED): not proven, not accepted |
-| 805bf3b4 | AddMKChannelPage_cpp_sinit_ | tertiary REL delta table candidate(s) 805b97f4 (UNVERIFIED): not proven, not accepted |
+| 805a0660 | AutoCameraMover::__dt | no tertiary REL delta table candidate |
+| 805a1478 | AutoCameraMoverRace::vf_0x14 | no tertiary REL delta table candidate |
+| 805a1480 | AutoCameraMoverRace::vf_0x18 | no tertiary REL delta table candidate |
+| 805be61c | PushButton::TriggerPtmf | no tertiary REL delta table candidate |
+| 805be64c | PushButton_cpp_sinit_ | no tertiary REL delta table candidate |
+| 805bf2dc | Pages::MKChannelExplanation::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 805bf2e8 | Pages::AddMKChannel::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 805bf2f4 | Pages::MKChannelExplanation::TriggerButtonPtmf | no tertiary REL delta table candidate |
+| 805bf324 | Pages::AddMKChannel::TriggerButtonPtmf | no tertiary REL delta table candidate |
+| 805bf354 | Pages::MKChannelExplanation::TriggerBackPtmf | no tertiary REL delta table candidate |
+| 805bf384 | Pages::AddMKChannel::TriggerBackPtmf | no tertiary REL delta table candidate |
+| 805bf3b4 | AddMKChannelPage_cpp_sinit_ | no tertiary REL delta table candidate |
 | 805c579c | 0x805c579c | outside every chunk; no interpolation gap; unnamed |
-| 805cc0a8 | Pages::EndingMovie::OnActivate | tertiary REL delta table candidate(s) 806266f0 (REFERENCED): not proven, not accepted |
-| 805dbfdc | SheetSelectControlScaleFade::__dt | tertiary REL delta table candidate(s) 805ceec0 (UNVERIFIED): not proven, not accepted |
-| 80637a8c | SystemBMGHolder::GetMessage | tertiary REL delta table candidate(s) 80606bf4 (REFERENCED): not proven, not accepted |
-| 8063bcf8 | Pages::TitleMovie::OnActivate | tertiary REL delta table candidate(s) 8060a958 (REFERENCED): not proven, not accepted |
-| 8064aee4 | VRPage_cpp_sinit_ | tertiary REL delta table candidate(s) 806186d4 (UNVERIFIED): not proven, not accepted |
+| 805cc0a8 | Pages::EndingMovie::OnActivate | no tertiary REL delta table candidate |
+| 805dbfdc | SheetSelectControlScaleFade::__dt | no tertiary REL delta table candidate |
+| 80637a8c | SystemBMGHolder::GetMessage | no tertiary REL delta table candidate |
+| 8063bcf8 | Pages::TitleMovie::OnActivate | no tertiary REL delta table candidate |
+| 8064aee4 | VRPage_cpp_sinit_ | no tertiary REL delta table candidate |
 | 8065b354 | 0x8065b354 | outside every chunk; no interpolation gap; unnamed |
 | 8065b3b8 | 0x8065b3b8 | outside every chunk; no interpolation gap; unnamed |
 | 8065b40c | 0x8065b40c | outside every chunk; no interpolation gap; unnamed |
 | 8065b450 | 0x8065b450 | outside every chunk; no interpolation gap; unnamed |
 | 8065b490 | 0x8065b490 | outside every chunk; no interpolation gap; unnamed |
 | 8065fa0c | 0x8065fa0c | collision at 80660694; kept 'RKNet::USERHandler::CreateInstance' (PAL 80662778) |
-| 806c4ed4 | ManagedObjects::RegisterObject | tertiary REL delta table candidate(s) 806e6bc0 (PLAUSIBLE): not proven, not accepted |
-| 806c63a8 | RouteController::SetPercent | tertiary REL delta table candidate(s) 806e8094 (UNVERIFIED): not proven, not accepted |
+| 806c4ed4 | ManagedObjects::RegisterObject | no tertiary REL delta table candidate |
+| 806c63a8 | RouteController::SetPercent | no tertiary REL delta table candidate |
 | 806ce820 | 0x806ce820 | outside every chunk; no interpolation gap; unnamed |
-| 806d28f4 | Objects::MapObjSniper::LoadCollision | tertiary REL delta table candidate(s) 806c7d00 (UNVERIFIED): not proven, not accepted |
-| 806d28f8 | Objects::MapObjSniper::LoadRoute | tertiary REL delta table candidate(s) 806c7d04 (UNVERIFIED): not proven, not accepted |
-| 806d28fc | Objects::MapObjSniper::LoadModels | tertiary REL delta table candidate(s) 806c7d08 (UNVERIFIED): not proven, not accepted |
-| 806d2900 | Objects::MapObjSniper::GetPropertiesBitfield | tertiary REL delta table candidate(s) 806c7d0c (UNVERIFIED): not proven, not accepted |
-| 806d5c5c | Objects::HighwayManager::LoadClipInfo | tertiary REL delta table candidate(s) 806c708c (REFERENCED): not proven, not accepted |
+| 806d28f4 | Objects::MapObjSniper::LoadCollision | no tertiary REL delta table candidate |
+| 806d28f8 | Objects::MapObjSniper::LoadRoute | no tertiary REL delta table candidate |
+| 806d28fc | Objects::MapObjSniper::LoadModels | no tertiary REL delta table candidate |
+| 806d2900 | Objects::MapObjSniper::GetPropertiesBitfield | no tertiary REL delta table candidate |
+| 806d5c5c | Objects::HighwayManager::LoadClipInfo | no tertiary REL delta table candidate |
 | 806ec7c0 | Objects::HwanwanBall::__dt(thunk) | collision at 806d8564; kept 'Objects::Wanwan::__dt' (PAL 806e95a8) |
-| 806f7698 | Audio::ItemWarning::GetPan | tertiary REL delta table candidate(s) 806e3444 (UNVERIFIED): not proven, not accepted |
-| 806f772c | Audio::ItemWarning::__ct | tertiary REL delta table candidate(s) 806e34d8 (UNVERIFIED): not proven, not accepted |
+| 806f7698 | Audio::ItemWarning::GetPan | no tertiary REL delta table candidate |
+| 806f772c | Audio::ItemWarning::__ct | no tertiary REL delta table candidate |
 | 806f7740 | 0x806f7740 | outside every chunk; no interpolation gap; unnamed |
 | 806f7780 | 0x806f7780 | outside every chunk; no interpolation gap; unnamed |
 | 806f7a54 | 0x806f7a54 | outside every chunk; no interpolation gap; unnamed |
-| 807001a4 | Audio::Manager::LoadState | tertiary REL delta table candidate(s) 806fb294 (UNVERIFIED): not proven, not accepted |
+| 807001a4 | Audio::Manager::LoadState | no tertiary REL delta table candidate |
 | 8072820c | 0x8072820c | outside every chunk; no interpolation gap; unnamed |
 | 80728210 | 0x80728210 | outside every chunk; no interpolation gap; unnamed |
-| 80728214 | AI::CPUDriving::GetCalculator | tertiary REL delta table candidate(s) 80723de4 (UNVERIFIED): not proven, not accepted |
+| 80728214 | AI::CPUDriving::GetCalculator | no tertiary REL delta table candidate |
 | 807285c8 | 0x807285c8 | outside every chunk; no interpolation gap; unnamed |
 | 80729338 | 0x80729338 | outside every chunk; no interpolation gap; unnamed |
 | 80729340 | 0x80729340 | outside every chunk; no interpolation gap; unnamed |
@@ -1389,9 +657,9 @@ Our address is still a validated entry point (or was not emitted), but the name 
 | 8072ff60 | 0x8072ff60 | outside every chunk; no interpolation gap; unnamed |
 | 8072ff68 | 0x8072ff68 | outside every chunk; no interpolation gap; unnamed |
 | 8072ff70 | 0x8072ff70 | outside every chunk; no interpolation gap; unnamed |
-| 80730a80 | AI::CPUDrivingAction::OnStart | tertiary REL delta table candidate(s) 80741e2c (UNVERIFIED): not proven, not accepted |
-| 80730ac8 | AI::CPUDrivingAction::Update | tertiary REL delta table candidate(s) 80741e74 (UNVERIFIED): not proven, not accepted |
-| 80730af8 | AI::CPUDrivingAction::OnEnd | tertiary REL delta table candidate 80741ea4 is proven but already claimed by chunk-ported PAL 807314a0 (0x807314a0); conflict, not accepted |
+| 80730a80 | AI::CPUDrivingAction::OnStart | no tertiary REL delta table candidate |
+| 80730ac8 | AI::CPUDrivingAction::Update | no tertiary REL delta table candidate |
+| 80730af8 | AI::CPUDrivingAction::OnEnd | no tertiary REL delta table candidate |
 | 8075db24 | 0x8075db24 | outside every chunk; no interpolation gap; unnamed |
 | 8075db2c | 0x8075db2c | outside every chunk; no interpolation gap; unnamed |
 | 8075db34 | 0x8075db34 | outside every chunk; no interpolation gap; unnamed |
@@ -1403,65 +671,65 @@ Our address is still a validated entry point (or was not emitted), but the name 
 | 8076959c | 0x8076959c | outside every chunk; no interpolation gap; unnamed |
 | 807695a4 | 0x807695a4 | outside every chunk; no interpolation gap; unnamed |
 | 80769608 | 0x80769608 | outside every chunk; no interpolation gap; unnamed |
-| 8076ebdc | Objects::SubObjectArray<W_Itemboxline::Box>::vf_0x14 | tertiary REL delta table candidate(s) 8075c4f4 (PLAUSIBLE): not proven, not accepted |
+| 8076ebdc | Objects::SubObjectArray<W_Itemboxline::Box>::vf_0x14 | no tertiary REL delta table candidate |
 | 807726c4 | 0x807726c4 | outside every chunk; no interpolation gap; unnamed |
-| 80773c14 | Objects::MiiKanban::GetPropertiesBitfield | tertiary REL delta table candidate(s) 80761620 (UNVERIFIED): not proven, not accepted |
+| 80773c14 | Objects::MiiKanban::GetPropertiesBitfield | no tertiary REL delta table candidate |
 | 8077439c | 0x8077439c | outside every chunk; no interpolation gap; unnamed |
 | 8077ce88 | 0x8077ce88 | outside every chunk; no interpolation gap; unnamed |
-| 807a9d90 | Item::ObjKinoko::InitSelf | tertiary REL delta table candidate(s) 807a0d84 (UNVERIFIED): not proven, not accepted |
-| 807a9dac | __sinit_ItemObjKinoko_cpp | tertiary REL delta table candidate(s) 807a0da0 (UNVERIFIED): not proven, not accepted |
-| 807a9dd4 | Item::ObjKinokoBig::CreateArray | tertiary REL delta table candidate(s) 807a0dc8 (UNVERIFIED): not proven, not accepted |
-| 807a9e50 | Item::Player::UseMegaMushroom | tertiary REL delta table candidate(s) 807a0e44 (UNVERIFIED): not proven, not accepted |
-| 807a9ea4 | Item::ObjKinokoBig::InitSelf | tertiary REL delta table candidate(s) 807a0e98 (UNVERIFIED): not proven, not accepted |
-| 807d9b80 | DriverCalcWorldCB::ExecCallbackC(thunk) | tertiary REL delta table candidate(s) 807cb120 (UNVERIFIED): not proven, not accepted |
-| 807d9b88 | DriverCalcWorldCB::ExecCallbackB(thunk) | tertiary REL delta table candidate(s) 807cb128 (UNVERIFIED): not proven, not accepted |
-| 807d9b90 | DriverCalcWorldCB::__dt(thunk) | tertiary REL delta table candidate(s) 807cb130 (UNVERIFIED): not proven, not accepted |
+| 807a9d90 | Item::ObjKinoko::InitSelf | no tertiary REL delta table candidate |
+| 807a9dac | __sinit_ItemObjKinoko_cpp | no tertiary REL delta table candidate |
+| 807a9dd4 | Item::ObjKinokoBig::CreateArray | no tertiary REL delta table candidate |
+| 807a9e50 | Item::Player::UseMegaMushroom | no tertiary REL delta table candidate |
+| 807a9ea4 | Item::ObjKinokoBig::InitSelf | no tertiary REL delta table candidate |
+| 807d9b80 | DriverCalcWorldCB::ExecCallbackC(thunk) | no tertiary REL delta table candidate |
+| 807d9b88 | DriverCalcWorldCB::ExecCallbackB(thunk) | no tertiary REL delta table candidate |
+| 807d9b90 | DriverCalcWorldCB::__dt(thunk) | no tertiary REL delta table candidate |
 | 807dc8c8 | 0x807dc8c8 | outside every chunk; no interpolation gap; unnamed |
-| 807e2520 | CtrlMenuMovieButton::GetMovieCount | tertiary REL delta table candidate(s) 807d3ac0 (UNVERIFIED): not proven, not accepted |
-| 807e2528 | CtrlMenuBattleStageSelectCup::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 807d3ac8 (UNVERIFIED): not proven, not accepted |
-| 807e2534 | CtrlMenuBattleStageSelectCupSub::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 807d3ad4 (UNVERIFIED): not proven, not accepted |
-| 807e2540 | CtrlMenuBattleStage_cpp_sinit_ | tertiary REL delta table candidate(s) 807d3ae0 (UNVERIFIED): not proven, not accepted |
-| 807e256c | CtrlMenuMovieButton::OnUpdate(PushButton) | tertiary REL delta table candidate(s) 807d3b0c (UNVERIFIED): not proven, not accepted |
-| 807e2574 | CtrlMenuMovieButton::InitSelf(PushButton) | tertiary REL delta table candidate(s) 807d3b14 (UNVERIFIED): not proven, not accepted |
-| 807e257c | CtrlMenuMovieButton::OnLoad(PushButton) | tertiary REL delta table candidate(s) 807d3b1c (UNVERIFIED): not proven, not accepted |
-| 807e2584 | StageButton::__dt(PushButton) | tertiary REL delta table candidate(s) 807d3b24 (UNVERIFIED): not proven, not accepted |
-| 807e258c | StageButton::GetClassName(PushButton) | tertiary REL delta table candidate(s) 807d3b2c (UNVERIFIED): not proven, not accepted |
-| 807e2594 | StageButton::GetRuntimeTypeInfo(PushButton) | tertiary REL delta table candidate(s) 807d3b34 (UNVERIFIED): not proven, not accepted |
-| 807e5610 | CtrlMenuCourseSelectCup::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 807d6bb0 (UNVERIFIED): not proven, not accepted |
-| 807e561c | CtrlMenuCourseSelectCupSub::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 807d6bbc (UNVERIFIED): not proven, not accepted |
-| 807e5628 | CtrlMenuCoursecpp_sinit_ | tertiary REL delta table candidate(s) 807d6bc8 (UNVERIFIED): not proven, not accepted |
-| 807e9c44 | CtrlMenuPressStart::GetClassName | tertiary REL delta table candidate(s) 807e0398 (REFERENCED): not proven, not accepted |
-| 807ee23c | CtrlRaceBattleSetPoint_cpp_sinit_ | tertiary REL delta table candidate(s) 807e4990 (UNVERIFIED): not proven, not accepted |
-| 807ee468 | CtrlRaceCount::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 807e4bbc (UNVERIFIED): not proven, not accepted |
-| 807ef9f4 | CtrlRaceLive::getClassName | tertiary REL delta table candidate(s) 807e6148 (UNVERIFIED): not proven, not accepted |
-| 807efa00 | CtrlRaceLive::initLayout | tertiary REL delta table candidate(s) 807e6154 (UNVERIFIED): not proven, not accepted |
-| 807efa70 | screenElement_setupPauseMovement | tertiary REL delta table candidate(s) 807e61c4 (UNVERIFIED): not proven, not accepted |
+| 807e2520 | CtrlMenuMovieButton::GetMovieCount | no tertiary REL delta table candidate |
+| 807e2528 | CtrlMenuBattleStageSelectCup::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 807e2534 | CtrlMenuBattleStageSelectCupSub::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 807e2540 | CtrlMenuBattleStage_cpp_sinit_ | no tertiary REL delta table candidate |
+| 807e256c | CtrlMenuMovieButton::OnUpdate(PushButton) | no tertiary REL delta table candidate |
+| 807e2574 | CtrlMenuMovieButton::InitSelf(PushButton) | no tertiary REL delta table candidate |
+| 807e257c | CtrlMenuMovieButton::OnLoad(PushButton) | no tertiary REL delta table candidate |
+| 807e2584 | StageButton::__dt(PushButton) | no tertiary REL delta table candidate |
+| 807e258c | StageButton::GetClassName(PushButton) | no tertiary REL delta table candidate |
+| 807e2594 | StageButton::GetRuntimeTypeInfo(PushButton) | no tertiary REL delta table candidate |
+| 807e5610 | CtrlMenuCourseSelectCup::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 807e561c | CtrlMenuCourseSelectCupSub::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 807e5628 | CtrlMenuCoursecpp_sinit_ | no tertiary REL delta table candidate |
+| 807e9c44 | CtrlMenuPressStart::GetClassName | no tertiary REL delta table candidate |
+| 807ee23c | CtrlRaceBattleSetPoint_cpp_sinit_ | no tertiary REL delta table candidate |
+| 807ee468 | CtrlRaceCount::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 807ef9f4 | CtrlRaceLive::getClassName | no tertiary REL delta table candidate |
+| 807efa00 | CtrlRaceLive::initLayout | no tertiary REL delta table candidate |
+| 807efa70 | screenElement_setupPauseMovement | no tertiary REL delta table candidate |
 | 807efa74 | 0x807efa74 | outside every chunk; no interpolation gap; unnamed |
-| 807efa78 | CtrlRaceLiveMessage::getClassName | tertiary REL delta table candidate(s) 807e61cc (UNVERIFIED): not proven, not accepted |
-| 807efa88 | CtrlRaceLiveMessage::initLayout | tertiary REL delta table candidate(s) 807e61dc (UNVERIFIED): not proven, not accepted |
-| 807efadc | CtrlRaceLiveMessage::onInit | tertiary REL delta table candidate(s) 807e6230 (UNVERIFIED): not proven, not accepted |
-| 807efb90 | CtrlRaceLiveMessage::onUpdate | tertiary REL delta table candidate(s) 807e62e4 (UNVERIFIED): not proven, not accepted |
-| 807efc20 | CtrlRaceLiveMessage::__dt | tertiary REL delta table candidate(s) 807e6374 (UNVERIFIED): not proven, not accepted |
-| 807efc7c | CtrlRaceLiveMessage::getInstance | tertiary REL delta table candidate(s) 807e63d0 (UNVERIFIED): not proven, not accepted |
-| 807efc88 | CtrlRaceLive::__dt | tertiary REL delta table candidate(s) 807e63dc (UNVERIFIED): not proven, not accepted |
+| 807efa78 | CtrlRaceLiveMessage::getClassName | no tertiary REL delta table candidate |
+| 807efa88 | CtrlRaceLiveMessage::initLayout | no tertiary REL delta table candidate |
+| 807efadc | CtrlRaceLiveMessage::onInit | no tertiary REL delta table candidate |
+| 807efb90 | CtrlRaceLiveMessage::onUpdate | no tertiary REL delta table candidate |
+| 807efc20 | CtrlRaceLiveMessage::__dt | no tertiary REL delta table candidate |
+| 807efc7c | CtrlRaceLiveMessage::getInstance | no tertiary REL delta table candidate |
+| 807efc88 | CtrlRaceLive::__dt | no tertiary REL delta table candidate |
 | 807efce4 | 0x807efce4 | outside every chunk; no interpolation gap; unnamed |
-| 807efcf0 | __sinit_CtrlRaceLive_cpp | tertiary REL delta table candidate(s) 807e6444 (UNVERIFIED): not proven, not accepted |
-| 807f7ba4 | CtrlRaceScore::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 807ed57c (UNVERIFIED): not proven, not accepted |
-| 807f7bb0 | CtrlRaceScore_cpp_sinit_ | tertiary REL delta table candidate(s) 807ed588 (UNVERIFIED): not proven, not accepted |
-| 807f890c | CtrlRaceTime::__dt | tertiary REL delta table candidate(s) 807ede0c (REFERENCED): not proven, not accepted |
-| 807f9348 | GeoHitTableHolder::__dt | tertiary REL delta table candidate(s) 80843780 (UNVERIFIED): not proven, not accepted |
-| 807f9388 | Objects::Airblock::__ct | tertiary REL delta table candidate(s) 808437c0 (UNVERIFIED): not proven, not accepted |
-| 807f9424 | Objects::Airblock::__ct(Vec3s) | tertiary REL delta table candidate(s) 8084385c (UNVERIFIED): not proven, not accepted |
-| 807f94cc | Objects::Airblock::OnStart | tertiary REL delta table candidate(s) 80843904 (UNVERIFIED): not proven, not accepted |
-| 807f957c | ObjectCollisionPolyhedra::GetRadius | tertiary REL delta table candidate(s) 808439b4 (UNVERIFIED): not proven, not accepted |
+| 807efcf0 | __sinit_CtrlRaceLive_cpp | no tertiary REL delta table candidate |
+| 807f7ba4 | CtrlRaceScore::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 807f7bb0 | CtrlRaceScore_cpp_sinit_ | no tertiary REL delta table candidate |
+| 807f890c | CtrlRaceTime::__dt | no tertiary REL delta table candidate |
+| 807f9348 | GeoHitTableHolder::__dt | no tertiary REL delta table candidate |
+| 807f9388 | Objects::Airblock::__ct | no tertiary REL delta table candidate |
+| 807f9424 | Objects::Airblock::__ct(Vec3s) | no tertiary REL delta table candidate |
+| 807f94cc | Objects::Airblock::OnStart | no tertiary REL delta table candidate |
+| 807f957c | ObjectCollisionPolyhedra::GetRadius | no tertiary REL delta table candidate |
 | 807ffae0 | 0x807ffae0 | outside every chunk; no interpolation gap; unnamed |
-| 808334a0 | MenuKartModelMgr::__dt | tertiary REL delta table candidate(s) 8081f678 (UNVERIFIED): not proven, not accepted |
-| 80838e4c | MenuBGPage_cpp_sinit_ | tertiary REL delta table candidate 80820f54 is proven but already claimed by chunk-ported PAL 8083b0cc (BattleKartSelectPagecpp_sinit_); conflict, not accepted |
-| 8083b0c0 | Pages::BattleKartSelect::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 808231c8 (UNVERIFIED): not proven, not accepted |
-| 80842334 | Pages::CupSelect::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 8082a43c (UNVERIFIED): not proven, not accepted |
-| 80851d2c | Pages::MainMenu::GetRuntimeTypeInfo | tertiary REL delta table candidate(s) 80834e54 (UNVERIFIED): not proven, not accepted |
+| 808334a0 | MenuKartModelMgr::__dt | no tertiary REL delta table candidate |
+| 80838e4c | MenuBGPage_cpp_sinit_ | no tertiary REL delta table candidate |
+| 8083b0c0 | Pages::BattleKartSelect::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 80842334 | Pages::CupSelect::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
+| 80851d2c | Pages::MainMenu::GetRuntimeTypeInfo | no tertiary REL delta table candidate |
 | 80862e24 | 0x80862e24 | outside every chunk; no interpolation gap; unnamed |
-| 8086c098 | Objects::WLwallGC::CalcNextPosition | tertiary REL delta table candidate(s) 80867614 (UNVERIFIED): not proven, not accepted |
+| 8086c098 | Objects::WLwallGC::CalcNextPosition | no tertiary REL delta table candidate |
 | 8086c988 | 0x8086c988 | outside every chunk; no interpolation gap; unnamed |
 | 8086c98c | 0x8086c98c | outside every chunk; no interpolation gap; unnamed |
 | 8086c9cc | 0x8086c9cc | outside every chunk; no interpolation gap; unnamed |

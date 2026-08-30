@@ -1,5 +1,20 @@
 #include "network_internal.h"
 
+#if defined(__APPLE__)
+// SecureTransport is the one Apple TLS API that (a) runs over a socket the caller owns, which
+// the IOS SSL model requires (the game opens the TCP socket, then hands it to /dev/net/ssl),
+// and (b) still negotiates TLS 1.0/1.1 - the only versions the Wii-era servers this HLE talks
+// to (the Wiimmfi payload host answers TLS 1.1 at most) accept. It is deprecated, not removed.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#include <CoreFoundation/CoreFoundation.h>
+#include <Security/SecureTransport.h>
+#include <Security/Security.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <cerrno>
+#endif
+
 namespace NetworkHle {
 
 enum SslError {
@@ -56,6 +71,13 @@ struct SslSession {
     CredHandle cred{};
     CtxtHandle context{};
     SecPkgContext_StreamSizes sizes{};
+#elif defined(__APPLE__)
+    SSLContextRef context = nullptr;
+    // Root certificates the game installed with SSL_SETROOTCA (DER); the peer chain is verified
+    // against exactly these when any were given, as IOS does. The built-in/default roots are
+    // Nintendo's own CA set, which is not available here, so those calls leave this empty and
+    // the chain is accepted unverified - the same policy the Windows backend applies to all.
+    std::vector<std::vector<uint8_t>> rootCaDer;
 #endif
 };
 
@@ -525,6 +547,220 @@ static int32_t SslRead(SslSession& ssl, uint8_t* out, uint32_t size) {
     ssl.decrypted.erase(ssl.decrypted.begin(), ssl.decrypted.begin() + copied);
     return copied == 0 ? SSL_ERR_ZERO : static_cast<int32_t>(copied);
 }
+#elif defined(__APPLE__)
+// --- SecureTransport backend -------------------------------------------------------------
+// SecureTransport drives the TLS state machine and calls back into these two functions for
+// raw bytes; they block on the Wii socket's native descriptor (SSL_CONNECT put it in blocking
+// mode with a receive/send timeout) so SSLHandshake/SSLRead/SSLWrite complete synchronously,
+// which is how the game's NHTTP thread expects the IOS calls to behave.
+static OSStatus SslSocketRead(SSLConnectionRef connection, void* data, size_t* length) {
+    const auto fd = static_cast<int>(reinterpret_cast<intptr_t>(connection));
+    const size_t wanted = *length;
+    size_t got = 0;
+    while (got < wanted) {
+        const ssize_t n = recv(fd, static_cast<uint8_t*>(data) + got, wanted - got, 0);
+        if (n > 0) {
+            got += static_cast<size_t>(n);
+            continue;
+        }
+        *length = got;
+        if (n == 0) {
+            return errSSLClosedGraceful;
+        }
+        if (errno == EINTR) {
+            continue;
+        }
+        return (errno == EAGAIN || errno == EWOULDBLOCK) ? errSSLWouldBlock : errSSLClosedAbort;
+    }
+    *length = got;
+    return noErr;
+}
+
+static OSStatus SslSocketWrite(SSLConnectionRef connection, const void* data, size_t* length) {
+    const auto fd = static_cast<int>(reinterpret_cast<intptr_t>(connection));
+    const size_t wanted = *length;
+    size_t sent = 0;
+    while (sent < wanted) {
+        const ssize_t n = send(fd, static_cast<const uint8_t*>(data) + sent, wanted - sent, 0);
+        if (n > 0) {
+            sent += static_cast<size_t>(n);
+            continue;
+        }
+        *length = sent;
+        if (n < 0 && errno == EINTR) {
+            continue;
+        }
+        return (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) ? errSSLWouldBlock : errSSLClosedAbort;
+    }
+    *length = sent;
+    return noErr;
+}
+
+static void ClearSslSession(SslSession& ssl) {
+    if (ssl.context != nullptr) {
+        SSLClose(ssl.context);
+        CFRelease(ssl.context);
+    }
+    ssl = {};
+}
+
+// The peer chain against the roots the game installed. Returns true when the chain is
+// anchored in one of them (or when the game installed none - see SslSession::rootCaDer).
+static bool VerifyPeerAgainstGameRoots(SslSession& ssl) {
+    if (ssl.rootCaDer.empty()) {
+        return true;
+    }
+    SecTrustRef trust = nullptr;
+    if (SSLCopyPeerTrust(ssl.context, &trust) != noErr || trust == nullptr) {
+        return false;
+    }
+    CFMutableArrayRef anchors = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
+    for (const std::vector<uint8_t>& der : ssl.rootCaDer) {
+        CFDataRef data = CFDataCreate(kCFAllocatorDefault, der.data(), static_cast<CFIndex>(der.size()));
+        SecCertificateRef cert = data ? SecCertificateCreateWithData(kCFAllocatorDefault, data) : nullptr;
+        if (cert) {
+            CFArrayAppendValue(anchors, cert);
+            CFRelease(cert);
+        }
+        if (data) {
+            CFRelease(data);
+        }
+    }
+    bool ok = false;
+    if (CFArrayGetCount(anchors) > 0 &&
+        SecTrustSetAnchorCertificates(trust, anchors) == noErr &&
+        SecTrustSetAnchorCertificatesOnly(trust, true) == noErr) {
+        ok = SecTrustEvaluateWithError(trust, nullptr);
+    }
+    CFRelease(anchors);
+    CFRelease(trust);
+    return ok;
+}
+
+static int32_t SslHandshakeImpl(SslSession& ssl) {
+    if (ssl.plaintextWfc) {
+        ssl.handshaked = true;
+        return SSL_OK;
+    }
+    if (ssl.native == kInvalidSocket) {
+        return SSL_ERR_SYSCALL;
+    }
+    if (ssl.handshaked) {
+        return SSL_OK;
+    }
+    if (ssl.context == nullptr) {
+        ssl.context = SSLCreateContext(kCFAllocatorDefault, kSSLClientSide, kSSLStreamType);
+        if (ssl.context == nullptr) {
+            return SSL_ERR_FAILED;
+        }
+        if (SSLSetIOFuncs(ssl.context, SslSocketRead, SslSocketWrite) != noErr ||
+            SSLSetConnection(ssl.context, reinterpret_cast<SSLConnectionRef>(static_cast<intptr_t>(ssl.native))) != noErr ||
+            // IOS speaks TLS 1.0; the servers it was written for stop at 1.1. Offer 1.0-1.2 so a
+            // modern host still gets the best it supports.
+            SSLSetProtocolVersionMin(ssl.context, kTLSProtocol1) != noErr ||
+            SSLSetProtocolVersionMax(ssl.context, kTLSProtocol12) != noErr ||
+            SSLSetSessionOption(ssl.context, kSSLSessionOptionBreakOnServerAuth, true) != noErr) {
+            return SSL_ERR_FAILED;
+        }
+        if (!ssl.hostname.empty() &&
+            SSLSetPeerDomainName(ssl.context, ssl.hostname.c_str(), ssl.hostname.size()) != noErr) {
+            return SSL_ERR_FAILED;
+        }
+    }
+    for (;;) {
+        const OSStatus status = SSLHandshake(ssl.context);
+        if (status == noErr) {
+            ssl.handshaked = true;
+            return SSL_OK;
+        }
+        if (status == errSSLServerAuthCompleted) {
+            if (!VerifyPeerAgainstGameRoots(ssl)) {
+                return SSL_ERR_FAILED;
+            }
+            continue;
+        }
+        if (status == errSSLWouldBlock) {
+            continue;
+        }
+        return status == errSSLClosedGraceful || status == errSSLClosedAbort || status == errSSLClosedNoNotify
+                   ? SSL_ERR_SYSCALL
+                   : SSL_ERR_FAILED;
+    }
+}
+
+static int32_t SslWrite(SslSession& ssl, const uint8_t* data, uint32_t size) {
+    if (!data || size == 0) {
+        return SSL_ERR_ZERO;
+    }
+    const int32_t handshakeRet = SslHandshake(ssl);
+    if (handshakeRet != SSL_OK) {
+        return handshakeRet;
+    }
+    if (ssl.plaintextWfc) {
+        uint32_t sent = 0;
+        while (sent < size) {
+            const ssize_t n = send(ssl.native, data + sent, size - sent, 0);
+            if (n <= 0) {
+                return SSL_ERR_SYSCALL;
+            }
+            sent += static_cast<uint32_t>(n);
+        }
+        return static_cast<int32_t>(size);
+    }
+    uint32_t total = 0;
+    while (total < size) {
+        size_t processed = 0;
+        const OSStatus status = SSLWrite(ssl.context, data + total, size - total, &processed);
+        total += static_cast<uint32_t>(processed);
+        if (status == noErr) {
+            continue;
+        }
+        if (status == errSSLWouldBlock) {
+            continue;  // the socket callback blocks, so this only means "partial progress"
+        }
+        return status == errSSLClosedGraceful || status == errSSLClosedAbort || status == errSSLClosedNoNotify
+                   ? SSL_ERR_SYSCALL
+                   : SSL_ERR_FAILED;
+    }
+    return static_cast<int32_t>(total);
+}
+
+static int32_t SslRead(SslSession& ssl, uint8_t* out, uint32_t size) {
+    if (!out || size == 0) {
+        return SSL_ERR_ZERO;
+    }
+    const int32_t handshakeRet = SslHandshake(ssl);
+    if (handshakeRet != SSL_OK) {
+        return handshakeRet;
+    }
+    if (ssl.plaintextWfc) {
+        const ssize_t ret = recv(ssl.native, out, size, 0);
+        if (ret == 0) {
+            return SSL_ERR_ZERO;
+        }
+        if (ret < 0) {
+            return SSL_ERR_RAGAIN;
+        }
+        return static_cast<int32_t>(ret);
+    }
+    size_t processed = 0;
+    const OSStatus status = SSLRead(ssl.context, out, size, &processed);
+    if (processed > 0) {
+        // Data first: a close alert that arrives with the last record is reported on the next
+        // call, exactly as IOS reports it (the SDK reads until SSL_ERR_ZERO).
+        return static_cast<int32_t>(processed);
+    }
+    if (status == noErr) {
+        return SSL_ERR_ZERO;
+    }
+    if (status == errSSLWouldBlock) {
+        return SSL_ERR_RAGAIN;
+    }
+    if (status == errSSLClosedGraceful || status == errSSLClosedNoNotify) {
+        return SSL_ERR_ZERO;
+    }
+    return SSL_ERR_FAILED;
+}
 #else
 static void ClearSslSession(SslSession& ssl) {
     ssl = {};
@@ -628,6 +864,11 @@ int32_t HandleSslIoctlv(uint32_t cmd, const std::vector<IoVector>& in, const std
         const int timeoutMs = 15000;
         setsockopt(socket->native, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeoutMs), sizeof(timeoutMs));
         setsockopt(socket->native, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeoutMs), sizeof(timeoutMs));
+#elif defined(__APPLE__)
+        // Same 15 s bound as Windows: the SecureTransport callbacks block on this socket.
+        const timeval timeout{15, 0};
+        setsockopt(socket->native, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        setsockopt(socket->native, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 #endif
         WriteSslReturn(in, SSL_OK);
         return 0;
@@ -708,10 +949,25 @@ int32_t HandleSslIoctlv(uint32_t cmd, const std::vector<IoVector>& in, const std
         WriteSslReturn(in, SSL_OK);
         return 0;
     }
+    case IOCTLV_NET_SSL_SETROOTCA: {
+        // out[1] is the DER certificate the game installs as the trust root for this session.
+        const int sslId = ReadSslId(out);
+        if (!IsSslIdValid(sslId)) {
+            WriteSslReturn(in, SSL_ERR_ID);
+            return 0;
+        }
+#if defined(__APPLE__)
+        if (out.size() > 1 && out[1].address && out[1].size > 0) {
+            const uint8_t* der = Memory::GetPointer(out[1].address, out[1].size);
+            g_sslSessions[sslId].rootCaDer.emplace_back(der, der + out[1].size);
+        }
+#endif
+        WriteSslReturn(in, SSL_OK);
+        return 0;
+    }
     case IOCTLV_NET_SSL_SETCLIENTCERT:
     case IOCTLV_NET_SSL_SETCLIENTCERTDEFAULT:
     case IOCTLV_NET_SSL_REMOVECLIENTCERT:
-    case IOCTLV_NET_SSL_SETROOTCA:
     case IOCTLV_NET_SSL_SETROOTCADEFAULT:
     case IOCTLV_NET_SSL_SETBUILTINROOTCA:
     case IOCTLV_NET_SSL_SETBUILTINCLIENTCERT:
@@ -731,3 +987,7 @@ int32_t HandleSslIoctlv(uint32_t cmd, const std::vector<IoVector>& in, const std
 }
 
 }  // namespace NetworkHle
+
+#if defined(__APPLE__)
+#pragma clang diagnostic pop
+#endif

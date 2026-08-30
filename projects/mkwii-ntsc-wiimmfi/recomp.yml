@@ -2,11 +2,22 @@ schema_version: 1
 workspace_root: ../..
 
 # Mario Kart Wii NTSC-U (RMCE01) with Wiimm's Wiimmfi patch (Wiimmfi Patcher v7.5,
-# `wstrt patch --clean-dol --wiimmfi --all-ranks`) applied to the clean executables. The patch
-# adds one code section at 0x802C0000 holding the Wiimmfi login/anticheat code and makes it the
-# DOL entry point (it chains to the original __start), NOPs one call at 0x800ED7C8, and rewrites
-# the WFC host names and the SAKE rank filters. Nothing else moves, so the clean map and the
-# RMCE01 region table apply unchanged; the added section is discovered from its entry point.
+# `wstrt patch --clean-dol --wiimmfi --all-ranks`), expressed as static translation inputs:
+#
+#  * main.stage1.dol / StaticR.rel: wstrt's executables, keeping every string patch it makes
+#    (nintendowifi.net -> wiimmfi.de, https -> http, the NAS URL table repurposed to
+#    /ca, /ac and /pe, the SAKE rank filters) and the NOP of DWCi_Auth_SendRequest's
+#    duplicate Host header, but without the 0x468-byte self-decrypting injector section wstrt
+#    adds at 0x802C0000; the entry point is __start again.
+#  * profile `wiimmfi`: what that injector leaves behind once it has run - a 0x110-byte block
+#    (16-byte info header + 0x100 bytes of code) at the top of the MEM1 arena and three patches
+#    (Assets/wiimmfi/stage1.kamek, produced by tools/wiimmfi/gen_stage1.py from main.dol):
+#      write32 DWCi_Auth_InitInterface+0x20  mr r30,r3 -> li r30,0   (auth server index 0 = /ca)
+#      hook    DWCi_Auth_HandleResponse+0x174 -> block+0x10   (1st body = CA cert, then index 2 = /pe;
+#                                                               2nd body = payload, executed)
+#      hook    NHTTPi_SocSSLConnect+0xB8      -> block+0x60   (SHA-1-pinned CA -> SSLSetRootCA)
+#    See docs/WIIMMFI.md. Nothing else moves, so the clean map and the RMCE01 region table apply
+#    unchanged.
 project:
   id: mkwii-rmce01-wiimmfi
   display_name: Mario Kart Wii NTSC-U (Wiimmfi)
@@ -23,8 +34,8 @@ memory:
 
 inputs:
   dol:
-    path: Assets/wiimmfi/main.dol
-    sha256: 8dc5e777f85d23acf1dcc838d1d2b8913da7ff9f7f2efee4aacd279dc692a44a
+    path: Assets/wiimmfi/main.stage1.dol
+    sha256: c9294d21eb9cce96a87e062eca6ee7e199c257e45d074733a2206ebe620bb052
 
   rel:
     path: Assets/wiimmfi/StaticR.rel
@@ -33,7 +44,6 @@ inputs:
 
 translation:
   entry_points:
-    - 0x802C0000
     - 0x800060A4
   function_map:
     path: projects/mkwii-ntsc/MAP.txt
@@ -53,5 +63,19 @@ output:
   base_manifest: ../build/wiimmfi/mkwii_base_manifest.json
 
 profiles:
+  wiimmfi:
+    enabled: true
+    requires_game_id: RMCE01
+    requires_dol_sha256: c9294d21eb9cce96a87e062eca6ee7e199c257e45d074733a2206ebe620bb052
+    code_pul: Assets/wiimmfi/stage1.kamek
+    region: E
+    # The injector reserves its block by lowering the MEM1 arena high mark: with the runtime's
+    # boot value 0x817F0520 that is (0x817F0520 - 0x100 - 16) & ~31. Placing the module there
+    # makes the runtime reserve exactly that range and lower the arena to it, so the game and
+    # anything the payload derives from the arena see the console layout.
+    module_guest_base: 0x817F0400
+    module_link_base: 0x817F0400
+    output: build/mods/wiimmfi_stage1
+    enable_retro_wfc: false
   retro-rewind:
     enabled: false

@@ -25,13 +25,57 @@ if(EXISTS "${DATA_INIT_BLOB_ASM}")
 endif()
 list(REMOVE_DUPLICATES SOURCES)
 
+# Link-time optimization. The translated guest code is 28k small functions in 204 translation
+# units that call the dispatch helpers in abi_bridge.h across TU boundaries, so cross-module
+# inlining is the one optimization that can reach the indirect-dispatch path measured at ~31% of
+# race CPU. "thin" is parallel and incremental (feasible on a 40 MB text section); "full" is the
+# serial whole-program form and is far slower to link.
+set(MKW_LTO "off" CACHE STRING "Link-time optimization: off, thin, or full")
+set_property(CACHE MKW_LTO PROPERTY STRINGS off thin full)
+if(MKW_LTO STREQUAL "thin")
+    set(MKW_LTO_FLAG -flto=thin)
+elseif(MKW_LTO STREQUAL "full")
+    set(MKW_LTO_FLAG -flto)
+else()
+    set(MKW_LTO_FLAG)
+endif()
+
+# Profile-guided optimization. The translated guest code is 28k functions reached largely through
+# indirect dispatch, which is ~34% of race CPU; micro-optimizing the C++ around that dispatch
+# measured as nothing, which points at branch prediction and code layout rather than the
+# surrounding bookkeeping. Those are exactly what a profile fixes, so this is the lever with the
+# most headroom left. "generate" builds an instrumented binary; run it, merge the .profraw with
+# llvm-profdata, then build with "use" and MKW_PGO_PROFILE pointing at the .profdata.
+set(MKW_PGO "off" CACHE STRING "Profile-guided optimization: off, generate, or use")
+set_property(CACHE MKW_PGO PROPERTY STRINGS off generate use)
+set(MKW_PGO_PROFILE "" CACHE FILEPATH "Merged .profdata for MKW_PGO=use")
+if(MKW_PGO STREQUAL "generate")
+    set(MKW_PGO_FLAGS -fprofile-generate)
+elseif(MKW_PGO STREQUAL "use")
+    if(NOT MKW_PGO_PROFILE)
+        message(FATAL_ERROR "MKW_PGO=use requires MKW_PGO_PROFILE=<merged .profdata>")
+    endif()
+    # A profile gathered from one attract-loop run cannot cover 28k functions; the unprofiled
+    # ones are not mistakes, so do not warn about each of them.
+    set(MKW_PGO_FLAGS "-fprofile-use=${MKW_PGO_PROFILE}" -Wno-profile-instr-unprofiled
+        -Wno-profile-instr-out-of-date)
+else()
+    set(MKW_PGO_FLAGS)
+endif()
+
 function(mkw_apply_common_compile_options target)
-    target_compile_options(${target} PRIVATE -O3 -ffast-math -w -pipe)
+    target_compile_options(${target} PRIVATE -O3 -ffast-math -w -pipe ${MKW_LTO_FLAG} ${MKW_PGO_FLAGS})
 endfunction()
 
+# Optimization level for the 28k translated guest functions. They are ~51 MB of the 76 MB
+# binary, so this single knob trades binary size (and instruction-cache pressure, which is what
+# actually limits weak hosts) against per-function code quality. -O2 is the accuracy-preserving
+# default; -Oz/-Os are size-first and are what a small-target build wants.
+set(MKW_TRANSLATED_OPT_LEVEL "-O2" CACHE STRING "Optimization level for translated guest code")
 function(mkw_apply_translated_compile_options target)
     target_compile_options(${target} PRIVATE
-        -O2 ${MKW_TRANSLATED_PPC_FP_OPTIONS} -fno-slp-vectorize -w -pipe)
+        ${MKW_TRANSLATED_OPT_LEVEL} ${MKW_TRANSLATED_PPC_FP_OPTIONS} -fno-slp-vectorize -w -pipe
+        ${MKW_LTO_FLAG} ${MKW_PGO_FLAGS})
 endfunction()
 
 function(mkw_configure_object_target target)
@@ -214,7 +258,14 @@ function(mkw_configure_product target)
 
         set_target_properties(${target} PROPERTIES WIN32_EXECUTABLE TRUE)
     elseif(APPLE)
-        target_link_libraries(${target} PRIVATE mkw::libco)
+        # Security/CoreFoundation: the SecureTransport backend of the /dev/net/ssl HLE.
+        target_link_libraries(${target} PRIVATE mkw::libco "-framework Security" "-framework CoreFoundation")
+        if(MKW_LTO_FLAG)
+            target_link_options(${target} PRIVATE ${MKW_LTO_FLAG})
+        endif()
+        if(MKW_PGO_FLAGS)
+            target_link_options(${target} PRIVATE ${MKW_PGO_FLAGS})
+        endif()
         # Every symbol the products never reference (unused aurora paths, dead third-party code,
         # translated functions only reachable through profiles this product does not carry) is
         # discarded at link time; the executable only pays for what it can execute.
@@ -288,17 +339,18 @@ if(TARGET mkw_base_sensitive)
 endif()
 
 if(MKW_HAVE_RETRO_REWIND)
-    add_executable(RetroRewind "${MKW_RETRO_REWIND_PRODUCT_SOURCE}" ${MKW_RETRO_REGISTRATION_SOURCES})
-    mkw_configure_product(RetroRewind)
-    target_precompile_headers(RetroRewind REUSE_FROM WiiCompiled)
+    set(mod_product "${MKW_MOD_PRODUCT_TARGET}")
+    add_executable(${mod_product} "${MKW_MOD_PRODUCT_SOURCE}" ${MKW_RETRO_REGISTRATION_SOURCES})
+    mkw_configure_product(${mod_product})
+    target_precompile_headers(${mod_product} REUSE_FROM WiiCompiled)
     if(TARGET mkw_retro_sensitive)
-        target_sources(RetroRewind PRIVATE $<TARGET_OBJECTS:mkw_retro_sensitive>)
+        target_sources(${mod_product} PRIVATE $<TARGET_OBJECTS:mkw_retro_sensitive>)
     endif()
-    target_sources(RetroRewind PRIVATE $<TARGET_OBJECTS:mkw_retro_rewind_functions>)
+    target_sources(${mod_product} PRIVATE $<TARGET_OBJECTS:mkw_retro_rewind_functions>)
     if(MKW_RETRO_BLOB_OBJECTS)
-        target_sources(RetroRewind PRIVATE ${MKW_RETRO_BLOB_OBJECTS})
+        target_sources(${mod_product} PRIVATE ${MKW_RETRO_BLOB_OBJECTS})
     endif()
-    add_custom_target(mkw_release DEPENDS WiiCompiled RetroRewind)
+    add_custom_target(mkw_release DEPENDS WiiCompiled ${mod_product})
 else()
     add_custom_target(mkw_release DEPENDS WiiCompiled)
     message(STATUS "RetroRewind target disabled (run translate-mod and emit-build-shards)")
@@ -325,7 +377,7 @@ endif()
 
 set(MKW_ALL_BUILD_TARGETS
     mkw_runtime_common mkw_base_shared mkw_base_sensitive mkw_retro_sensitive
-    mkw_retro_rewind_functions WiiCompiled RetroRewind)
+    mkw_retro_rewind_functions WiiCompiled ${MKW_MOD_PRODUCT_TARGET})
 foreach(target IN LISTS MKW_ALL_BUILD_TARGETS)
     if(TARGET ${target} AND MKW_BASELINE_ARCH_FLAG)
         target_compile_options(${target} PRIVATE ${MKW_BASELINE_ARCH_FLAG})

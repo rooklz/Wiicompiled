@@ -1,0 +1,53 @@
+schema_version: 1
+workspace_root: ../..
+
+# Mario Kart Wii NTSC-J (RMCJ01). Same translation surface as projects/mkwii/recomp.yml, with
+# the layout facts that differ per region: the small-data bases the DOL's __init_registers
+# installs, the StaticR.rel load address, and the clean-input digests. The function map is the
+# PAL map ported with the community region table and validated against these binaries; see
+# tools/region/port_map.py and MAP_REPORT.md.
+project:
+  id: mkwii-rmcj01
+  display_name: Mario Kart Wii NTSC-J
+  game_id: RMCJ01
+  region: J
+  base_manifest_format: mkwii-recomp-base-manifest
+  base_manifest_stem: mkwii_base
+
+memory:
+  base: 0x80000000
+  size: 0x01A00000
+  sda_base: 0x8038C580
+  sda2_base: 0x8038E920
+
+inputs:
+  dol:
+    path: Assets/main.dol
+    sha256: 1b9621ef7c5d97dada103e50e5389730e67f3c2545dda592edd4b5843655af91
+
+  rel:
+    path: Assets/StaticR.rel
+    load_address: 0x8050FC60
+    sha256: 88539012d357a1420724e51dc7e351192ce696da4b0045994895518a3fad6fae
+
+translation:
+  entry_points:
+    - 0x800060A4
+  function_map:
+    path: projects/mkwii-ntsc-j/MAP.txt
+  allow_unsupported_instructions: false
+
+runtime:
+  native_registration_root: runtime/src
+  native_abi_directories:
+    - runtime/src/hle/gx
+  # The runtime names guest addresses by their PAL identity; this table (also the header the
+  # compiler resolves them through) gives the translator the RMCE01 addresses it registers.
+  guest_address_table: runtime/include/region/rmcj01.h
+
+output:
+  root: generated-j
+  functions: functions
+  runtime_config: RuntimeConfig.h
+  data_initializer: data_sections_init.cpp
+  base_manifest: ../build/rmcj01/mkwii_base_manifest.json

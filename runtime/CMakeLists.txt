@@ -148,6 +148,22 @@ else()
     if(NOT EXISTS ${MKW_AURORA_DIR}/CMakeLists.txt)
         message(FATAL_ERROR "Requested aurora-main but ${MKW_AURORA_DIR} is missing")
     endif()
+    # Which GPU APIs Dawn compiles support for. The defaults below keep each platform on the API
+    # it actually ships (Metal on Apple, D3D12+Vulkan on Windows, Vulkan on Linux), which is the
+    # smallest and fastest binary. Portability builds override them: Dawn implements WebGPU over
+    # GL 4.4 / GLES 3.1, and those are the only APIs on older GPUs, Raspberry Pi and Android, so
+    # a build targeting those turns MKW_GPU_GLES (or MKW_GPU_DESKTOP_GL) on. Requires a
+    # from-source Dawn (AURORA_DAWN_PROVIDER=vendor); the prebuilt package ships Metal/D3D12/Null
+    # only.
+    option(MKW_GPU_GLES "Compile Dawn's OpenGL ES backend (GLES 3.1)" OFF)
+    option(MKW_GPU_DESKTOP_GL "Compile Dawn's desktop OpenGL backend (GL 4.4)" OFF)
+    option(MKW_GPU_VULKAN_ON_APPLE "Compile Dawn's Vulkan backend on Apple platforms (MoltenVK)" OFF)
+    set(DAWN_ENABLE_DESKTOP_GL ${MKW_GPU_DESKTOP_GL} CACHE BOOL "" FORCE)
+    set(DAWN_ENABLE_OPENGLES ${MKW_GPU_GLES} CACHE BOOL "" FORCE)
+    if(MKW_GPU_GLES OR MKW_GPU_DESKTOP_GL)
+        set(TINT_BUILD_GLSL_WRITER ON CACHE BOOL "" FORCE)
+        set(TINT_BUILD_GLSL_VALIDATOR ON CACHE BOOL "" FORCE)
+    endif()
     set(DAWN_ENABLE_D3D11 OFF CACHE BOOL "" FORCE)
     if(WIN32)
         set(DAWN_ENABLE_D3D12 ON CACHE BOOL "" FORCE)
@@ -163,7 +179,10 @@ else()
         # the binary entirely - one fewer translation layer between the GX stream and the GPU.
         set(DAWN_ENABLE_D3D12 OFF CACHE BOOL "" FORCE)
         set(TINT_BUILD_HLSL_WRITER OFF CACHE BOOL "" FORCE)
-        set(DAWN_ENABLE_VULKAN OFF CACHE BOOL "" FORCE)
+        # MKW_GPU_VULKAN_ON_APPLE routes through MoltenVK instead: one more translation layer,
+        # but it is the same code path Linux/Android use, so it is how the non-Metal path gets
+        # exercised on a Mac.
+        set(DAWN_ENABLE_VULKAN ${MKW_GPU_VULKAN_ON_APPLE} CACHE BOOL "" FORCE)
         set(DAWN_ENABLE_METAL ON CACHE BOOL "" FORCE)
         set(DAWN_ENABLE_NULL ON CACHE BOOL "" FORCE)
     else()
@@ -269,6 +288,13 @@ endif()
 #     cmake/PublicProducts.cmake are all created below (that file is include()d,
 #     not add_subdirectory()d, so it shares this directory scope) -> they pick
 #     the definitions up exactly as before.
+# Fault reports name the guest address that was executing. Maintaining it costs a thread-local
+# read and two writes on every guest indirect call; OFF trades that detail for the cycles.
+option(MKW_TRACK_EXECUTION_ADDRESS "Track the executing guest address for fault reports" ON)
+if(NOT MKW_TRACK_EXECUTION_ADDRESS)
+    add_compile_definitions(MKW_TRACK_EXECUTION_ADDRESS=0)
+endif()
+
 if(MKW_PROJECT_COMPILE_DEFINITIONS)
     add_compile_definitions(${MKW_PROJECT_COMPILE_DEFINITIONS})
 endif()
@@ -281,12 +307,17 @@ endif()
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 set(MKW_BASE_PRODUCT_SOURCE "${CMAKE_CURRENT_LIST_DIR}/src/product/base_product.cpp")
 set(MKW_RETRO_REWIND_PRODUCT_SOURCE "${CMAKE_CURRENT_LIST_DIR}/src/product/retro_rewind_product.cpp")
+set(MKW_WIIMMFI_PRODUCT_SOURCE "${CMAKE_CURRENT_LIST_DIR}/src/product/wiimmfi_product.cpp")
+# The executable built from the mod overlay (translate-mod + emit-build-shards output). Retro
+# Rewind by default; the Wiimmfi build names it Wiimmfi and links the Wiimmfi product descriptor.
+set(MKW_MOD_PRODUCT_TARGET "RetroRewind" CACHE STRING "Executable name for the mod-overlay product")
+set(MKW_MOD_PRODUCT_SOURCE "${MKW_RETRO_REWIND_PRODUCT_SOURCE}" CACHE FILEPATH "Product descriptor source for the mod-overlay product")
 # The host ISA guard is the one translation unit that must not receive the
 # x86-64-v3 flags, so it gets its own object library instead of riding along in
 # mkw_runtime_common. See cmake/PublicProducts.cmake and the file's own header.
 set(MKW_CPU_BASELINE_SOURCE "${CMAKE_CURRENT_LIST_DIR}/src/host_cpu_baseline.cpp")
 list(REMOVE_ITEM SOURCES ${MKW_BASE_PRODUCT_SOURCE} ${MKW_RETRO_REWIND_PRODUCT_SOURCE}
-     ${MKW_CPU_BASELINE_SOURCE})
+     ${MKW_WIIMMFI_PRODUCT_SOURCE} ${MKW_CPU_BASELINE_SOURCE})
 
 # The translator emits the complete, content-addressed source graph. Consuming
 # this one manifest keeps configure independent of the 28k generated function

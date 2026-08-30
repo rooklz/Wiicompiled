@@ -46,6 +46,9 @@ struct RuntimeUserConfig {
     std::optional<bool> textureReplacements;
     std::optional<bool> textureDumps;
     std::optional<bool> showFps;
+    std::optional<bool> frameLimit;
+    std::optional<int32_t> keyboardPort;
+    std::optional<std::string> padScript;
     std::optional<uint32_t> disabledPostProcessingPaths;
     std::optional<float> audioVolume;
     std::optional<float> audioMusicVolume;
@@ -300,6 +303,14 @@ inline void EnsureConfigFile() {
               "# guest can observe it. Set to false to mix inline on the guest\n"
               "# thread exactly as the runtime did before.\n"
               "mix_worker = true\n\n"
+              "[input]\n"
+              "# Drive a GameCube controller port (0-3) from the keyboard, no controller needed:\n"
+              "# WASD = stick, arrows = D-pad, IJKL = C-stick, X = A, Z = B, C = X, V = Y,\n"
+              "# Q = L, E = R, Shift = Z, Enter = Start.\n"
+              "# keyboard_port = 0\n"
+              "# Scripted controller timeline for unattended runs (port 1): lines of\n"
+              "# `<seconds> [A B X Y Z L R START UP DOWN LEFT RIGHT SX+ SX- SY+ SY- CX+ CX- CY+ CY-]`.\n"
+              "# pad_script = \"/path/to/pad.txt\"\n\n"
               "[network]\n"
               "enabled = true\n\n"
               "[paths]\n"
@@ -419,6 +430,9 @@ inline RuntimeUserConfig ParseConfigDocument(const toml::value& document) {
     config.skipUnreadyPipelines = FindConfigValue<bool>(document, "video", "skip_unready_pipelines");
     config.disableCopyFilter = FindConfigValue<bool>(document, "video", "disable_copy_filter");
     config.showFps = FindConfigValue<bool>(document, "video", "show_fps");
+    config.frameLimit = FindConfigValue<bool>(document, "video", "frame_limit");
+    config.keyboardPort = FindConfigInt(document, "input", "keyboard_port");
+    config.padScript = FindConfigValue<std::string>(document, "input", "pad_script");
     config.textureReplacements = FindConfigValue<bool>(document, "video", "texture_replacements");
     config.textureDumps = FindConfigValue<bool>(document, "video", "texture_dumps");
     if (auto value = FindConfigUint(document, "video", "disabled_post_processing_paths");
@@ -787,6 +801,23 @@ inline bool DisableCopyFilter(bool fallback = true) {
 
 inline bool ShowFps(bool fallback = true) {
     return Get().showFps.value_or(fallback);
+}
+
+// [video] frame_limit: false removes VI pacing so the guest runs as fast as the host allows.
+// A benchmark mode, not a play mode - guest-visible timing (audio cadence, alarms) is no longer
+// wall-clock accurate. Throughput is reported to the log as a multiple of the 60 Hz target.
+inline bool FrameLimit(bool fallback = true) {
+    return Get().frameLimit.value_or(fallback);
+}
+
+// [input] keyboard_port: GameCube controller port (0-3) driven by the keyboard, -1 = none.
+inline int32_t KeyboardPort(int32_t fallback = -1) {
+    return Get().keyboardPort.value_or(fallback);
+}
+
+// [input] pad_script: scripted controller timeline for unattended runs ("" = none).
+inline std::string PadScript() {
+    return Get().padScript.value_or(std::string{});
 }
 
 inline bool TextureReplacements(bool fallback = false) {

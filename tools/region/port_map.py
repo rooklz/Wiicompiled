@@ -70,7 +70,10 @@ TOOL_ID = "tools/region/port_map.py"
 # (RMCP01) addresses to NTSC-U (RMCE01) addresses: if src_start <= a < src_end then
 # a - src_start + dst_start.
 
-REL_LOAD_ADDRESS = {"P": 0x805102E0, "E": 0x8050BF60}
+REL_LOAD_ADDRESS = {"P": 0x805102E0, "E": 0x8050BF60, "J": 0x8050FC60, "K": 0x804FE300}
+
+# Output project directory per destination region.
+PROJECT_DIR = {"E": "mkwii-ntsc", "J": "mkwii-ntsc-j", "K": "mkwii-ntsc-k"}
 
 DOL_SECTIONS = {
     "P": [
@@ -103,6 +106,36 @@ DOL_SECTIONS = {
         ("sdata2", 0x80382C20, 0x80384DC0),
         ("sbss2", 0x80384DC0, 0x80384DFC),
     ],
+    "J": [
+        ("init", 0x80004000, 0x80006460),
+        ("extab", 0x80006460, 0x80006A20),
+        ("extabindex", 0x80006A20, 0x800072C0),
+        ("text", 0x800072C0, 0x80244D00),
+        ("ctors", 0x80244D00, 0x80244DC0),
+        ("dtors", 0x80244DC0, 0x80244DE0),
+        ("rodata", 0x80244E00, 0x80257F20),
+        ("data", 0x80257F20, 0x802A39E0),
+        ("bss", 0x802A3A00, 0x80384580),
+        ("sdata", 0x80384580, 0x80385940),
+        ("sbss", 0x80385940, 0x80386920),
+        ("sdata2", 0x80386920, 0x80388AC0),
+        ("sbss2", 0x80388AC0, 0x80388AFC),
+    ],
+    "K": [
+        ("init", 0x80004000, 0x80006460),
+        ("extab", 0x80006460, 0x80006A20),
+        ("extabindex", 0x80006A20, 0x800072C0),
+        ("text", 0x800072C0, 0x80245160),
+        ("ctors", 0x80245160, 0x80245220),
+        ("dtors", 0x80245220, 0x80245240),
+        ("rodata", 0x80245240, 0x80258340),
+        ("data", 0x80258340, 0x80292040),
+        ("bss", 0x80292080, 0x80372C00),
+        ("sdata", 0x80372C00, 0x80373FE0),
+        ("sbss", 0x80373FE0, 0x80374FC0),
+        ("sdata2", 0x80374FC0, 0x80377160),
+        ("sbss2", 0x80377160, 0x8037719C),
+    ],
 }
 
 REL_SECTIONS = {
@@ -121,6 +154,22 @@ REL_SECTIONS = {
         ("rodata", 0x8088B2E0, 0x808AE520),
         ("data", 0x808AE520, 0x808D8C7C),
         ("bss", 0x809B8F20, 0x809C07D0),
+    ],
+    "J": [
+        ("text", 0x8050FD34, 0x8088EA6C),
+        ("ctors", 0x8088EA6C, 0x8088ED70),
+        ("dtors", 0x8088ED70, 0x8088ED7C),
+        ("rodata", 0x8088ED80, 0x808B1D30),
+        ("data", 0x808B1D30, 0x808DC524),
+        ("bss", 0x809BC740, 0x809C3FF0),
+    ],
+    "K": [
+        ("text", 0x804FE3D4, 0x8087D7C0),
+        ("ctors", 0x8087D7C0, 0x8087DAC4),
+        ("dtors", 0x8087DAC4, 0x8087DAD0),
+        ("rodata", 0x8087DAE0, 0x808A1030),
+        ("data", 0x808A1030, 0x808CB86C),
+        ("bss", 0x809ABD20, 0x809B35D0),
     ],
 }
 
@@ -228,6 +277,77 @@ CHUNKS_E = [
     (0x809C38B8, 0x809C38BC, 0x809BF0B0), (0x809C4330, 0x809C4334, 0x809BFAF0), (0x809C4680, 0x809C4684, 0x809BFDC0),
     (0x809C4740, 0x809C474C, 0x809BFF90), (0x809C496C, 0x809C4970, 0x809C014C),
 ]
+# PAL -> NTSC-J chunk table. Vendored from mkw-sp port.py (CHUNKS['J']), MIT license.
+CHUNKS_J = [
+    (0x80004000, 0x80008024, 0x80004000), (0x800080E8, 0x8000ADC0, 0x80008044), (0x8000AF08, 0x80021BAC, 0x8000AE2C),
+    (0x80021BAC, 0x80244DE0, 0x80021ACC), (0x802A4080, 0x8038917C, 0x802A3A00), (0x805103B4, 0x805CC0A8, 0x8050FD34),
+    (0x805CC1B4, 0x805FA33C, 0x805CBA90), (0x805FA344, 0x805FF6E8, 0x805F9C20), (0x805FFD70, 0x806003E8, 0x805FF528),
+    (0x80600C78, 0x80620CB4, 0x806003EC), (0x80620D7C, 0x80637A24, 0x806204C8), (0x80637A80, 0x8063BCF8, 0x8063716C),
+    (0x8063BE40, 0x8088F400, 0x8063B4AC), (0x808913C0, 0x808913C4, 0x80890A10), (0x80895238, 0x808952B8, 0x80894888),
+    (0x808AD3C4, 0x808AD3C8, 0x808AC524), (0x808B3984, 0x808B3988, 0x808B2AE4), (0x808B5B1C, 0x808B5B20, 0x808B4C7C),
+    (0x808B5C78, 0x808B5C7C, 0x808B4DD8), (0x808BB034, 0x808BB098, 0x808BA184), (0x808CB550, 0x808CB554, 0x808CA6A0),
+    (0x808D3698, 0x808D369C, 0x808D27E8), (0x808D36CC, 0x808D36D0, 0x808D281C), (0x808D36D4, 0x808D36D8, 0x808D2824),
+    (0x808D3744, 0x808D3748, 0x808D2894), (0x808D374C, 0x808D3750, 0x808D289C), (0x808D3E14, 0x808D3E18, 0x808D2F64),
+    (0x808DA070, 0x808DA080, 0x808D91C0), (0x808DA318, 0x808DA368, 0x808D9468), (0x809BD6E8, 0x809BD74C, 0x809BC748),
+    (0x809C1830, 0x809C1834, 0x809C0890), (0x809C1874, 0x809C1878, 0x809C08D4), (0x809C18F8, 0x809C18FC, 0x809C0958),
+    (0x809C1988, 0x809C198C, 0x809C09E8), (0x809C19A0, 0x809C19BC, 0x809C0A00), (0x809C1E38, 0x809C1E3C, 0x809C0E98),
+    (0x809C21D0, 0x809C21D4, 0x809C1230), (0x809C21D8, 0x809C21DC, 0x809C1238), (0x809C2328, 0x809C232C, 0x809C1388),
+    (0x809C27F0, 0x809C27FC, 0x809C1850), (0x809C282C, 0x809C2854, 0x809C188C), (0x809C28B8, 0x809C28BC, 0x809C1918),
+    (0x809C2BE8, 0x809C2BEC, 0x809C1C48), (0x809C2EF0, 0x809C2EF4, 0x809C1F50), (0x809C2F38, 0x809C2F40, 0x809C1F98),
+    (0x809C2F44, 0x809C2F48, 0x809C1FA4), (0x809C3618, 0x809C361C, 0x809C2678), (0x809C38B8, 0x809C38BC, 0x809C2918),
+    (0x809C4330, 0x809C4334, 0x809C3390), (0x809C4680, 0x809C4684, 0x809C36E0), (0x809C4740, 0x809C474C, 0x809C37A0),
+    (0x809C496C, 0x809C4970, 0x809C39CC),
+]
+
+# PAL -> NTSC-K chunk table. Vendored from mkw-sp port.py (CHUNKS['K']), MIT license.
+CHUNKS_K = [
+    (0x80004000, 0x800074DC, 0x80004000), (0x800077C8, 0x800079D4, 0x80007894), (0x80007BC0, 0x80007BCC, 0x80007CAC),
+    (0x80007F2C, 0x80008004, 0x80008034), (0x8000829C, 0x80008BA4, 0x8000841C), (0x80008C04, 0x800093FC, 0x80008D54),
+    (0x80009458, 0x8000AD14, 0x80009560), (0x8000AF24, 0x8000B610, 0x8000AFD0), (0x8000B654, 0x80021BA8, 0x8000B6BC),
+    (0x80021BB0, 0x800EA448, 0x80021C10), (0x800EA474, 0x801642F4, 0x800EA4EC), (0x80164310, 0x801746FC, 0x801643AC),
+    (0x801746FC, 0x80174C54, 0x80174838), (0x80174EF4, 0x80175970, 0x8017517C), (0x80175978, 0x80176B58, 0x80175BF0),
+    (0x80176D68, 0x801774D0, 0x80176FF8), (0x80178514, 0x80178E8C, 0x801788A4), (0x8017A0BC, 0x8017AC74, 0x8017A3AC),
+    (0x8017B338, 0x8017B73C, 0x8017B790), (0x8017B740, 0x8017DC3C, 0x8017BB98), (0x8017E650, 0x8017EBC4, 0x8017EAA8),
+    (0x8017F674, 0x801E8414, 0x8017F9D0), (0x801E8414, 0x8020FD10, 0x801E883C), (0x8020FD18, 0x8020FD8C, 0x80210138),
+    (0x8020FE24, 0x8021008C, 0x802101AC), (0x802100A0, 0x80244DE0, 0x80210414), (0x802A4080, 0x803858E0, 0x80292080),
+    (0x80385908, 0x8038590C, 0x80373910), (0x80385FC0, 0x8038917C, 0x80373FE0), (0x805103B4, 0x8051D72C, 0x804FE3D4),
+    (0x8051E488, 0x8052A324, 0x8050C4AC), (0x8052A338, 0x805C08CC, 0x80518390), (0x805C08D4, 0x805CC0A8, 0x805AE938),
+    (0x805CC220, 0x805CEAE0, 0x805BA1E0), (0x805CEAFC, 0x805CF0E8, 0x805BCABC), (0x805CF154, 0x805CF158, 0x805BD118),
+    (0x805CF2BC, 0x805CF2C0, 0x805BD284), (0x805CF7E4, 0x805CF7E8, 0x805BD738), (0x805CF8BC, 0x805D00D0, 0x805BDA40),
+    (0x805D01C8, 0x805D124C, 0x805BE350), (0x805D1260, 0x805EEB68, 0x805BF3FC), (0x805EEB68, 0x805FA33C, 0x805DCF88),
+    (0x805FA344, 0x80620CB4, 0x805E8764), (0x80620D7C, 0x80637A24, 0x8060F174), (0x80637A80, 0x8063BCF8, 0x80625E18),
+    (0x8063BE40, 0x806681E8, 0x8062A158), (0x80668334, 0x80675464, 0x8065668C), (0x80675808, 0x80675EB8, 0x80663B68),
+    (0x80675F2C, 0x806771F8, 0x8066428C), (0x80677C3C, 0x80678134, 0x80665FE4), (0x8067818C, 0x80742B58, 0x80666534),
+    (0x80743154, 0x8088F400, 0x80731514), (0x808913C0, 0x808913C4, 0x8087F7C8), (0x80895238, 0x808952B8, 0x80883648),
+    (0x808AD3C4, 0x808AD3C8, 0x8089B824), (0x808B3984, 0x808B3988, 0x808A1DFC), (0x808B5B1C, 0x808B5B20, 0x808A3F94),
+    (0x808B5C78, 0x808B5C7C, 0x808A40F0), (0x808BB034, 0x808BB098, 0x808A94A4), (0x808CB550, 0x808CB554, 0x808B99E8),
+    (0x808D3698, 0x808D369C, 0x808C1B30), (0x808D36CC, 0x808D36D0, 0x808C1B64), (0x808D36D4, 0x808D36D8, 0x808C1B6C),
+    (0x808D3744, 0x808D3748, 0x808C1BDC), (0x808D374C, 0x808D3750, 0x808C1BE4), (0x808D3E14, 0x808D3E18, 0x808C22AC),
+    (0x808DA070, 0x808DA080, 0x808C8508), (0x808DA318, 0x808DA368, 0x808C87B0), (0x809BD6E8, 0x809BD74C, 0x809ABD28),
+    (0x809C1830, 0x809C1834, 0x809AFE70), (0x809C1874, 0x809C1878, 0x809AFEB4), (0x809C18F8, 0x809C18FC, 0x809AFF38),
+    (0x809C1988, 0x809C198C, 0x809AFFC8), (0x809C19A0, 0x809C19BC, 0x809AFFE0), (0x809C1E38, 0x809C1E3C, 0x809B0478),
+    (0x809C21D0, 0x809C21D4, 0x809B0810), (0x809C21D8, 0x809C21DC, 0x809B0818), (0x809C2328, 0x809C232C, 0x809B0968),
+    (0x809C27F0, 0x809C27FC, 0x809B0E30), (0x809C282C, 0x809C2854, 0x809B0E6C), (0x809C28B8, 0x809C28BC, 0x809B0EF8),
+    (0x809C2BE8, 0x809C2BEC, 0x809B1228), (0x809C2EF0, 0x809C2EF4, 0x809B1530), (0x809C2F38, 0x809C2F40, 0x809B1578),
+    (0x809C2F44, 0x809C2F48, 0x809B1584), (0x809C3618, 0x809C361C, 0x809B1C58), (0x809C38B8, 0x809C38BC, 0x809B13F8),
+    (0x809C4330, 0x809C4334, 0x809B2970), (0x809C4680, 0x809C4684, 0x809B2CC0), (0x809C4740, 0x809C474C, 0x809B2D80),
+    (0x809C496C, 0x809C4970, 0x809B2FAC),
+]
+
+CHUNK_TABLES = {"E": CHUNKS_E, "J": CHUNKS_J, "K": CHUNKS_K}
+
+# Which region this run is porting to. Set once by main() from --region; the section tables and
+# chunk table are then selected from it, so nothing below hardcodes a destination region.
+TARGET = "E"
+
+
+def dol_secs():
+    return DOL_SECTIONS[TARGET]
+
+
+def rel_secs():
+    return REL_SECTIONS[TARGET]
+
 
 LOW_MEMORY_LIMIT = 0x80004000          # below this: exception vectors / runtime-copied code
 REL_MODULE_ID = 1
@@ -835,7 +955,7 @@ class Evidence:
     def scan_ctor_tables(self, dol: Dol, rel: Rel) -> None:
         """Every entry of the .ctors/.dtors tables is called by the runtime (DOL: __init_cpp /
         __destroy_global_chain, REL: _prolog/_epilog), so each one is a proven function entry."""
-        dol_tables = {DOL_SECTIONS["E"][4][1]: "ctor:dol", DOL_SECTIONS["E"][5][1]: "dtor:dol"}
+        dol_tables = {dol_secs()[4][1]: "ctor:dol", dol_secs()[5][1]: "dtor:dol"}
         for sec in dol.sections:
             tag = dol_tables.get(sec.start)
             if tag is None:
@@ -847,7 +967,7 @@ class Evidence:
                     n += 1
             self.bump(f"dol.{'ctors' if tag == 'ctor:dol' else 'dtors'}: table entries", n)
         rel_tables = {"ctors": "ctor:rel", "dtors": "dtor:rel"}
-        for name, start, end in REL_SECTIONS["E"]:
+        for name, start, end in rel_secs():
             tag = rel_tables.get(name)
             if tag is None:
                 continue
@@ -873,8 +993,8 @@ def build_evidence(mem: Memory, dol: Dol, rel: Rel) -> Evidence:
     for a in (rel.prolog, rel.epilog, rel.unresolved):
         ev.add(a, F_ENTRY, "entry:rel")
     ev.scan_ctor_tables(dol, rel)
-    extab = next((s for s in dol.sections if s.start == DOL_SECTIONS["E"][1][1]), None)
-    extabindex = next((s for s in dol.sections if s.start == DOL_SECTIONS["E"][2][1]), None)
+    extab = next((s for s in dol.sections if s.start == dol_secs()[1][1]), None)
+    extabindex = next((s for s in dol.sections if s.start == dol_secs()[2][1]), None)
     if extab is not None and extabindex is not None:
         ev.scan_extabindex(extabindex, (extab.start, extab.end))
     # Relocations in two passes: the strong (REL24) ones first, so that jump-table detection
@@ -1534,7 +1654,7 @@ def layout_check(dol: Dol, rel: Rel) -> List[str]:
     """Compare the parsed NTSC-U binaries with the vendored mkw-sp 'E' layout."""
     notes = []
     parsed = {s.start: s for s in dol.sections}
-    for name, start, end in DOL_SECTIONS["E"]:
+    for name, start, end in dol_secs():
         if name in ("bss", "sbss", "sbss2"):
             continue
         s = parsed.get(start)
@@ -1544,10 +1664,10 @@ def layout_check(dol: Dol, rel: Rel) -> List[str]:
             notes.append(f"DOL {name}: parsed {s.start:08x}-{s.end:08x}, table says {start:08x}-{end:08x}")
         else:
             notes.append(f"DOL {name}: {start:08x}-{end:08x} OK")
-    if dol.bss_addr != DOL_SECTIONS["E"][8][1]:
+    if dol.bss_addr != dol_secs()[8][1]:
         notes.append(f"DOL bss: header says {dol.bss_addr:08x}, table says {DOL_SECTIONS['E'][8][1]:08x}")
     parsed_rel = {s.start: s for s in rel.sections}
-    for name, start, end in REL_SECTIONS["E"]:
+    for name, start, end in rel_secs():
         s = parsed_rel.get(start)
         if s is None:
             notes.append(f"REL {name}: expected a section at {start:08x}, none parsed")
@@ -1956,28 +2076,35 @@ def write_report(path: str, args: argparse.Namespace, dol: Dol, rel: Rel, table:
 # ---------------------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------------------
-def default_paths() -> dict:
+def default_paths(region: str = "E") -> dict:
     here = os.path.dirname(os.path.abspath(__file__))
     repo = os.path.abspath(os.path.join(here, "..", ".."))
     return {
         "pal_map": os.path.join(repo, "projects", "mkwii", "MAP.txt"),
-        "dol": "/Users/rookie/mkwiimac/disc/RMCE01/sys/main.dol",
-        "rel": "/Users/rookie/mkwiimac/disc/RMCE01/files/rel/StaticR.rel",
-        "out_map": os.path.join(repo, "projects", "mkwii-ntsc", "MAP.txt"),
-        "out_report": os.path.join(repo, "projects", "mkwii-ntsc", "MAP_REPORT.md"),
-        "out_json": os.path.join(repo, "projects", "mkwii-ntsc", "region_port.json"),
+        "dol": f"/Users/rookie/mkwiimac/disc/RMC{region}01/sys/main.dol",
+        "rel": f"/Users/rookie/mkwiimac/disc/RMC{region}01/files/rel/StaticR.rel",
+        "out_map": os.path.join(repo, "projects", PROJECT_DIR[region], "MAP.txt"),
+        "out_report": os.path.join(repo, "projects", PROJECT_DIR[region], "MAP_REPORT.md"),
+        "out_json": os.path.join(repo, "projects", PROJECT_DIR[region], "region_port.json"),
         "tertiary_map": "/Users/rookie/dolphin-ps3/external/mkwii-ntsc/MAP_ntsc_full.txt",
         "tertiary_rel_delta": "/Users/rookie/dolphin-ps3/external/mkwii-ntsc/rel_delta_table.txt",
     }
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    d = default_paths()
-    ap = argparse.ArgumentParser(description="Port the PAL MKWii function map to NTSC-U with binary validation.")
+    global TARGET
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--region", choices=sorted(CHUNK_TABLES), default="E")
+    known, _ = pre.parse_known_args(argv)
+    TARGET = known.region
+    d = default_paths(TARGET)
+    ap = argparse.ArgumentParser(
+        parents=[pre],
+        description="Port the PAL MKWii function map to another region with binary validation.")
     ap.add_argument("--pal-map", default=d["pal_map"])
     ap.add_argument("--dol", default=d["dol"], help="NTSC-U sys/main.dol")
     ap.add_argument("--rel", default=d["rel"], help="NTSC-U files/rel/StaticR.rel")
-    ap.add_argument("--rel-load", default=f"0x{REL_LOAD_ADDRESS['E']:08X}", help="NTSC-U REL load address")
+    ap.add_argument("--rel-load", default=None, help="target REL load address (default: the region's)")
     ap.add_argument("--out-map", default=d["out_map"])
     ap.add_argument("--out-report", default=d["out_report"])
     ap.add_argument("--out-json", default=d["out_json"])
@@ -1987,9 +2114,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
 
-    rel_load = int(args.rel_load, 16)
+    rel_load = int(args.rel_load, 16) if args.rel_load else REL_LOAD_ADDRESS[TARGET]
     dol = parse_dol(args.dol)
-    rel = parse_rel(args.rel, rel_load, REL_SECTIONS["E"][5][1])
+    rel = parse_rel(args.rel, rel_load, rel_secs()[5][1])
     mem = Memory()
     for s in dol.sections:
         mem.add(s)
@@ -1997,7 +2124,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         mem.add(s)
 
     ev = build_evidence(mem, dol, rel)
-    table = ChunkTable(CHUNKS_E)
+    table = ChunkTable(CHUNK_TABLES[TARGET])
     entries = load_pal_map(args.pal_map)
 
     if args.no_tertiary:

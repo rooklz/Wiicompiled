@@ -7,11 +7,11 @@
 // exactly as written and treated as the *identity* of the thing they name; a per-region table
 // then maps each identity to the address it has in the executable actually being built.
 //
-// Mechanically: a bare 8-digit hex token such as 801A9E84 goes through MKW_REGION_TOKEN, which
-// pastes it onto MKW_G_ and expands to the region's token (801A9DE4 for NTSC-U, the same token for
-// PAL). Two extra macro levels let the expanded token be pasted again into func_/0x forms. The
-// translator applies the same table (see tools/region/gen_region_headers.py, which writes both
-// this header's region files and keeps them in the form the translator's source scan reads).
+// Mechanically: MKW_GADDR(801A9E84) pastes onto MKW_G_801A9E84, which the region header defines
+// as the address that identity has in this build (0x801A9DE4u for NTSC-U, 0x801A9E84u for PAL).
+// MKW_GUEST_FUNC does the same through MKW_F_ for the translated function's symbol. The
+// translator resolves the same table when it scans these sources (tools/region/gen_region_headers.py
+// writes the headers; Translator.Core/GuestAddressTable.cs reads them).
 //
 // Any PAL address the region header does not define fails to compile ("use of undeclared
 // identifier 'MKW_G_xxxxxxxx'"): a region table is complete or the build does not exist.
@@ -22,18 +22,11 @@
 #include "region/rmcp01.h"
 #endif
 
-#define MKW_REGION_TOKEN(pal_hex) MKW_G_##pal_hex
-
-// 0x<region address>u from a PAL identity token, usable wherever an integer literal is.
-#define MKW_GADDR(pal_hex) MKW_GADDR_I(MKW_REGION_TOKEN(pal_hex))
-#define MKW_GADDR_I(tok) MKW_GADDR_II(tok)
-#define MKW_GADDR_II(tok) 0x##tok##u
-
-// The C symbol of a translated guest function (func_<address>) from its PAL identity, for the
-// few native wrappers that call the original translated body directly.
-#define MKW_GUEST_FUNC(pal_hex) MKW_GUEST_FUNC_I(MKW_REGION_TOKEN(pal_hex))
-#define MKW_GUEST_FUNC_I(tok) MKW_GUEST_FUNC_II(tok)
-#define MKW_GUEST_FUNC_II(tok) func_##tok
+// A guest address, and the C symbol of its translated function, from a PAL identity. The region
+// header carries both forms already written out, so each of these is a single token paste and
+// what it expands to is visible in that header.
+#define MKW_GADDR(pal_hex) MKW_G_##pal_hex
+#define MKW_GUEST_FUNC(pal_hex) MKW_F_##pal_hex
 
 #ifndef MKW_REGION_GAME_ID
 #error "The guest region header must define MKW_REGION_GAME_ID and the other MKW_REGION_* facts"

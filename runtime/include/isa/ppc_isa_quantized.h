@@ -264,7 +264,7 @@ inline void PpcWritePairPsqInline(uint32_t addr, T first, T second)
 // reading stale bytes, and unmapped pages commit on demand, same as MemoryInline::Flat* loads.
 MKW_PPC_FORCE_INLINE const uint8_t* PpcTryGetPsqReadableHostInline(uint32_t addr)
 {
-    return MKW_FLAT_GUEST_BASE + addr;
+    return MKW_FLAT_GUEST_BASE + MKW_GUEST_OFFSET(addr);
 }
 
 // Same reduction for stores. Still refuses a 32-bit address wrap (one host access can't
@@ -279,7 +279,7 @@ MKW_PPC_FORCE_INLINE uint8_t* PpcTryGetPsqWritableHostInline(uint32_t addr)
     if (MemoryInline::FlatWriteNeedsPolicy(addr) ||
         MemoryInline::FlatWriteNeedsPolicy(addr + 7u)) [[unlikely]]
         return nullptr;
-    return MKW_FLAT_GUEST_BASE + addr;
+    return MKW_FLAT_GUEST_BASE + MKW_GUEST_OFFSET(addr);
 }
 
 inline double PpcLoadPairPsqFloatFastInline(uint32_t addr)
