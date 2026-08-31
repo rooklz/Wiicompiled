@@ -12,6 +12,10 @@ below (A accel, B brake/drift, L item -> GC A/B+R/L) reproduces a lap only if it
 what the game latched when the ghost was recorded - verify by replaying a staff ghost and
 comparing the finish time to the ghost's own header time.
 
+The ghost's input stream begins ~3 s before GO with no stored launch frame: the timeline
+must be aligned to the race start (--start-frame; ~188 worked for the Luigi staff ghost in
+mkw-roblox's replay tool, but calibrate per boot flow).
+
 Usage: rkg_to_padscript.py <ghost.rkg> <out.txt> [--start-frame N] [--b-to-r]
 """
 import struct, sys
@@ -68,16 +72,20 @@ def main():
             start = int(a.split("=", 1)[1] if "=" in a else sys.argv[sys.argv.index(a) + 1])
     b_to_r = "--b-to-r" in sys.argv
     frames = read_frames(args[0])
-    # GC stick full deflection ~ +/-72 in PADStatus units; RKG stick is 15 steps around 7.
-    scale = lambda v: round((v - 7) / 7.0 * 72)
+    # GC stick full deflection ~ +/-72 in PADStatus units; RKG stick is 15 steps around 7,
+    # with nibble 0 = full RIGHT (community docs + mkw-roblox replay validation), so X flips
+    # into PADStatus's positive-right convention. Y polarity is unvalidated until a replayed
+    # staff ghost reproduces its header time on hardware.
+    scale_x = lambda v: round((7 - v) / 7.0 * 72)
+    scale_y = lambda v: round((v - 7) / 7.0 * 72)
     lines, prev = [], None
     for i, (state, x, y) in enumerate(frames):
         toks = []
         if state & 1: toks.append("A")
         if state & 2: toks.append("R" if b_to_r else "B")
         if state & 4: toks.append("L")
-        toks.append(f"SX={scale(x)}")
-        toks.append(f"SY={scale(y)}")
+        toks.append(f"SX={scale_x(x)}")
+        toks.append(f"SY={scale_y(y)}")
         cur = " ".join(toks)
         if cur != prev:
             lines.append(f"F{start + i} {cur}")
