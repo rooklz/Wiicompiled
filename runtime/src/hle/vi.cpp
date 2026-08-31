@@ -8,6 +8,7 @@
 #include "fiber_manager.h"
 #include "runtime_log.h"
 #include "runtime_config.h"
+#include "pad_script.h"
 
 #include <dolphin/vi.h>
 
@@ -958,6 +959,9 @@ PPC_NATIVE_OVERRIDE_VOID(801BAC48, VIGetCurrentLine_HLE_801bac48, (CpuContext* c
 
 extern "C" void VIWaitForRetrace_HLE_801b99ec(CpuContext* ctx)
 {
+    // One retrace = one guest frame: the pad script's clock (see pad_script.h).
+    PadScript::Tick();
+
     CpuContext* cpu = ctx ? ctx : &GetPersistentCpuContext();
     
     if (Fiber::GuestFiberManager::IsInitialized()) {

@@ -31,6 +31,7 @@
 struct RuntimeUserConfig {
     std::optional<bool> widescreen;
     std::optional<bool> frameLimit;
+    std::optional<std::string> padScript;
     std::optional<int32_t> windowPosX;
     std::optional<int32_t> windowPosY;
     std::optional<uint32_t> windowWidth;
@@ -366,6 +367,7 @@ inline RuntimeUserConfig ParseConfigDocument(const toml::value& document) {
 
     config.widescreen = FindConfigValue<bool>(document, "video", "widescreen");
     config.frameLimit = FindConfigValue<bool>(document, "video", "frame_limit");
+    config.padScript = FindConfigValue<std::string>(document, "input", "pad_script");
     config.windowPosX = FindConfigInt(document, "video", "window_x");
     config.windowPosY = FindConfigInt(document, "video", "window_y");
     if (auto value = FindConfigUint(document, "video", "window_width"); value && *value != 0) {
@@ -685,6 +687,12 @@ inline bool SetAttenuateMusicWhenMediaPlays(bool value) {
 // [video] frame_limit: false removes VI pacing so the guest runs as fast as the host allows.
 // A benchmark mode, not a play mode - guest-visible timing (audio cadence, alarms) is no longer
 // wall-clock accurate. Throughput is reported to the log as a multiple of the 60 Hz target.
+// [input] pad_script: scripted controller timeline for unattended runs ("" = none). Steps are
+// applied to port 1 and keyed to VI retraces (a step at 8.0 fires on frame 480 of the run).
+inline std::string PadScript() {
+    return Get().padScript.value_or(std::string{});
+}
+
 inline bool FrameLimit(bool fallback = true) {
     return Get().frameLimit.value_or(fallback);
 }

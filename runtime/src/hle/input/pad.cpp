@@ -1,4 +1,6 @@
 #include "hle_stubs.h"
+#include "pad_script.h"
+#include "runtime_config.h"
 #include "memory.h"
 #include "hle/controller_status_contract.h"
 
@@ -33,6 +35,7 @@ void WritePadStatus(uint32_t base, const PADStatus& status) {
 
 extern "C" uint32_t PAD__Init_HLE()
 {
+    PadScript::Load(RuntimeConfigFile::PadScript());
     return PADInit() ? 1u : 0u;
 }
 PPC_NATIVE_OVERRIDE(801AF2F0, PAD__Init_HLE, uint32_t, (), ());
@@ -45,6 +48,7 @@ extern "C" uint32_t PAD__Read_HLE(uint32_t statusPtr)
 
     PADStatus statuses[PAD_CHANMAX]{};
     uint32_t rumbleMask = PADRead(statuses);
+    PadScript::Apply(statuses[0]);
 
     try {
         for (uint32_t i = 0; i < PAD_CHANMAX; ++i) {
