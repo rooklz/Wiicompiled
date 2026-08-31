@@ -510,6 +510,17 @@ bool FrameLimitEnabled() {
     return enabled;
 }
 
+// Instrumented (MKW_PGO=generate) builds only: the weak symbol exists solely there. Flushing at
+// every milestone means a killed profile run still leaves a complete, mergeable profile that is
+// at most one milestone stale - no reliance on clean exits or on signals SDL may intercept.
+extern "C" int __llvm_profile_write_file(void) __attribute__((weak));
+
+void FlushProfileIfInstrumented() {
+    if (&__llvm_profile_write_file != nullptr) {
+        __llvm_profile_write_file();
+    }
+}
+
 void ReportUnpacedThroughput() {
     // Fixed FRAME milestones, not wall-clock intervals: the attract loop is deterministic, so
     // frame N is the same guest content in every build - comparing seconds-to-frame-N compares
@@ -526,6 +537,7 @@ void ReportUnpacedThroughput() {
                            << (frames / elapsed) << " fps avg (" << (frames / elapsed / 60.0)
                            << "x of 60 Hz)" << std::endl;
     nextMilestone += 2000;
+    FlushProfileIfInstrumented();
 }
 
 // Paced-mode frame telemetry: per-present wall deltas, summarized every 2000 frames. The p99
