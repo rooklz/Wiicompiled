@@ -2,7 +2,6 @@
 
 #include "runtime_log.h"
 
-#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -17,7 +16,6 @@ struct Step {
 };
 
 std::vector<Step> g_steps;
-std::chrono::steady_clock::time_point g_start;
 bool g_started = false;
 bool g_finished = false;
 
@@ -83,15 +81,33 @@ void Load(const std::string& path) {
     RT_LOG(RT_TAG_RUNTIME) << "pad script: " << path << " (" << g_steps.size() << " steps)" << std::endl;
 }
 
+PADStatus g_lastApplied{};
+
+const PADStatus& LastApplied() {
+    return g_lastApplied;
+}
+
+// One VI retrace = one guest frame. Counting frames instead of wall time keeps a script
+// aligned with the simulation whatever the host does: a laggy frame delays the timeline with
+// the game, and an unpaced (frame_limit = false) run replays it fast without skewing a step.
+uint64_t g_frames = 0;
+uint64_t g_startFrame = 0;
+
+void Tick() {
+    ++g_frames;
+}
+
 bool Apply(PADStatus& status) {
     if (g_steps.empty() || g_finished) {
         return false;
     }
     if (!g_started) {
         g_started = true;
-        g_start = std::chrono::steady_clock::now();
+        g_startFrame = g_frames;
     }
-    const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - g_start).count();
+    // Timeline positions stay spelled in seconds in the script file; they are interpreted at
+    // the guest's 60 Hz, so "8.0" means frame 480 of the run, not eight wall-clock seconds.
+    const double elapsed = static_cast<double>(g_frames - g_startFrame) / 60.0;
     const Step* current = nullptr;
     for (const Step& step : g_steps) {
         if (step.seconds <= elapsed) {
@@ -107,6 +123,7 @@ bool Apply(PADStatus& status) {
     }
     status = current->status;
     status.err = PAD_ERR_NONE;
+    g_lastApplied = status;
     return true;
 }
 

@@ -17,4 +17,12 @@ void Load(const std::string& path);
 // Overrides `status` (port 1) while the script is active; returns false when it is not.
 bool Apply(PADStatus& status);
 
+// Advances the script's clock by one guest frame. Called once per VI retrace; the script
+// timeline is interpreted against this counter (at 60 Hz), never against wall time.
+void Tick();
+
+// The status most recently applied by the script, for anything that needs to record what
+// the game was told. Zeroed when no script is running.
+const PADStatus& LastApplied();
+
 } // namespace PadScript

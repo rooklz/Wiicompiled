@@ -1,4 +1,5 @@
 #include "kart_trace.h"
+#include "pad_script.h"
 #include "hle_stubs.h"
 #include "memory.h"
 #include "abi_bridge.h"
@@ -977,6 +978,7 @@ extern "C" void VIWaitForRetrace_HLE_801b99ec(CpuContext* ctx)
     // One retrace is one frame, which is the cadence a recorded trace has to match: the
     // game's behaviour is defined in frames, so the reimplementation compares per frame.
     KartTrace::Tick();
+    PadScript::Tick();
 
     CpuContext* cpu = ctx ? ctx : &GetPersistentCpuContext();
     
