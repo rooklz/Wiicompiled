@@ -30,6 +30,7 @@
 
 struct RuntimeUserConfig {
     std::optional<bool> widescreen;
+    std::optional<bool> frameLimit;
     std::optional<int32_t> windowPosX;
     std::optional<int32_t> windowPosY;
     std::optional<uint32_t> windowWidth;
@@ -364,6 +365,7 @@ inline RuntimeUserConfig ParseConfigDocument(const toml::value& document) {
     }
 
     config.widescreen = FindConfigValue<bool>(document, "video", "widescreen");
+    config.frameLimit = FindConfigValue<bool>(document, "video", "frame_limit");
     config.windowPosX = FindConfigInt(document, "video", "window_x");
     config.windowPosY = FindConfigInt(document, "video", "window_y");
     if (auto value = FindConfigUint(document, "video", "window_width"); value && *value != 0) {
@@ -678,6 +680,13 @@ inline bool SetAudioMixWorker(bool value) {
 inline bool SetAttenuateMusicWhenMediaPlays(bool value) {
     Mutable().attenuateMusicWhenMediaPlays = value;
     return WriteSetting("audio", "attenuate_music_when_media_plays", value ? "true" : "false");
+}
+
+// [video] frame_limit: false removes VI pacing so the guest runs as fast as the host allows.
+// A benchmark mode, not a play mode - guest-visible timing (audio cadence, alarms) is no longer
+// wall-clock accurate. Throughput is reported to the log as a multiple of the 60 Hz target.
+inline bool FrameLimit(bool fallback = true) {
+    return Get().frameLimit.value_or(fallback);
 }
 
 inline bool WidescreenEnabled(bool fallback = false) {
