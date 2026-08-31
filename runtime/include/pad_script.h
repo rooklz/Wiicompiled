@@ -25,4 +25,19 @@ void Tick();
 // the game was told. Zeroed when no script is running.
 const PADStatus& LastApplied();
 
+// Frame at which a SCRIPT_GO rebase anchored the timeline; 0 until it happens.
+uint64_t RebasedAtFrame();
+
+// Called by OSReport interception on the game's "Scene Restart" prints. When
+// MKW_PAD_ANCHOR_SCENE=N is set, the Nth restart rebases the script timeline
+// exactly like a SCRIPT_GO, frame-locked to the scene rather than to any
+// external observer.
+void NoteSceneRestart();
+
+// Called by the tracer the moment any grid-height transform first moves during a
+// race start: that is GO, the only anchor whose offset cannot drift with loading
+// times. Rebases the script so its configured GO frame (MKW_PAD_ANCHOR_GO) lands
+// exactly now, and hands control from the live channel to the script.
+void NoteGo();
+
 } // namespace PadScript

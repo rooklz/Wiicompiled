@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "abi_bridge.h"
+#include "pad_script.h"
 #include "memory.h"
 #include "hle_stubs.h"
 #include "hle/guest_printf.h"
@@ -103,6 +104,15 @@ static void HLE_LogOSReport(CpuContext* cpu, const char* fmt)
         [&state]() { return NextOsReportU64(state); },
         [&state]() { return NextOsReportDouble(state); },
         [](uint32_t address) { return ReadGuestStringForReport(address); });
+
+    // The game announces scene transitions here ("N Scene Restart"). That print is
+    // frame-locked to the scene, which makes it the only jitter-free anchor an
+    // external recording rig can key on - screenshot polling wobbles by a capture
+    // tick, and menu flows shift by whole seconds run to run.
+    if (buffer.find("Scene Restart") != std::string::npos
+        || buffer.find("Scene Exit") != std::string::npos) {
+        PadScript::NoteSceneRestart();
+    }
 
     // nw4r warnings arrive as "<file>:<line> Warning:" plus a bare newline, so
     // consecutive identical messages never land back to back. Blank lines are

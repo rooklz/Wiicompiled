@@ -1,5 +1,8 @@
 #include "hle_stubs.h"
+#include <string_view>
+
 #include "hle/guest_printf.h"
+#include "pad_script.h"
 #include "memory.h"
 
 #include <cctype>
@@ -33,6 +36,16 @@ extern "C" uint32_t ConsoleWrite_HLE_80015500(
         if (!data) {
             Memory::Write32(lengthPtr, 0);
             return 1;
+        }
+
+        // The game announces scene transitions through this console path. That
+        // announcement is frame-locked to the scene, which makes it the anchor
+        // for scripted-input timelines (see PadScript::NoteSceneRestart).
+        if (length >= 13) {
+            const std::string_view text(reinterpret_cast<const char*>(data), length);
+            if (text.find("Scene Restart") != std::string_view::npos) {
+                PadScript::NoteSceneRestart();
+            }
         }
 
         return 0;
