@@ -2,6 +2,8 @@
 
 #include "runtime_log.h"
 
+#include <cmath>
+
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -11,7 +13,7 @@ namespace PadScript {
 namespace {
 
 struct Step {
-    double seconds = 0;
+    uint64_t frame = 0;
     PADStatus status{};
 };
 
@@ -67,7 +69,19 @@ void Load(const std::string& path) {
     while (std::getline(file, line)) {
         std::istringstream in(line);
         Step step;
-        if (!(in >> step.seconds)) {
+        // Two spellings for a step's position: "F<frames>" is exact; a bare number is seconds,
+        // interpreted at the guest's 60 Hz (8.0 -> frame 480).
+        std::string when;
+        if (!(in >> when)) {
+            continue;
+        }
+        try {
+            if (when.size() > 1 && when[0] == 'F') {
+                step.frame = std::stoull(when.substr(1));
+            } else {
+                step.frame = static_cast<uint64_t>(std::llround(std::stod(when) * 60.0));
+            }
+        } catch (...) {
             continue;
         }
         std::string token;
@@ -105,19 +119,17 @@ bool Apply(PADStatus& status) {
         g_started = true;
         g_startFrame = g_frames;
     }
-    // Timeline positions stay spelled in seconds in the script file; they are interpreted at
-    // the guest's 60 Hz, so "8.0" means frame 480 of the run, not eight wall-clock seconds.
-    const double elapsed = static_cast<double>(g_frames - g_startFrame) / 60.0;
+    const uint64_t elapsed = g_frames - g_startFrame;
     const Step* current = nullptr;
     for (const Step& step : g_steps) {
-        if (step.seconds <= elapsed) {
+        if (step.frame <= elapsed) {
             current = &step;
         }
     }
     if (current == nullptr) {
         return false;  // before the first step
     }
-    if (current == &g_steps.back() && elapsed > current->seconds + 1.0) {
+    if (current == &g_steps.back() && elapsed > current->frame + 60) {
         g_finished = true;
         return false;
     }

@@ -64,6 +64,7 @@ project.lock.json
 /.idea/
 /tools/*
 !/tools/region/
+!/tools/switch/
 __pycache__/
 /TEMP/
 /tmp/
