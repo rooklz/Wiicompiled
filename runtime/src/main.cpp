@@ -1068,6 +1068,8 @@ void InstallSehLogger() {
 #else
 // POSIX counterpart to SehLogger above. Unlike Windows' AddVectoredExceptionHandler, which lets
 // GuestFlat and this module each install their own handler and defensively re-check each other,
+extern "C" int __llvm_profile_write_file(void) __attribute__((weak));
+
 // sigaction only allows one handler per signal - the second registration replaces the first
 // instead of chaining. So this is the single SIGSEGV/SIGBUS handler for the whole process, and it
 // owns checking GuestFlat's fault-interception logic first, exactly mirroring the order SehLogger
@@ -1281,6 +1283,17 @@ int RuntimeMain(int argc, char** argv) {
 #endif
     InitializeProcessTranscript(argc, argv);
     std::signal(SIGABRT, AbortSignalHandler);
+
+    // Profile-instrumented builds (MKW_PGO=generate): flush the profile on SIGTERM. Continuous
+    // mode mmaps only the counters; the names section is written at clean exit, so a killed
+    // instrumented process otherwise leaves a "truncated profile data" file that cannot merge.
+    // The weak symbol is absent in normal builds, making this a no-op there.
+    if (&__llvm_profile_write_file != nullptr) {
+        std::signal(SIGTERM, [](int) {
+            __llvm_profile_write_file();
+            _exit(0);
+        });
+    }
     // Install exit/terminate handlers to ensure we get crash info
     std::atexit(AtExitHandler);
     std::set_terminate(TerminateHandler);
