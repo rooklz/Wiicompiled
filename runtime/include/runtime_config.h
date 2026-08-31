@@ -23,6 +23,9 @@
 #endif
 #include <windows.h>
 #include <shlobj.h>
+#else
+#include <cstdlib>
+#include <unistd.h>
 #endif
 
 struct RuntimeUserConfig {
@@ -60,9 +63,6 @@ struct RuntimeUserConfig {
     // comma-separated SDL-style physical button names ("south", or
     // "dpad_up,left_shoulder") as values; pressing either bound button counts.
     std::array<std::optional<std::string>, 12> controllerButtons;
-    // One-based physical WUP-028 adapter port assigned to each game port.
-    // Zero or a missing value means the adapter does not own that game port.
-    std::array<uint32_t, 4> gameCubeAdapterPorts{};
 };
 
 namespace RuntimeConfigFile {
@@ -168,7 +168,22 @@ inline std::optional<std::filesystem::path> ExecutableDirectory() {
         buffer.resize(buffer.size() * 2);
     }
 #else
-    return std::nullopt;
+    // /proc/self/exe is a Linux-specific magic symlink to the running executable; readlink()
+    // does not NUL-terminate and silently truncates if the buffer is too small, so this grows
+    // the buffer until the result no longer fills it completely, the same doubling strategy as
+    // the Windows branch above uses for GetModuleFileNameW.
+    std::string buffer(256, '\0');
+    for (;;) {
+        const ssize_t length = readlink("/proc/self/exe", buffer.data(), buffer.size());
+        if (length < 0) {
+            return std::nullopt;
+        }
+        if (static_cast<size_t>(length) < buffer.size()) {
+            buffer.resize(static_cast<size_t>(length));
+            return std::filesystem::path(buffer).parent_path();
+        }
+        buffer.resize(buffer.size() * 2);
+    }
 #endif
 }
 
@@ -208,6 +223,15 @@ inline std::filesystem::path ApplicationDataDirectory() {
         const std::filesystem::path directory = std::filesystem::path(rawPath) / kApplicationDirectoryName;
         CoTaskMemFree(rawPath);
         return directory;
+    }
+#else
+    // XDG Base Directory spec equivalent of FOLDERID_LocalAppData: $XDG_DATA_HOME if set and
+    // non-empty, otherwise its default of $HOME/.local/share.
+    if (const char* xdgDataHome = std::getenv("XDG_DATA_HOME"); xdgDataHome && *xdgDataHome) {
+        return std::filesystem::path(xdgDataHome) / kApplicationDirectoryName;
+    }
+    if (const char* home = std::getenv("HOME"); home && *home) {
+        return std::filesystem::path(home) / ".local" / "share" / kApplicationDirectoryName;
     }
 #endif
     return std::filesystem::current_path() / kApplicationDirectoryName;
@@ -337,12 +361,6 @@ inline RuntimeUserConfig ParseConfigDocument(const toml::value& document) {
     for (size_t index = 0; index < buttonKeys.size(); ++index) {
         config.controllerButtons[index] =
             FindConfigValue<std::string>(document, "controller", buttonKeys[index]);
-    }
-    for (size_t index = 0; index < config.gameCubeAdapterPorts.size(); ++index) {
-        const std::string key = "adapter_port_" + std::to_string(index + 1);
-        if (auto value = FindConfigUint(document, "controller", key); value && *value <= 4) {
-            config.gameCubeAdapterPorts[index] = *value;
-        }
     }
 
     config.widescreen = FindConfigValue<bool>(document, "video", "widescreen");
@@ -605,19 +623,6 @@ inline bool SetControllerButton(size_t index, std::string value) {
     }
     Mutable().controllerButtons[index] = value;
     return WriteSetting("controller", kControllerButtonKeys[index], FormatString(value));
-}
-
-inline int GameCubeAdapterPort(size_t gamePort) {
-    if (gamePort >= Get().gameCubeAdapterPorts.size()) return -1;
-    const uint32_t physicalPort = Get().gameCubeAdapterPorts[gamePort];
-    return physicalPort >= 1 && physicalPort <= 4 ? static_cast<int>(physicalPort - 1) : -1;
-}
-
-inline bool SetGameCubeAdapterPort(size_t gamePort, int physicalPort) {
-    if (gamePort >= Mutable().gameCubeAdapterPorts.size() || physicalPort < -1 || physicalPort >= 4) return false;
-    const uint32_t storedPort = physicalPort < 0 ? 0u : static_cast<uint32_t>(physicalPort + 1);
-    Mutable().gameCubeAdapterPorts[gamePort] = storedPort;
-    return WriteSetting("controller", "adapter_port_" + std::to_string(gamePort + 1), std::to_string(storedPort));
 }
 
 inline bool SetAudioVolume(float value) {

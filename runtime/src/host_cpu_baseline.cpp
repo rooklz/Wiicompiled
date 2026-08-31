@@ -4,13 +4,24 @@
 // build/PCH) and runs from a priority-101 C initializer, ahead of every C++ dynamic initializer
 // and thus the first AVX2 code that could execute. Keep it free of anything that could pull in
 // vectorized code: no iostreams, no std::string, no runtime-wide headers.
+//
+// x86-64-v3 is an x86-specific optional-feature baseline (AVX2/BMI2/FMA and friends are not
+// guaranteed present on every x86_64 chip); nothing here applies on AArch64, where ASIMD/NEON is
+// mandatory in the base architecture and PublicProducts.cmake never applies an -march=x86-64-v3
+// equivalent flag to begin with. That branch below is a no-op stub, not a port of this check.
+
+#if defined(__x86_64__)
 
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 
 #include <cpuid.h>
+#if defined(_WIN32)
 #include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace {
 
@@ -137,7 +148,12 @@ bool CollectMissingBaselineFeatures(TextBuffer& missing) {
 // up yet, and fprintf(stderr, ...) faults there. Verified on this toolchain:
 // WriteFile on the raw standard-error handle and MessageBoxA both work, printf
 // does not. Anything added to this reporting path has to respect that.
+//
+// The POSIX path runs from an __attribute__((constructor)) instead, ahead of libc's own startup
+// guarantees; ::write() on the raw fd is the same kind of allocation-free, libc-init-independent
+// primitive as WriteFile is on Windows, so the same restriction is honored here.
 void WriteStdErrEarly(const char* text) {
+#if defined(_WIN32)
     const HANDLE handle = ::GetStdHandle(STD_ERROR_HANDLE);
     if (handle == nullptr || handle == INVALID_HANDLE_VALUE) {
         return;
@@ -148,6 +164,13 @@ void WriteStdErrEarly(const char* text) {
     }
     DWORD written = 0;
     ::WriteFile(handle, text, static_cast<DWORD>(length), &written, nullptr);
+#else
+    size_t length = 0;
+    while (text[length] != '\0') {
+        ++length;
+    }
+    (void)::write(STDERR_FILENO, text, length);
+#endif
 }
 
 [[noreturn]] void ReportUnsupportedCpu(const char* missing) {
@@ -168,12 +191,18 @@ void WriteStdErrEarly(const char* text) {
     WriteStdErrEarly(message.data);
     WriteStdErrEarly("\n");
 
+#if defined(_WIN32)
     ::MessageBoxA(nullptr, message.data, "WiiCompiled - Unsupported Processor",
                   MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TASKMODAL);
     // Leave through the OS rather than exit(): the C++ dynamic initializers
     // have not run yet, so there is no constructed program state to unwind and
     // the teardown path itself lives in AVX2 translation units.
     ::ExitProcess(1u);
+#else
+    // Same reasoning as the Windows path above: no C++ dynamic initializer has run yet, so
+    // _exit() (skips atexit/global destructors, unlike exit()) is the correct way out.
+    ::_exit(1);
+#endif
 }
 
 }  // namespace
@@ -192,3 +221,11 @@ extern "C" int MkwHostCpuBaselineInit() {
 __attribute__((constructor(101))) static void MkwHostCpuBaselineCtor() {
     MkwHostCpuBaselineInit();
 }
+
+#else  // !defined(__x86_64__)
+
+extern "C" int MkwHostCpuBaselineInit() {
+    return 0;
+}
+
+#endif  // defined(__x86_64__)
