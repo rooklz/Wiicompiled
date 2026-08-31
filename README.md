@@ -1,4 +1,8 @@
+Nintendo Switch Port WIP
 
+Plan is to target Switchroot Ubuntu Noble, see how it runs then collect all the data I can to determine if it can be optimized for native speed, if not then I will likely target a low level build using https://github.com/devkitPro/deko3d .
+
+---
 # WiiCompiled
 
 A native PC port of Mario Kart Wii, made with static recompilation.
