@@ -72,12 +72,21 @@ def main():
             start = int(a.split("=", 1)[1] if "=" in a else sys.argv[sys.argv.index(a) + 1])
     b_to_r = "--b-to-r" in sys.argv
     frames = read_frames(args[0])
-    # GC stick full deflection ~ +/-72 in PADStatus units; RKG stick is 15 steps around 7,
-    # with nibble 0 = full RIGHT (community docs + mkw-roblox replay validation), so X flips
-    # into PADStatus's positive-right convention. Y polarity is unvalidated until a replayed
-    # staff ghost reproduces its header time on hardware.
-    scale_x = lambda v: round((7 - v) / 7.0 * 72)
-    scale_y = lambda v: round((v - 7) / 7.0 * 72)
+    # RKG stick nibbles are the game's OWN quantised steer levels (15 steps, scheme-independent;
+    # GhostDirectionStream stores post-conversion values). The GC input path reconstructs the
+    # level as trunc(clamp(raw/62)*7) (62.0f divisor at PAL .sdata2 0x8088B890, quantum 7.0f at
+    # 0x8088B870; decoded+verified by the mkw-roblox session). Emitting the CENTRE of each raw
+    # bucket therefore reproduces the recorded level exactly through a plain PAD injection:
+    # level k in 1..6 -> raw 4+9k; full lock (k=7) needs raw >= 62. Nibble 0 = full right, so
+    # X negates into PADStatus's positive-right convention; Y uses the same buckets (polarity
+    # pending on-device staff-ghost validation).
+    def bucket(level):  # level in -7..7 -> bucket-centred PADStatus raw
+        k = abs(level)
+        if k == 0: return 0
+        raw = 62 if k >= 7 else 13 + 9 * (k - 1)  # centres 13,22,31,40,49,58; full lock 62
+        return raw if level > 0 else -raw
+    scale_x = lambda v: bucket(7 - v)
+    scale_y = lambda v: bucket(v - 7)
     lines, prev = [], None
     for i, (state, x, y) in enumerate(frames):
         toks = []
