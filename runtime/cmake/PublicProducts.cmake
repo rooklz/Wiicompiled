@@ -25,13 +25,39 @@ if(EXISTS "${DATA_INIT_BLOB_ASM}")
 endif()
 list(REMOVE_DUPLICATES SOURCES)
 
+# Profile-guided optimization. The translated guest code is ~28k functions reached largely
+# through indirect dispatch; that cost is branch prediction and code layout, which is what a
+# profile fixes. "generate" builds an instrumented binary; run it, merge the .profraw with
+# llvm-profdata, then rebuild with "use" and MKW_PGO_PROFILE pointing at the .profdata.
+set(MKW_PGO "off" CACHE STRING "Profile-guided optimization: off, generate, or use")
+set_property(CACHE MKW_PGO PROPERTY STRINGS off generate use)
+set(MKW_PGO_PROFILE "" CACHE FILEPATH "Merged .profdata for MKW_PGO=use")
+if(MKW_PGO STREQUAL "generate")
+    set(MKW_PGO_FLAGS -fprofile-generate)
+elseif(MKW_PGO STREQUAL "use")
+    if(NOT MKW_PGO_PROFILE)
+        message(FATAL_ERROR "MKW_PGO=use requires MKW_PGO_PROFILE=<merged .profdata>")
+    endif()
+    # One captured profile cannot cover 28k functions; unprofiled ones are not mistakes.
+    set(MKW_PGO_FLAGS "-fprofile-use=${MKW_PGO_PROFILE}" -Wno-profile-instr-unprofiled
+        -Wno-profile-instr-out-of-date)
+else()
+    set(MKW_PGO_FLAGS)
+endif()
+
 function(mkw_apply_common_compile_options target)
-    target_compile_options(${target} PRIVATE -O3 -ffast-math -w -pipe)
+    target_compile_options(${target} PRIVATE -O3 -ffast-math -w -pipe ${MKW_PGO_FLAGS})
 endfunction()
 
+# Optimization level for the translated guest functions: they are most of the binary, so this
+# knob trades code size (and instruction-cache pressure, which is what limits small cores)
+# against per-function code quality. -O2 is the accuracy-preserving default; -Oz is what an
+# i-cache-starved target wants to try.
+set(MKW_TRANSLATED_OPT_LEVEL "-O2" CACHE STRING "Optimization level for translated guest code")
 function(mkw_apply_translated_compile_options target)
     target_compile_options(${target} PRIVATE
-        -O2 ${MKW_TRANSLATED_PPC_FP_OPTIONS} -fno-slp-vectorize -w -pipe)
+        ${MKW_TRANSLATED_OPT_LEVEL} ${MKW_TRANSLATED_PPC_FP_OPTIONS} -fno-slp-vectorize -w -pipe
+        ${MKW_PGO_FLAGS})
 endfunction()
 
 function(mkw_configure_object_target target)
@@ -225,6 +251,9 @@ function(mkw_configure_product target)
         # here for the same reason: music_attenuation.cpp's dlopen(libdbus-1) lives in those
         # objects (empty string on glibc >= 2.34, where dl* is in libc).
         target_link_libraries(${target} PRIVATE mkw::libco ${CMAKE_DL_LIBS})
+        if(MKW_PGO_FLAGS)
+            target_link_options(${target} PRIVATE ${MKW_PGO_FLAGS})
+        endif()
     endif()
     if(WIN32)
         foreach(runtime_dll libc++.dll libunwind.dll)
