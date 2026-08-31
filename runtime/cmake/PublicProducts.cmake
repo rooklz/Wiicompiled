@@ -33,7 +33,12 @@ set(MKW_PGO "off" CACHE STRING "Profile-guided optimization: off, generate, or u
 set_property(CACHE MKW_PGO PROPERTY STRINGS off generate use)
 set(MKW_PGO_PROFILE "" CACHE FILEPATH "Merged .profdata for MKW_PGO=use")
 if(MKW_PGO STREQUAL "generate")
+    # runtime-counter-relocation makes %c (continuous-mode) LLVM_PROFILE_FILE patterns work on
+    # Linux: the counters are mmapped into the profile file as the program runs, so a profile
+    # survives a killed process. Without it the runtime aborts profiling with
+    # "__llvm_profile_counter_bias is undefined" and writes nothing.
     set(MKW_PGO_FLAGS -fprofile-generate)
+    set(MKW_PGO_COMPILE_ONLY_FLAGS -mllvm -runtime-counter-relocation)
 elseif(MKW_PGO STREQUAL "use")
     if(NOT MKW_PGO_PROFILE)
         message(FATAL_ERROR "MKW_PGO=use requires MKW_PGO_PROFILE=<merged .profdata>")
@@ -44,9 +49,12 @@ elseif(MKW_PGO STREQUAL "use")
 else()
     set(MKW_PGO_FLAGS)
 endif()
+if(NOT DEFINED MKW_PGO_COMPILE_ONLY_FLAGS)
+    set(MKW_PGO_COMPILE_ONLY_FLAGS)
+endif()
 
 function(mkw_apply_common_compile_options target)
-    target_compile_options(${target} PRIVATE -O3 -ffast-math -w -pipe ${MKW_PGO_FLAGS})
+    target_compile_options(${target} PRIVATE -O3 -ffast-math -w -pipe ${MKW_PGO_FLAGS} ${MKW_PGO_COMPILE_ONLY_FLAGS})
 endfunction()
 
 # Optimization level for the translated guest functions: they are most of the binary, so this
@@ -57,7 +65,7 @@ set(MKW_TRANSLATED_OPT_LEVEL "-O2" CACHE STRING "Optimization level for translat
 function(mkw_apply_translated_compile_options target)
     target_compile_options(${target} PRIVATE
         ${MKW_TRANSLATED_OPT_LEVEL} ${MKW_TRANSLATED_PPC_FP_OPTIONS} -fno-slp-vectorize -w -pipe
-        ${MKW_PGO_FLAGS})
+        ${MKW_PGO_FLAGS} ${MKW_PGO_COMPILE_ONLY_FLAGS})
 endfunction()
 
 function(mkw_configure_object_target target)
