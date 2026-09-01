@@ -8,7 +8,6 @@
 
 #include <array>
 #include <atomic>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -310,8 +309,16 @@ struct KnownTypedNativeCpuCall {
 // permutation of the low address bits and every pair of functions 512 words
 // (2 KiB) apart collides deterministically. The high bits mix the whole address.
 inline constexpr size_t kIndirectDispatchCacheEntries = 512;
+inline constexpr unsigned IndirectDispatchLog2(size_t value) noexcept {
+    unsigned bits = 0;
+    while ((size_t{1} << bits) < value) ++bits;
+    return bits;
+}
 inline constexpr unsigned kIndirectDispatchCacheShift =
-    32u - std::bit_width(kIndirectDispatchCacheEntries) + 1u;  // 32 - log2(entries)
+    32u - IndirectDispatchLog2(kIndirectDispatchCacheEntries);
+static_assert((size_t{1} << IndirectDispatchLog2(kIndirectDispatchCacheEntries)) ==
+                  kIndirectDispatchCacheEntries,
+              "memo entry count must be a power of two");
 inline constexpr uint32_t IndirectDispatchMemoIndex(uint32_t address) noexcept {
     return (static_cast<uint32_t>(address >> 2) * 2654435761u) >> kIndirectDispatchCacheShift;
 }
