@@ -93,8 +93,11 @@ def main():
         if state & 1: toks.append("A")
         if state & 2: toks.append("R" if b_to_r else "B")
         if state & 4: toks.append("L")
-        toks.append(f"SX={scale_x(x)}")
-        toks.append(f"SY={scale_y(y)}")
+        sx, sy = scale_x(x), scale_y(y)
+        # Parser syntax is sign-prefixed magnitude (SX+25 / SX-60); a zero axis is
+        # simply omitted - each step starts from a neutral PADStatus.
+        if sx: toks.append(f"SX{'+' if sx > 0 else '-'}{abs(sx)}")
+        if sy: toks.append(f"SY{'+' if sy > 0 else '-'}{abs(sy)}")
         cur = " ".join(toks)
         if cur != prev:
             lines.append(f"F{start + i} {cur}")
