@@ -8,7 +8,6 @@
 
 #include <array>
 #include <atomic>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -304,17 +303,8 @@ struct KnownTypedNativeCpuCall {
 // Direct-mapped thread-local memo in front of the sorted registry lookup every bctrl performs;
 // a miss just re-runs the sorted lookup. 512 entries (12 KiB) covers the per-frame indirect
 // working set while staying L1/L2 resident, unlike 4096 which would thrash L2. Must stay a
-// power of two; the index takes the top log2(size) bits of the golden-ratio product
-// (Fibonacci hashing). Masking the low bits instead is not a hash at all: bit k of
-// x * odd-constant depends only on bits <= k of x, so the low bits are just a
-// permutation of the low address bits and every pair of functions 512 words
-// (2 KiB) apart collides deterministically. The high bits mix the whole address.
+// power of two, the index masks with (size - 1).
 inline constexpr size_t kIndirectDispatchCacheEntries = 512;
-inline constexpr unsigned kIndirectDispatchCacheShift =
-    32u - std::bit_width(kIndirectDispatchCacheEntries) + 1u;  // 32 - log2(entries)
-inline constexpr uint32_t IndirectDispatchMemoIndex(uint32_t address) noexcept {
-    return (static_cast<uint32_t>(address >> 2) * 2654435761u) >> kIndirectDispatchCacheShift;
-}
 
 // Namespace-scope `inline thread_local`, not function-local `static thread_local`, to avoid a
 // thread-static init epoch check on every bctrl (same as g_currentCpuContext in ppc_runtime.h).
@@ -347,7 +337,8 @@ public:
             return FindByAddressPtrSlow(address);
         }
 
-        auto& cached = g_indirectResolvedDispatchMemo[IndirectDispatchMemoIndex(address)];
+        auto& cached = g_indirectResolvedDispatchMemo[
+            ((address >> 2) * 2654435761u) & (kIndirectDispatchCacheEntries - 1)];
         if (cached.valid && cached.address == address) {
             return cached.info;
         }
@@ -366,7 +357,8 @@ public:
             return nullptr;
         }
 
-        auto& cached = g_indirectRawDispatchMemo[IndirectDispatchMemoIndex(address)];
+        auto& cached = g_indirectRawDispatchMemo[
+            ((address >> 2) * 2654435761u) & (kIndirectDispatchCacheEntries - 1)];
         if (cached.valid && cached.address == address) {
             return cached.record;
         }
