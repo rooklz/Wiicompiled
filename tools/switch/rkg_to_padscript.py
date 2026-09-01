@@ -16,7 +16,7 @@ The ghost's input stream begins ~3 s before GO with no stored launch frame: the 
 must be aligned to the race start (--start-frame; ~188 worked for the Luigi staff ghost in
 mkw-roblox's replay tool, but calibrate per boot flow).
 
-Usage: rkg_to_padscript.py <ghost.rkg> <out.txt> [--start-frame N] [--b-to-r]
+Usage: rkg_to_padscript.py <ghost.rkg> <out.txt> [--start-frame N] [--b-to-r] [--mute-buttons-before N]
 """
 import struct, sys
 
@@ -71,6 +71,10 @@ def main():
         if a.startswith("--start-frame"):
             start = int(a.split("=", 1)[1] if "=" in a else sys.argv[sys.argv.index(a) + 1])
     b_to_r = "--b-to-r" in sys.argv
+    mute_before = 0
+    for a in sys.argv[1:]:
+        if a.startswith("--mute-buttons-before"):
+            mute_before = int(a.split("=", 1)[1] if "=" in a else sys.argv[sys.argv.index(a) + 1])
     frames = read_frames(args[0])
     # RKG stick nibbles are the game's OWN quantised steer levels (15 steps, scheme-independent;
     # GhostDirectionStream stores post-conversion values). The GC input path reconstructs the
@@ -88,7 +92,11 @@ def main():
     scale_x = lambda v: bucket(7 - v)
     scale_y = lambda v: bucket(v - 7)
     lines, prev = [], None
+    # Buttons before the countdown are muted: the port's intro flyover skips on any
+    # A press, which the original recording's idle pre-GO holds never triggered.
+    # Steering passes through - the stick cannot skip the intro.
     for i, (state, x, y) in enumerate(frames):
+        if i < mute_before: state = 0
         toks = []
         if state & 1: toks.append("A")
         if state & 2: toks.append("R" if b_to_r else "B")
