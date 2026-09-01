@@ -301,13 +301,10 @@ struct KnownTypedNativeCpuCall {
 #include "native_cpu_calls.inc"
 
 // Direct-mapped thread-local memo in front of the sorted registry lookup every bctrl performs;
-// a miss just re-runs the sorted lookup. Must stay a power of two, the index masks with
-// (size - 1). The low-bit index is deliberate: it preserves address locality, so functions
-// near each other never collide - only pairs whose word addresses are congruent mod the
-// table size do. (A high-bit Fibonacci hash measured 0.5-1% slower on the race bench:
-// uniform scattering birthday-collides the hot working set instead.) 4096 entries widen
-// the congruence spacing to 16 KiB at 96 KiB TLS per guest thread.
-inline constexpr size_t kIndirectDispatchCacheEntries = 4096;
+// a miss just re-runs the sorted lookup. 512 entries (12 KiB) covers the per-frame indirect
+// working set while staying L1/L2 resident, unlike 4096 which would thrash L2. Must stay a
+// power of two, the index masks with (size - 1).
+inline constexpr size_t kIndirectDispatchCacheEntries = 512;
 
 // Namespace-scope `inline thread_local`, not function-local `static thread_local`, to avoid a
 // thread-static init epoch check on every bctrl (same as g_currentCpuContext in ppc_runtime.h).
